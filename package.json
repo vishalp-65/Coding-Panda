@@ -1,0 +1,35 @@
+{
+  "name": "ai-coding-platform",
+  "version": "1.0.0",
+  "description": "AI-powered coding contest platform with microservices architecture",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "docker-compose up -d && npm run dev:services",
+    "dev:services": "concurrently \"npm run dev --workspace=services/api-gateway\" \"npm run dev --workspace=services/user-service\" \"npm run dev --workspace=services/problem-service\"",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "eslint . --ext .ts,.js",
+    "format": "prettier --write .",
+    "clean": "npm run clean --workspaces && rm -rf node_modules",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "concurrently": "^8.2.0",
+    "eslint": "^8.45.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

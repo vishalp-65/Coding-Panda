@@ -12,6 +12,7 @@ export * from './database';
 
 // HTTP utilities
 export * from './http';
+export { errorHandler } from './http';
 
 // Constants
 export * from './constants';

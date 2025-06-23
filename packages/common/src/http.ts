@@ -60,3 +60,49 @@ export const rateLimitConfig = {
   standardHeaders: true,
   legacyHeaders: false,
 };
+
+// Error handling middleware
+export const errorHandler = (err: any, req: any, res: any, next: any) => {
+  const requestId = req.headers['x-request-id'] || HttpUtils.generateRequestId();
+  
+  // Log error
+  console.error(`[${requestId}] Error:`, err);
+
+  // Handle known error types
+  if (err.statusCode && err.code) {
+    return res.status(err.statusCode).json(
+      HttpUtils.error(err.code, err.message, err.details, requestId)
+    );
+  }
+
+  // Handle validation errors
+  if (err.name === 'ValidationError') {
+    return res.status(400).json(
+      HttpUtils.error('VALIDATION_ERROR', err.message, err.details, requestId)
+    );
+  }
+
+  // Handle MongoDB errors
+  if (err.name === 'MongoError' || err.name === 'MongoServerError') {
+    if (err.code === 11000) {
+      return res.status(409).json(
+        HttpUtils.error('DUPLICATE_RESOURCE', 'Resource already exists', err.keyValue, requestId)
+      );
+    }
+    return res.status(500).json(
+      HttpUtils.error('DATABASE_ERROR', 'Database operation failed', null, requestId)
+    );
+  }
+
+  // Handle Mongoose errors
+  if (err.name === 'CastError') {
+    return res.status(400).json(
+      HttpUtils.error('INVALID_ID', 'Invalid resource ID format', null, requestId)
+    );
+  }
+
+  // Default error response
+  res.status(500).json(
+    HttpUtils.error('INTERNAL_ERROR', 'An unexpected error occurred', null, requestId)
+  );
+};

@@ -9,7 +9,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import uvicorn
 
 from .config import settings
-from .routers import analysis, health
+from .routers import analysis, health, learning
 from .core.database import init_db
 from .core.redis_client import init_redis
 from .core.ai_client import init_ai_clients
@@ -74,6 +74,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["analysis"])
+app.include_router(learning.router, prefix="/api/v1/learning", tags=["learning"])
 
 
 @app.get("/")

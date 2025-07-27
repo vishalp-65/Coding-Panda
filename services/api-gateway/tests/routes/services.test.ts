@@ -9,32 +9,32 @@ jest.mock('http-proxy-middleware', () => ({
   createProxyMiddleware: jest.fn(() => (req: any, res: any, next: any) => {
     // Simulate successful proxy response
     res.json({ proxied: true, service: req.path.split('/')[1] });
-  })
+  }),
 }));
 
 // Mock Redis client
 jest.mock('../../src/middleware/rate-limit', () => ({
   redisClient: {
-    get: jest.fn().mockResolvedValue(null)
-  }
+    get: jest.fn().mockResolvedValue(null),
+  },
 }));
 
 describe('Service Routes', () => {
   let app: express.Application;
   const JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
-  
+
   const validUser = {
     id: 'user-123',
     email: 'test@example.com',
     username: 'testuser',
-    roles: ['user']
+    roles: ['user'],
   };
 
   const adminUser = {
     id: 'admin-123',
     email: 'admin@example.com',
     username: 'admin',
-    roles: ['admin', 'user']
+    roles: ['admin', 'user'],
   };
 
   const createToken = (payload: any) => {
@@ -51,27 +51,21 @@ describe('Service Routes', () => {
 
   describe('Public endpoints', () => {
     it('should allow access to user endpoints without authentication', async () => {
-      const response = await request(app)
-        .get('/api/users/public')
-        .expect(200);
+      const response = await request(app).get('/api/users/public').expect(200);
 
       expect(response.body.proxied).toBe(true);
       expect(response.body.service).toBe('users');
     });
 
     it('should allow access to problem browsing without authentication', async () => {
-      const response = await request(app)
-        .get('/api/problems')
-        .expect(200);
+      const response = await request(app).get('/api/problems').expect(200);
 
       expect(response.body.proxied).toBe(true);
       expect(response.body.service).toBe('problems');
     });
 
     it('should allow access to contest viewing without authentication', async () => {
-      const response = await request(app)
-        .get('/api/contests')
-        .expect(200);
+      const response = await request(app).get('/api/contests').expect(200);
 
       expect(response.body.proxied).toBe(true);
       expect(response.body.service).toBe('contests');
@@ -90,7 +84,7 @@ describe('Service Routes', () => {
 
     it('should allow authenticated access to code execution', async () => {
       const token = createToken(validUser);
-      
+
       const response = await request(app)
         .post('/api/execute')
         .set('Authorization', `Bearer ${token}`)
@@ -112,7 +106,7 @@ describe('Service Routes', () => {
 
     it('should allow authenticated access to AI services', async () => {
       const token = createToken(validUser);
-      
+
       const response = await request(app)
         .post('/api/ai/analyze')
         .set('Authorization', `Bearer ${token}`)
@@ -127,7 +121,7 @@ describe('Service Routes', () => {
   describe('Role-based access control', () => {
     it('should require admin role for admin endpoints', async () => {
       const token = createToken(validUser);
-      
+
       const response = await request(app)
         .get('/api/admin/users')
         .set('Authorization', `Bearer ${token}`)
@@ -138,7 +132,7 @@ describe('Service Routes', () => {
 
     it('should allow admin access to admin endpoints', async () => {
       const token = createToken(adminUser);
-      
+
       const response = await request(app)
         .get('/api/admin/users')
         .set('Authorization', `Bearer ${token}`)
@@ -152,11 +146,11 @@ describe('Service Routes', () => {
         id: 'mod-123',
         email: 'mod@example.com',
         username: 'moderator',
-        roles: ['moderator', 'user']
+        roles: ['moderator', 'user'],
       };
-      
+
       const token = createToken(moderatorUser);
-      
+
       const response = await request(app)
         .get('/api/moderate/reports')
         .set('Authorization', `Bearer ${token}`)
@@ -169,7 +163,7 @@ describe('Service Routes', () => {
   describe('Request forwarding', () => {
     it('should forward user information in headers when authenticated', async () => {
       const token = createToken(validUser);
-      
+
       // Mock the proxy to capture forwarded headers
       const captureHeadersProxy = jest.fn((req, res, next) => {
         res.json({
@@ -179,8 +173,8 @@ describe('Service Routes', () => {
             'x-user-email': req.headers['x-user-email'],
             'x-user-roles': req.headers['x-user-roles'],
             'x-request-id': req.headers['x-request-id'],
-            'x-real-ip': req.headers['x-real-ip']
-          }
+            'x-real-ip': req.headers['x-real-ip'],
+          },
         });
       });
 
@@ -201,8 +195,12 @@ describe('Service Routes', () => {
         .expect(200);
 
       expect(response.body.forwardedHeaders['x-user-id']).toBe(validUser.id);
-      expect(response.body.forwardedHeaders['x-user-email']).toBe(validUser.email);
-      expect(response.body.forwardedHeaders['x-user-roles']).toBe(JSON.stringify(validUser.roles));
+      expect(response.body.forwardedHeaders['x-user-email']).toBe(
+        validUser.email
+      );
+      expect(response.body.forwardedHeaders['x-user-roles']).toBe(
+        JSON.stringify(validUser.roles)
+      );
       expect(response.body.forwardedHeaders['x-request-id']).toBeDefined();
       expect(response.body.forwardedHeaders['x-real-ip']).toBeDefined();
     });
@@ -211,7 +209,9 @@ describe('Service Routes', () => {
       const captureHeadersProxy = jest.fn((req, res, next) => {
         res.json({
           proxied: true,
-          hasUserHeaders: !!(req.headers['x-user-id'] || req.headers['x-user-email'])
+          hasUserHeaders: !!(
+            req.headers['x-user-id'] || req.headers['x-user-email']
+          ),
         });
       });
 
@@ -223,9 +223,7 @@ describe('Service Routes', () => {
       testApp.use(loggingMiddleware);
       testApp.use('/api', serviceRoutes);
 
-      const response = await request(testApp)
-        .get('/api/problems')
-        .expect(200);
+      const response = await request(testApp).get('/api/problems').expect(200);
 
       expect(response.body.hasUserHeaders).toBe(false);
     });
@@ -236,13 +234,11 @@ describe('Service Routes', () => {
       const services = [
         { path: '/api/users', expectedService: 'users' },
         { path: '/api/problems', expectedService: 'problems' },
-        { path: '/api/contests', expectedService: 'contests' }
+        { path: '/api/contests', expectedService: 'contests' },
       ];
 
       for (const service of services) {
-        const response = await request(app)
-          .get(service.path)
-          .expect(200);
+        const response = await request(app).get(service.path).expect(200);
 
         expect(response.body.service).toBe(service.expectedService);
       }
@@ -269,8 +265,8 @@ describe('Service Routes', () => {
             message: 'Service temporarily unavailable',
             service: req.path.split('/')[1],
             timestamp: expect.any(String),
-            requestId: req.requestId
-          }
+            requestId: req.requestId,
+          },
         });
       });
 
@@ -282,9 +278,7 @@ describe('Service Routes', () => {
       testApp.use(loggingMiddleware);
       testApp.use('/api', serviceRoutes);
 
-      const response = await request(testApp)
-        .get('/api/problems')
-        .expect(503);
+      const response = await request(testApp).get('/api/problems').expect(503);
 
       expect(response.body.error.code).toBe('SERVICE_UNAVAILABLE');
       expect(response.body.error.service).toBe('problems');

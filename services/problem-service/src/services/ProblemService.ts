@@ -1,11 +1,11 @@
 import { ProblemModel, ProblemDocument } from '../models/Problem';
 import { UserProblemModel, UserProblemDocument } from '../models/UserProblem';
-import { 
-  Problem, 
-  CreateProblemRequest, 
-  UpdateProblemRequest, 
+import {
+  Problem,
+  CreateProblemRequest,
+  UpdateProblemRequest,
   ProblemSearchCriteria,
-  PaginatedResult
+  PaginatedResult,
 } from '@ai-platform/types';
 import { DatabaseUtils } from '@ai-platform/common';
 import { logger } from '@ai-platform/common';
@@ -16,7 +16,7 @@ export class ProblemService {
   async createProblem(problemData: CreateProblemRequest): Promise<Problem> {
     try {
       const slug = this.generateSlug(problemData.title);
-      
+
       // Check if slug already exists
       const existingProblem = await ProblemModel.findOne({ slug });
       if (existingProblem) {
@@ -26,18 +26,20 @@ export class ProblemService {
       // Add IDs to test cases
       const testCasesWithIds = problemData.testCases.map(testCase => ({
         ...testCase,
-        id: uuidv4()
+        id: uuidv4(),
       }));
 
       const problem = new ProblemModel({
         ...problemData,
         slug,
-        testCases: testCasesWithIds
+        testCases: testCasesWithIds,
       });
 
       const savedProblem = await problem.save();
-      logger.info(`Created problem: ${savedProblem.title} (${savedProblem.id})`);
-      
+      logger.info(
+        `Created problem: ${savedProblem.title} (${savedProblem.id})`
+      );
+
       return savedProblem.toJSON() as Problem;
     } catch (error) {
       logger.error('Error creating problem:', error);
@@ -52,7 +54,7 @@ export class ProblemService {
       }
 
       const problem = await ProblemModel.findById(id);
-      return problem ? problem.toJSON() as Problem : null;
+      return problem ? (problem.toJSON() as Problem) : null;
     } catch (error) {
       logger.error('Error getting problem by ID:', error);
       throw error;
@@ -62,14 +64,17 @@ export class ProblemService {
   async getProblemBySlug(slug: string): Promise<Problem | null> {
     try {
       const problem = await ProblemModel.findOne({ slug });
-      return problem ? problem.toJSON() as Problem : null;
+      return problem ? (problem.toJSON() as Problem) : null;
     } catch (error) {
       logger.error('Error getting problem by slug:', error);
       throw error;
     }
   }
 
-  async updateProblem(id: string, updates: UpdateProblemRequest): Promise<Problem | null> {
+  async updateProblem(
+    id: string,
+    updates: UpdateProblemRequest
+  ): Promise<Problem | null> {
     try {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return null;
@@ -78,15 +83,15 @@ export class ProblemService {
       // If title is being updated, generate new slug
       if (updates.title) {
         const newSlug = this.generateSlug(updates.title);
-        const existingProblem = await ProblemModel.findOne({ 
-          slug: newSlug, 
-          _id: { $ne: id } 
+        const existingProblem = await ProblemModel.findOne({
+          slug: newSlug,
+          _id: { $ne: id },
         });
-        
+
         if (existingProblem) {
           throw new Error('Problem with similar title already exists');
         }
-        
+
         (updates as any).slug = newSlug;
       }
 
@@ -100,7 +105,7 @@ export class ProblemService {
         logger.info(`Updated problem: ${problem.title} (${problem.id})`);
       }
 
-      return problem ? problem.toJSON() as Problem : null;
+      return problem ? (problem.toJSON() as Problem) : null;
     } catch (error) {
       logger.error('Error updating problem:', error);
       throw error;
@@ -114,14 +119,14 @@ export class ProblemService {
       }
 
       const result = await ProblemModel.findByIdAndDelete(id);
-      
+
       if (result) {
         // Also delete related user problem records
         await UserProblemModel.deleteMany({ problemId: id });
         logger.info(`Deleted problem: ${result.title} (${id})`);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       logger.error('Error deleting problem:', error);
@@ -142,7 +147,7 @@ export class ProblemService {
         sortBy = 'createdAt',
         sortOrder = 'desc',
         page = 1,
-        limit = 20
+        limit = 20,
       } = criteria;
 
       // Build MongoDB aggregation pipeline
@@ -179,14 +184,14 @@ export class ProblemService {
                   $expr: {
                     $and: [
                       { $eq: ['$userId', userId] },
-                      { $eq: ['$problemId', '$$problemId'] }
-                    ]
-                  }
-                }
-              }
+                      { $eq: ['$problemId', '$$problemId'] },
+                    ],
+                  },
+                },
+              },
             ],
-            as: 'userProblem'
-          }
+            as: 'userProblem',
+          },
         });
 
         pipeline.push({
@@ -195,10 +200,10 @@ export class ProblemService {
               $cond: {
                 if: { $gt: [{ $size: '$userProblem' }, 0] },
                 then: { $arrayElemAt: ['$userProblem.status', 0] },
-                else: null
-              }
-            }
-          }
+                else: null,
+              },
+            },
+          },
         });
 
         // Filter by user status if specified
@@ -208,13 +213,13 @@ export class ProblemService {
               $match: {
                 $or: [
                   { userStatus: null },
-                  { userStatus: { $in: ['bookmarked', 'attempted'] } }
-                ]
-              }
+                  { userStatus: { $in: ['bookmarked', 'attempted'] } },
+                ],
+              },
             });
           } else {
             pipeline.push({
-              $match: { userStatus: status }
+              $match: { userStatus: status },
             });
           }
         }
@@ -248,14 +253,14 @@ export class ProblemService {
                   then: {
                     id: '$$testCase.id',
                     isHidden: true,
-                    explanation: '$$testCase.explanation'
+                    explanation: '$$testCase.explanation',
                   },
-                  else: '$$testCase'
-                }
-              }
-            }
-          }
-        }
+                  else: '$$testCase',
+                },
+              },
+            },
+          },
+        },
       });
 
       // Execute aggregation
@@ -265,7 +270,7 @@ export class ProblemService {
       const transformedProblems = problems.map(problem => {
         const transformed = {
           ...problem,
-          id: problem._id.toString()
+          id: problem._id.toString(),
         };
         delete transformed._id;
         delete transformed.__v;
@@ -285,14 +290,16 @@ export class ProblemService {
     }
   }
 
-  async getPopularTags(limit: number = 20): Promise<Array<{ tag: string; count: number }>> {
+  async getPopularTags(
+    limit: number = 20
+  ): Promise<Array<{ tag: string; count: number }>> {
     try {
       const pipeline: any[] = [
         { $unwind: '$tags' },
         { $group: { _id: '$tags', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: limit },
-        { $project: { tag: '$_id', count: 1, _id: 0 } }
+        { $project: { tag: '$_id', count: 1, _id: 0 } },
       ];
 
       return await ProblemModel.aggregate(pipeline);
@@ -303,7 +310,7 @@ export class ProblemService {
   }
 
   async updateProblemStatistics(
-    problemId: string, 
+    problemId: string,
     isAccepted: boolean
   ): Promise<void> {
     try {
@@ -312,7 +319,7 @@ export class ProblemService {
       }
 
       const updateQuery: any = {
-        $inc: { 'statistics.totalSubmissions': 1 }
+        $inc: { 'statistics.totalSubmissions': 1 },
       };
 
       if (isAccepted) {
@@ -324,9 +331,12 @@ export class ProblemService {
       // Recalculate acceptance rate
       const problem = await ProblemModel.findById(problemId);
       if (problem && problem.statistics.totalSubmissions > 0) {
-        const acceptanceRate = (problem.statistics.acceptedSubmissions / problem.statistics.totalSubmissions) * 100;
+        const acceptanceRate =
+          (problem.statistics.acceptedSubmissions /
+            problem.statistics.totalSubmissions) *
+          100;
         await ProblemModel.findByIdAndUpdate(problemId, {
-          'statistics.acceptanceRate': Math.round(acceptanceRate * 100) / 100
+          'statistics.acceptanceRate': Math.round(acceptanceRate * 100) / 100,
         });
       }
     } catch (error) {
@@ -344,7 +354,7 @@ export class ProblemService {
           userId,
           problemId,
           status: 'bookmarked',
-          bookmarkedAt: new Date()
+          bookmarkedAt: new Date(),
         },
         { upsert: true, new: true }
       );
@@ -359,7 +369,7 @@ export class ProblemService {
   async unbookmarkProblem(userId: string, problemId: string): Promise<void> {
     try {
       const userProblem = await UserProblemModel.findOne({ userId, problemId });
-      
+
       if (userProblem) {
         if (userProblem.status === 'bookmarked') {
           await UserProblemModel.findOneAndDelete({ userId, problemId });
@@ -379,13 +389,20 @@ export class ProblemService {
     }
   }
 
-  async rateProblem(userId: string, problemId: string, rating: number): Promise<void> {
+  async rateProblem(
+    userId: string,
+    problemId: string,
+    rating: number
+  ): Promise<void> {
     try {
       if (rating < 1 || rating > 5) {
         throw new Error('Rating must be between 1 and 5');
       }
 
-      const existingUserProblem = await UserProblemModel.findOne({ userId, problemId });
+      const existingUserProblem = await UserProblemModel.findOne({
+        userId,
+        problemId,
+      });
       const previousRating = existingUserProblem?.rating;
 
       // Update user problem record
@@ -395,7 +412,7 @@ export class ProblemService {
           userId,
           problemId,
           rating,
-          status: existingUserProblem?.status || 'attempted'
+          status: existingUserProblem?.status || 'attempted',
         },
         { upsert: true, new: true }
       );
@@ -404,7 +421,8 @@ export class ProblemService {
       const problem = await ProblemModel.findById(problemId);
       if (problem) {
         let newRatingCount = problem.statistics.ratingCount;
-        let newTotalRating = problem.statistics.averageRating * problem.statistics.ratingCount;
+        let newTotalRating =
+          problem.statistics.averageRating * problem.statistics.ratingCount;
 
         if (previousRating) {
           // Replace existing rating
@@ -419,7 +437,7 @@ export class ProblemService {
 
         await ProblemModel.findByIdAndUpdate(problemId, {
           'statistics.averageRating': Math.round(newAverageRating * 100) / 100,
-          'statistics.ratingCount': newRatingCount
+          'statistics.ratingCount': newRatingCount,
         });
       }
 
@@ -431,8 +449,8 @@ export class ProblemService {
   }
 
   async getUserBookmarkedProblems(
-    userId: string, 
-    page: number = 1, 
+    userId: string,
+    page: number = 1,
     limit: number = 20
   ): Promise<PaginatedResult<Problem>> {
     try {
@@ -443,31 +461,31 @@ export class ProblemService {
         { $sort: { bookmarkedAt: -1 } },
         {
           $addFields: {
-            problemObjectId: { $toObjectId: '$problemId' }
-          }
+            problemObjectId: { $toObjectId: '$problemId' },
+          },
         },
         {
           $lookup: {
             from: 'problems',
             localField: 'problemObjectId',
             foreignField: '_id',
-            as: 'problem'
-          }
+            as: 'problem',
+          },
         },
         { $unwind: '$problem' },
         { $replaceRoot: { newRoot: '$problem' } },
         { $skip: skip },
-        { $limit: limit }
+        { $limit: limit },
       ];
 
       const countPipeline: any[] = [
         { $match: { userId, status: 'bookmarked' } },
-        { $count: 'total' }
+        { $count: 'total' },
       ];
 
       const [problems, countResult] = await Promise.all([
         UserProblemModel.aggregate(pipeline),
-        UserProblemModel.aggregate(countPipeline)
+        UserProblemModel.aggregate(countPipeline),
       ]);
 
       const total = countResult[0]?.total || 0;
@@ -476,7 +494,7 @@ export class ProblemService {
         ...problem,
         id: problem._id.toString(),
         _id: undefined,
-        __v: undefined
+        __v: undefined,
       }));
 
       return DatabaseUtils.createPaginatedResult(
@@ -502,10 +520,10 @@ export class ProblemService {
 
   private getSortField(sortBy: string): string {
     const sortFieldMap: Record<string, string> = {
-      'title': 'title',
-      'difficulty': 'difficulty',
-      'acceptance_rate': 'statistics.acceptanceRate',
-      'created_at': 'createdAt'
+      title: 'title',
+      difficulty: 'difficulty',
+      acceptance_rate: 'statistics.acceptanceRate',
+      created_at: 'createdAt',
     };
 
     return sortFieldMap[sortBy] || 'createdAt';

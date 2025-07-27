@@ -81,6 +81,7 @@ hints = await learning_service.generate_progressive_hints(request)
 ```
 
 **Features:**
+
 - AI-powered hint generation using LLM
 - Progressive difficulty (levels 1-5)
 - Context awareness based on user's current code
@@ -108,6 +109,7 @@ print(f"Weak areas: {len(assessment.weak_areas)}")
 ```
 
 **Analysis includes:**
+
 - Overall skill level (Beginner, Intermediate, Advanced, Expert)
 - Performance by concept category (algorithms, data structures, etc.)
 - Weak area identification with improvement suggestions
@@ -136,6 +138,7 @@ print(f"Practice problems: {len(path.practice_problems)}")
 ```
 
 **Features:**
+
 - Personalized based on current skill assessment
 - Adaptive difficulty progression
 - Curated learning resources
@@ -161,6 +164,7 @@ recommendations = await learning_service.generate_contextual_recommendations(req
 ```
 
 **Context types:**
+
 - `problem_solving`: Based on recent code submissions
 - `skill_gap`: Based on identified weak areas
 - `interview_prep`: Focused on interview concepts
@@ -181,6 +185,7 @@ for pattern in patterns:
 ```
 
 **Pattern types:**
+
 - Time-based patterns (best/worst hours for coding)
 - Difficulty progression patterns
 - Concept performance patterns
@@ -201,6 +206,7 @@ print(f"Estimated success rate: {progression.estimated_success_rate:.2%}")
 ```
 
 **Features:**
+
 - Readiness score calculation
 - Success rate estimation
 - Supporting evidence

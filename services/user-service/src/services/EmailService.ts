@@ -9,16 +9,18 @@ export class EmailService {
       host: config.email.host,
       port: config.email.port,
       secure: config.email.secure,
-      auth: config.email.user ? {
-        user: config.email.user,
-        pass: config.email.password,
-      } : undefined,
+      auth: config.email.user
+        ? {
+            user: config.email.user,
+            pass: config.email.password,
+          }
+        : undefined,
     });
   }
 
   async sendVerificationEmail(email: string, token: string): Promise<void> {
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
-    
+
     const mailOptions = {
       from: config.email.from,
       to: email,
@@ -49,7 +51,7 @@ export class EmailService {
 
   async sendPasswordResetEmail(email: string, token: string): Promise<void> {
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
-    
+
     const mailOptions = {
       from: config.email.from,
       to: email,

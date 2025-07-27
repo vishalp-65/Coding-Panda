@@ -17,35 +17,39 @@ app.use((req: any, res, next) => {
   next();
 });
 
-const MockedProblemService = ProblemService as jest.MockedClass<typeof ProblemService>;
+const MockedProblemService = ProblemService as jest.MockedClass<
+  typeof ProblemService
+>;
 
 describe('ProblemController', () => {
   let mockProblemService: jest.Mocked<ProblemService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockProblemService = new MockedProblemService() as jest.Mocked<ProblemService>;
+    mockProblemService =
+      new MockedProblemService() as jest.Mocked<ProblemService>;
     (ProblemService as any).mockImplementation(() => mockProblemService);
   });
 
   const mockProblemData: CreateProblemRequest = {
     title: 'Two Sum',
-    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+    description:
+      'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
     difficulty: 'easy' as ProblemDifficulty,
     tags: ['array', 'hash-table'],
     constraints: {
       timeLimit: 1000,
       memoryLimit: 128,
       inputFormat: 'First line contains array, second line contains target',
-      outputFormat: 'Return array of two indices'
+      outputFormat: 'Return array of two indices',
     },
     testCases: [
       {
         input: '[2,7,11,15]\n9',
         expectedOutput: '[0,1]',
-        isHidden: false
-      }
-    ]
+        isHidden: false,
+      },
+    ],
   };
 
   const mockProblem = {
@@ -58,10 +62,10 @@ describe('ProblemController', () => {
       acceptanceRate: 0,
       averageRating: 0,
       ratingCount: 0,
-      difficultyVotes: { easy: 0, medium: 0, hard: 0 }
+      difficultyVotes: { easy: 0, medium: 0, hard: 0 },
     },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   describe('POST /api/problems', () => {
@@ -76,7 +80,9 @@ describe('ProblemController', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.title).toBe(mockProblemData.title);
       expect(response.body.message).toBe('Problem created successfully');
-      expect(mockProblemService.createProblem).toHaveBeenCalledWith(mockProblemData);
+      expect(mockProblemService.createProblem).toHaveBeenCalledWith(
+        mockProblemData
+      );
     });
 
     it('should return 409 for duplicate problem', async () => {
@@ -104,7 +110,9 @@ describe('ProblemController', () => {
     });
 
     it('should return 500 for internal error', async () => {
-      mockProblemService.createProblem.mockRejectedValue(new Error('Database error'));
+      mockProblemService.createProblem.mockRejectedValue(
+        new Error('Database error')
+      );
 
       const response = await request(app)
         .post('/api/problems')
@@ -125,7 +133,9 @@ describe('ProblemController', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.title).toBe(mockProblem.title);
-      expect(mockProblemService.getProblemById).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(mockProblemService.getProblemById).toHaveBeenCalledWith(
+        '507f1f77bcf86cd799439011'
+      );
     });
 
     it('should get problem by slug', async () => {
@@ -138,7 +148,9 @@ describe('ProblemController', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.title).toBe(mockProblem.title);
-      expect(mockProblemService.getProblemBySlug).toHaveBeenCalledWith('two-sum');
+      expect(mockProblemService.getProblemBySlug).toHaveBeenCalledWith(
+        'two-sum'
+      );
     });
 
     it('should return 404 for non-existent problem', async () => {
@@ -193,7 +205,9 @@ describe('ProblemController', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Problem deleted successfully');
-      expect(mockProblemService.deleteProblem).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(mockProblemService.deleteProblem).toHaveBeenCalledWith(
+        '507f1f77bcf86cd799439011'
+      );
     });
 
     it('should return 404 for non-existent problem', async () => {
@@ -217,8 +231,8 @@ describe('ProblemController', () => {
           total: 1,
           totalPages: 1,
           hasNext: false,
-          hasPrev: false
-        }
+          hasPrev: false,
+        },
       };
 
       mockProblemService.searchProblems.mockResolvedValue(mockResult as any);
@@ -233,7 +247,7 @@ describe('ProblemController', () => {
       expect(mockProblemService.searchProblems).toHaveBeenCalledWith(
         expect.objectContaining({
           difficulty: ['easy'],
-          tags: ['array']
+          tags: ['array'],
         }),
         'user123'
       );
@@ -248,8 +262,8 @@ describe('ProblemController', () => {
           total: 0,
           totalPages: 0,
           hasNext: false,
-          hasPrev: false
-        }
+          hasPrev: false,
+        },
       };
 
       mockProblemService.searchProblems.mockResolvedValue(mockResult as any);
@@ -267,7 +281,7 @@ describe('ProblemController', () => {
     it('should get popular tags', async () => {
       const mockTags = [
         { tag: 'array', count: 10 },
-        { tag: 'string', count: 8 }
+        { tag: 'string', count: 8 },
       ];
 
       mockProblemService.getPopularTags.mockResolvedValue(mockTags);
@@ -367,11 +381,13 @@ describe('ProblemController', () => {
           total: 1,
           totalPages: 1,
           hasNext: false,
-          hasPrev: false
-        }
+          hasPrev: false,
+        },
       };
 
-      mockProblemService.getUserBookmarkedProblems.mockResolvedValue(mockResult as any);
+      mockProblemService.getUserBookmarkedProblems.mockResolvedValue(
+        mockResult as any
+      );
 
       const response = await request(app)
         .get('/api/problems/bookmarks?page=1&limit=10')
@@ -397,7 +413,9 @@ describe('ProblemController', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Problem statistics updated successfully');
+      expect(response.body.message).toBe(
+        'Problem statistics updated successfully'
+      );
       expect(mockProblemService.updateProblemStatistics).toHaveBeenCalledWith(
         '507f1f77bcf86cd799439011',
         true

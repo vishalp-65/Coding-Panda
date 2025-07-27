@@ -112,13 +112,13 @@ export enum ContestStatus {
   UPCOMING = 'upcoming',
   ACTIVE = 'active',
   ENDED = 'ended',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 export enum ParticipantStatus {
   REGISTERED = 'registered',
   PARTICIPATING = 'participating',
-  DISQUALIFIED = 'disqualified'
+  DISQUALIFIED = 'disqualified',
 }
 
 export enum SubmissionStatus {
@@ -128,13 +128,13 @@ export enum SubmissionStatus {
   TIME_LIMIT = 'time_limit',
   MEMORY_LIMIT = 'memory_limit',
   RUNTIME_ERROR = 'runtime_error',
-  COMPILE_ERROR = 'compile_error'
+  COMPILE_ERROR = 'compile_error',
 }
 
 export enum ScoringType {
   STANDARD = 'standard',
   ICPC = 'icpc',
-  IOI = 'ioi'
+  IOI = 'ioi',
 }
 
 // Request/Response DTOs

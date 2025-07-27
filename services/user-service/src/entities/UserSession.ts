@@ -37,7 +37,7 @@ export class UserSession {
   @Column({ name: 'ip_address', type: 'inet', nullable: true })
   ipAddress?: string;
 
-  @ManyToOne(() => User, (user) => user.sessions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, user => user.sessions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: User;
 }

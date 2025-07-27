@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import { logger } from '@ai-platform/common';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-platform';
+const MONGODB_URI =
+  process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-platform';
 
 export async function connectToDatabase(): Promise<void> {
   try {
@@ -10,7 +11,7 @@ export async function connectToDatabase(): Promise<void> {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     });
-    
+
     logger.info('Successfully connected to MongoDB');
   } catch (error) {
     logger.error('MongoDB connection error:', error);
@@ -29,7 +30,7 @@ export async function disconnectFromDatabase(): Promise<void> {
 }
 
 // Handle connection events
-mongoose.connection.on('error', (error) => {
+mongoose.connection.on('error', error => {
   logger.error('MongoDB connection error:', error);
 });
 

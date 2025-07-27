@@ -1,7 +1,11 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthUtils } from '@ai-platform/common';
-import { CreateUserRequest, LoginRequest, AuthResponse } from '@ai-platform/types';
+import {
+  CreateUserRequest,
+  LoginRequest,
+  AuthResponse,
+} from '@ai-platform/types';
 import { UserRepository, UserSessionRepository } from '../repositories';
 import { EmailService } from './EmailService';
 import { config } from '../config/env';
@@ -19,13 +23,17 @@ export class AuthService {
 
   async register(userData: CreateUserRequest): Promise<AuthResponse> {
     // Check if user already exists
-    const existingUser = await this.userRepository.findByEmailOrUsername(userData.email);
+    const existingUser = await this.userRepository.findByEmailOrUsername(
+      userData.email
+    );
     if (existingUser) {
       throw new Error('User with this email or username already exists');
     }
 
     // Check username availability
-    const usernameExists = await this.userRepository.existsByUsername(userData.username);
+    const usernameExists = await this.userRepository.existsByUsername(
+      userData.username
+    );
     if (usernameExists) {
       throw new Error('Username is already taken');
     }
@@ -78,15 +86,24 @@ export class AuthService {
     };
   }
 
-  async login(credentials: LoginRequest, userAgent?: string, ipAddress?: string): Promise<AuthResponse> {
+  async login(
+    credentials: LoginRequest,
+    userAgent?: string,
+    ipAddress?: string
+  ): Promise<AuthResponse> {
     // Find user by email or username
-    const user = await this.userRepository.findByEmailOrUsername(credentials.email);
+    const user = await this.userRepository.findByEmailOrUsername(
+      credentials.email
+    );
     if (!user) {
       throw new Error('Invalid credentials');
     }
 
     // Verify password
-    const isValidPassword = await AuthUtils.comparePassword(credentials.password, user.passwordHash);
+    const isValidPassword = await AuthUtils.comparePassword(
+      credentials.password,
+      user.passwordHash
+    );
     if (!isValidPassword) {
       throw new Error('Invalid credentials');
     }
@@ -138,7 +155,7 @@ export class AuthService {
     try {
       // Verify refresh token
       const payload = AuthUtils.verifyToken(refreshToken);
-      
+
       // Check if session exists and is valid
       const refreshTokenHash = await AuthUtils.hashPassword(refreshToken);
       const isValidSession = await this.sessionRepository.isValidSession(
@@ -188,7 +205,9 @@ export class AuthService {
     await this.sessionRepository.deleteByUserId(userId);
   }
 
-  async validateToken(token: string): Promise<{ userId: string; roles: string[] }> {
+  async validateToken(
+    token: string
+  ): Promise<{ userId: string; roles: string[] }> {
     try {
       const payload = AuthUtils.verifyToken(token);
       return {

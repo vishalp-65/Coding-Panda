@@ -14,7 +14,7 @@ export class AppError extends Error {
     details?: any
   ) {
     super(message);
-    
+
     this.statusCode = statusCode;
     this.code = code;
     this.isOperational = isOperational;
@@ -26,7 +26,13 @@ export class AppError extends Error {
 
 export class ValidationError extends AppError {
   constructor(message: string, details?: any) {
-    super(message, HTTP_STATUS.BAD_REQUEST, ERROR_CODES.VALIDATION_ERROR, true, details);
+    super(
+      message,
+      HTTP_STATUS.BAD_REQUEST,
+      ERROR_CODES.VALIDATION_ERROR,
+      true,
+      details
+    );
   }
 }
 
@@ -44,7 +50,11 @@ export class AuthorizationError extends AppError {
 
 export class NotFoundError extends AppError {
   constructor(resource: string = 'Resource') {
-    super(`${resource} not found`, HTTP_STATUS.NOT_FOUND, ERROR_CODES.RESOURCE_NOT_FOUND);
+    super(
+      `${resource} not found`,
+      HTTP_STATUS.NOT_FOUND,
+      ERROR_CODES.RESOURCE_NOT_FOUND
+    );
   }
 }
 
@@ -56,7 +66,13 @@ export class ConflictError extends AppError {
 
 export class DatabaseError extends AppError {
   constructor(message: string, details?: any) {
-    super(message, HTTP_STATUS.INTERNAL_SERVER_ERROR, ERROR_CODES.DATABASE_ERROR, true, details);
+    super(
+      message,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_CODES.DATABASE_ERROR,
+      true,
+      details
+    );
   }
 }
 

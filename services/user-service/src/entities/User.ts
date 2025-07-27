@@ -48,16 +48,16 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt!: Date;
 
-  @OneToMany(() => UserSession, (session) => session.user)
+  @OneToMany(() => UserSession, session => session.user)
   sessions!: UserSession[];
 
-  @OneToMany(() => PasswordResetToken, (token) => token.user)
+  @OneToMany(() => PasswordResetToken, token => token.user)
   passwordResetTokens!: PasswordResetToken[];
 
-  @OneToMany(() => EmailVerificationToken, (token) => token.user)
+  @OneToMany(() => EmailVerificationToken, token => token.user)
   emailVerificationTokens!: EmailVerificationToken[];
 
-  @OneToOne(() => UserStats, (stats) => stats.user)
+  @OneToOne(() => UserStats, stats => stats.user)
   stats!: UserStats;
 
   // Helper method to get user without sensitive data

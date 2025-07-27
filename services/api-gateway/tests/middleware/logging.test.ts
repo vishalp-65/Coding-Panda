@@ -14,14 +14,12 @@ describe('Logging Middleware', () => {
     app.get('/slow', (req, res) => {
       setTimeout(() => res.json({ message: 'slow' }), 100);
     });
-    
+
     jest.clearAllMocks();
   });
 
   it('should generate and set request ID', async () => {
-    const response = await request(app)
-      .get('/test')
-      .expect(200);
+    const response = await request(app).get('/test').expect(200);
 
     expect(response.headers['x-request-id']).toBeDefined();
     expect(response.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
@@ -29,7 +27,7 @@ describe('Logging Middleware', () => {
 
   it('should use provided request ID from header', async () => {
     const customRequestId = 'custom-request-id-123';
-    
+
     const response = await request(app)
       .get('/test')
       .set('X-Request-ID', customRequestId)
@@ -39,24 +37,20 @@ describe('Logging Middleware', () => {
   });
 
   it('should log incoming requests', async () => {
-    await request(app)
-      .get('/test')
-      .expect(200);
+    await request(app).get('/test').expect(200);
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'Incoming request',
       expect.objectContaining({
         method: 'GET',
         url: '/test',
-        requestId: expect.any(String)
+        requestId: expect.any(String),
       })
     );
   });
 
   it('should log outgoing responses', async () => {
-    await request(app)
-      .get('/test')
-      .expect(200);
+    await request(app).get('/test').expect(200);
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'Outgoing response',
@@ -65,7 +59,7 @@ describe('Logging Middleware', () => {
         url: '/test',
         statusCode: 200,
         duration: expect.any(Number),
-        requestId: expect.any(String)
+        requestId: expect.any(String),
       })
     );
   });
@@ -80,21 +74,19 @@ describe('Logging Middleware', () => {
       'Incoming request',
       expect.objectContaining({
         headers: expect.objectContaining({
-          authorization: '[REDACTED]'
-        })
+          authorization: '[REDACTED]',
+        }),
       })
     );
   });
 
   it('should measure request duration', async () => {
-    await request(app)
-      .get('/test')
-      .expect(200);
+    await request(app).get('/test').expect(200);
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'Outgoing response',
       expect.objectContaining({
-        duration: expect.any(Number)
+        duration: expect.any(Number),
       })
     );
 
@@ -112,9 +104,7 @@ describe('Logging Middleware', () => {
       res.json({ requestId: req.requestId });
     });
 
-    const response = await request(app)
-      .get('/check-request-id')
-      .expect(200);
+    const response = await request(app).get('/check-request-id').expect(200);
 
     expect(response.body.requestId).toBeDefined();
   });

@@ -27,7 +27,7 @@ export class PasswordResetService {
     // Generate secure token
     const token = uuidv4();
     const tokenHash = await AuthUtils.hashPassword(token);
-    
+
     // Set expiration to 1 hour
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1);
@@ -69,7 +69,9 @@ export class PasswordResetService {
     await this.tokenRepository.markAsUsed(resetToken.id);
 
     // Send confirmation email
-    await this.emailService.sendPasswordResetConfirmation(resetToken.user.email);
+    await this.emailService.sendPasswordResetConfirmation(
+      resetToken.user.email
+    );
   }
 
   async validateResetToken(token: string): Promise<boolean> {

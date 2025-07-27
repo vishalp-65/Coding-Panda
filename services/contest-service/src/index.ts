@@ -12,10 +12,10 @@ async function startServer(): Promise<void> {
   try {
     // Initialize database connections
     await initializeDatabase();
-    
+
     // Create and start the Express app
     const app = createApp();
-    
+
     const server = app.listen(PORT, () => {
       logger.info(`Contest Service started on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -24,10 +24,10 @@ async function startServer(): Promise<void> {
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
       logger.info(`Received ${signal}. Starting graceful shutdown...`);
-      
+
       server.close(async () => {
         logger.info('HTTP server closed');
-        
+
         try {
           await closeDatabase();
           logger.info('Database connections closed');
@@ -44,7 +44,7 @@ async function startServer(): Promise<void> {
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
     // Handle uncaught exceptions
-    process.on('uncaughtException', (error) => {
+    process.on('uncaughtException', error => {
       logger.error('Uncaught Exception:', error);
       process.exit(1);
     });
@@ -53,7 +53,6 @@ async function startServer(): Promise<void> {
       logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
       process.exit(1);
     });
-
   } catch (error) {
     logger.error('Failed to start server:', error);
     process.exit(1);

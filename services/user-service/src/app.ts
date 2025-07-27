@@ -10,7 +10,7 @@ export const createApp = (): express.Application => {
 
   // Security middleware
   app.use(helmet());
-  
+
   // CORS configuration
   app.use(cors(config.cors));
 
@@ -62,17 +62,27 @@ export const createApp = (): express.Application => {
   });
 
   // Global error handler
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('Unhandled error:', err);
-    
-    res.status(500).json({
-      error: {
-        code: 'INTERNAL_SERVER_ERROR',
-        message: config.nodeEnv === 'production' ? 'Internal server error' : err.message,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  });
+  app.use(
+    (
+      err: any,
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction
+    ) => {
+      console.error('Unhandled error:', err);
+
+      res.status(500).json({
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message:
+            config.nodeEnv === 'production'
+              ? 'Internal server error'
+              : err.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  );
 
   return app;
 };

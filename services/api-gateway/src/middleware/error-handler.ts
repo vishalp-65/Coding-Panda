@@ -18,7 +18,7 @@ export class APIError extends Error {
     this.statusCode = statusCode;
     this.code = code;
     this.details = details;
-    
+
     // Maintains proper stack trace for where our error was thrown
     Error.captureStackTrace(this, APIError);
   }
@@ -145,7 +145,7 @@ export const errorHandlerMiddleware = (
     stack: error.stack,
     userId: req.user?.id,
     userAgent: req.headers['user-agent'],
-    ip: req.ip || req.connection.remoteAddress
+    ip: req.ip || req.connection.remoteAddress,
   });
 
   // Prepare error response
@@ -154,8 +154,8 @@ export const errorHandlerMiddleware = (
       code,
       message,
       timestamp: new Date().toISOString(),
-      requestId: req.requestId
-    }
+      requestId: req.requestId,
+    },
   };
 
   // Add details for client errors

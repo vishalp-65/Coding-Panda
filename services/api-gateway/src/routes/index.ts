@@ -7,7 +7,7 @@ import { authRateLimitMiddleware } from '../middleware/rate-limit';
 export function setupRoutes(app: Express | express.Application): void {
   // Health check endpoint (no authentication required)
   app.get('/health', getHealth);
-  
+
   // Metrics endpoint (no authentication required)
   app.get('/metrics', getMetrics);
 

@@ -43,7 +43,7 @@ export class PasswordResetTokenRepository {
       .delete()
       .where('expires_at < :now', { now: new Date() })
       .execute();
-    
+
     return result.affected || 0;
   }
 

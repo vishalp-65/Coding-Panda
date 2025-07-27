@@ -3,7 +3,11 @@ import { AppDataSource } from '../config/database';
 import { User } from '../entities/User';
 import { UserStats } from '../entities/UserStats';
 import { CreateUserRequest } from '@ai-platform/types';
-import { PaginationOptions, PaginatedResult, DatabaseUtils } from '@ai-platform/common';
+import {
+  PaginationOptions,
+  PaginatedResult,
+  DatabaseUtils,
+} from '@ai-platform/common';
 
 export class UserRepository {
   private repository: Repository<User>;
@@ -14,7 +18,9 @@ export class UserRepository {
     this.statsRepository = AppDataSource.getRepository(UserStats);
   }
 
-  async create(userData: CreateUserRequest & { passwordHash: string }): Promise<User> {
+  async create(
+    userData: CreateUserRequest & { passwordHash: string }
+  ): Promise<User> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -93,10 +99,7 @@ export class UserRepository {
 
   async findByEmailOrUsername(emailOrUsername: string): Promise<User | null> {
     return this.repository.findOne({
-      where: [
-        { email: emailOrUsername },
-        { username: emailOrUsername },
-      ],
+      where: [{ email: emailOrUsername }, { username: emailOrUsername }],
       relations: ['stats'],
     });
   }
@@ -113,7 +116,7 @@ export class UserRepository {
 
   async findAll(options: PaginationOptions): Promise<PaginatedResult<User>> {
     const offset = DatabaseUtils.calculateOffset(options.page, options.limit);
-    
+
     const [users, total] = await this.repository.findAndCount({
       relations: ['stats'],
       skip: offset,
@@ -121,7 +124,12 @@ export class UserRepository {
       order: { createdAt: 'DESC' },
     });
 
-    return DatabaseUtils.createPaginatedResult(users, total, options.page, options.limit);
+    return DatabaseUtils.createPaginatedResult(
+      users,
+      total,
+      options.page,
+      options.limit
+    );
   }
 
   async existsByEmail(email: string): Promise<boolean> {
@@ -142,7 +150,10 @@ export class UserRepository {
     await this.repository.update(id, { passwordHash });
   }
 
-  async updateProfile(id: string, profile: Partial<User['profile']>): Promise<User | null> {
+  async updateProfile(
+    id: string,
+    profile: Partial<User['profile']>
+  ): Promise<User | null> {
     const user = await this.findById(id);
     if (!user) return null;
 
@@ -151,7 +162,10 @@ export class UserRepository {
     return this.findById(id);
   }
 
-  async updatePreferences(id: string, preferences: Partial<User['preferences']>): Promise<User | null> {
+  async updatePreferences(
+    id: string,
+    preferences: Partial<User['preferences']>
+  ): Promise<User | null> {
     const user = await this.findById(id);
     if (!user) return null;
 

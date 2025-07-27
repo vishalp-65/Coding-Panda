@@ -1,6 +1,12 @@
 import request from 'supertest';
 import express from 'express';
-import { metricsMiddleware, getMetrics, getHealth, resetMetrics, metrics } from '../../src/middleware/metrics';
+import {
+  metricsMiddleware,
+  getMetrics,
+  getHealth,
+  resetMetrics,
+  metrics,
+} from '../../src/middleware/metrics';
 
 describe('Metrics Middleware', () => {
   let app: express.Application;
@@ -10,7 +16,9 @@ describe('Metrics Middleware', () => {
     app = express();
     app.use(metricsMiddleware);
     app.get('/test', (req, res) => res.json({ message: 'test' }));
-    app.get('/error', (req, res) => res.status(500).json({ error: 'test error' }));
+    app.get('/error', (req, res) =>
+      res.status(500).json({ error: 'test error' })
+    );
     app.get('/slow', (req, res) => {
       setTimeout(() => res.json({ message: 'slow' }), 100);
     });
@@ -40,7 +48,7 @@ describe('Metrics Middleware', () => {
 
   it('should track response times', async () => {
     await request(app).get('/test').expect(200);
-    
+
     expect(metrics.responseTime.count).toBe(1);
     expect(metrics.responseTime.average).toBeGreaterThan(0);
     expect(metrics.responseTime.min).toBeGreaterThan(0);
@@ -58,38 +66,38 @@ describe('Metrics Middleware', () => {
 
   it('should track active connections', async () => {
     const initialConnections = metrics.activeConnections;
-    
+
     const promise1 = request(app).get('/slow');
     const promise2 = request(app).get('/slow');
-    
+
     // Small delay to let middleware increment counters
     await new Promise(resolve => setTimeout(resolve, 10));
-    
+
     expect(metrics.activeConnections).toBeGreaterThan(initialConnections);
-    
+
     await Promise.all([promise1, promise2]);
-    
+
     // Connections should be decremented after response
     expect(metrics.activeConnections).toBe(initialConnections);
   });
 
   it('should normalize route patterns', async () => {
     // Test UUID normalization
-    await request(app).get('/users/123e4567-e89b-12d3-a456-426614174000').expect(404);
-    
+    await request(app)
+      .get('/users/123e4567-e89b-12d3-a456-426614174000')
+      .expect(404);
+
     // Test numeric ID normalization
     await request(app).get('/users/123').expect(404);
-    
+
     expect(metrics.requests.byRoute['/users/:id']).toBe(2);
   });
 
   describe('metrics endpoint', () => {
     it('should return current metrics', async () => {
       await request(app).get('/test').expect(200);
-      
-      const response = await request(app)
-        .get('/metrics')
-        .expect(200);
+
+      const response = await request(app).get('/metrics').expect(200);
 
       expect(response.body).toHaveProperty('timestamp');
       expect(response.body).toHaveProperty('uptime');
@@ -98,14 +106,12 @@ describe('Metrics Middleware', () => {
       expect(response.body).toHaveProperty('responseTime');
       expect(response.body).toHaveProperty('errors');
       expect(response.body).toHaveProperty('activeConnections');
-      
+
       expect(response.body.requests.total).toBeGreaterThan(0);
     });
 
     it('should include memory usage information', async () => {
-      const response = await request(app)
-        .get('/metrics')
-        .expect(200);
+      const response = await request(app).get('/metrics').expect(200);
 
       expect(response.body.memory).toHaveProperty('rss');
       expect(response.body.memory).toHaveProperty('heapTotal');
@@ -116,9 +122,7 @@ describe('Metrics Middleware', () => {
 
   describe('health endpoint', () => {
     it('should return health status', async () => {
-      const response = await request(app)
-        .get('/health')
-        .expect(200);
+      const response = await request(app).get('/health').expect(200);
 
       expect(response.body).toHaveProperty('status', 'healthy');
       expect(response.body).toHaveProperty('timestamp');
@@ -132,12 +136,12 @@ describe('Metrics Middleware', () => {
     it('should reset all metrics to initial state', async () => {
       await request(app).get('/test').expect(200);
       await request(app).get('/error').expect(500);
-      
+
       expect(metrics.requests.total).toBeGreaterThan(0);
       expect(metrics.errors.total).toBeGreaterThan(0);
-      
+
       resetMetrics();
-      
+
       expect(metrics.requests.total).toBe(0);
       expect(metrics.requests.byMethod).toEqual({});
       expect(metrics.requests.byStatus).toEqual({});

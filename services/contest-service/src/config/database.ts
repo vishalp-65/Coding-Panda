@@ -21,7 +21,7 @@ db.on('connect', () => {
   logger.info('Connected to PostgreSQL database');
 });
 
-db.on('error', (err) => {
+db.on('error', err => {
   logger.error('PostgreSQL connection error:', err);
 });
 
@@ -46,7 +46,7 @@ redis.on('connect', () => {
   logger.info('Connected to Redis');
 });
 
-redis.on('error', (err) => {
+redis.on('error', err => {
   logger.error('Redis connection error:', err);
 });
 

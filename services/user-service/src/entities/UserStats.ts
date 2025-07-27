@@ -19,7 +19,13 @@ export class UserStats {
   @Column({ name: 'accepted_submissions', default: 0 })
   acceptedSubmissions!: number;
 
-  @Column({ name: 'acceptance_rate', type: 'decimal', precision: 5, scale: 2, default: 0.00 })
+  @Column({
+    name: 'acceptance_rate',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 0.0,
+  })
   acceptanceRate!: number;
 
   @Column({ name: 'problems_solved', default: 0 })
@@ -43,7 +49,7 @@ export class UserStats {
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt!: Date;
 
-  @OneToOne(() => User, (user) => user.stats, { onDelete: 'CASCADE' })
+  @OneToOne(() => User, user => user.stats, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: User;
 }

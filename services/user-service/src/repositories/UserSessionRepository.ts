@@ -36,10 +36,7 @@ export class UserSessionRepository {
   }
 
   async updateLastUsed(sessionId: string): Promise<void> {
-    await this.repository.update(
-      { sessionId },
-      { lastUsedAt: new Date() }
-    );
+    await this.repository.update({ sessionId }, { lastUsedAt: new Date() });
   }
 
   async delete(sessionId: string): Promise<boolean> {
@@ -58,11 +55,14 @@ export class UserSessionRepository {
       .delete()
       .where('expires_at < :now', { now: new Date() })
       .execute();
-    
+
     return result.affected || 0;
   }
 
-  async isValidSession(sessionId: string, refreshTokenHash: string): Promise<boolean> {
+  async isValidSession(
+    sessionId: string,
+    refreshTokenHash: string
+  ): Promise<boolean> {
     const session = await this.repository.findOne({
       where: {
         sessionId,

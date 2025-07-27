@@ -5,7 +5,7 @@ describe('AuthUtils', () => {
     it('should hash a password', async () => {
       const password = 'testpassword123';
       const hash = await AuthUtils.hashPassword(password);
-      
+
       expect(hash).toBeDefined();
       expect(hash).not.toBe(password);
       expect(hash.length).toBeGreaterThan(0);
@@ -16,7 +16,7 @@ describe('AuthUtils', () => {
     it('should return true for matching password and hash', async () => {
       const password = 'testpassword123';
       const hash = await AuthUtils.hashPassword(password);
-      
+
       const isMatch = await AuthUtils.comparePassword(password, hash);
       expect(isMatch).toBe(true);
     });
@@ -25,7 +25,7 @@ describe('AuthUtils', () => {
       const password = 'testpassword123';
       const wrongPassword = 'wrongpassword';
       const hash = await AuthUtils.hashPassword(password);
-      
+
       const isMatch = await AuthUtils.comparePassword(wrongPassword, hash);
       expect(isMatch).toBe(false);
     });
@@ -41,7 +41,7 @@ describe('AuthUtils', () => {
       };
 
       const token = AuthUtils.generateAccessToken(payload);
-      
+
       expect(token).toBeDefined();
       expect(typeof token).toBe('string');
       expect(token.split('.')).toHaveLength(3); // JWT has 3 parts
@@ -59,7 +59,7 @@ describe('AuthUtils', () => {
 
       const token = AuthUtils.generateAccessToken(payload);
       const decoded = AuthUtils.verifyToken(token);
-      
+
       expect(decoded.userId).toBe(payload.userId);
       expect(decoded.email).toBe(payload.email);
       expect(decoded.roles).toEqual(payload.roles);
@@ -68,7 +68,7 @@ describe('AuthUtils', () => {
 
     it('should throw error for invalid token', () => {
       const invalidToken = 'invalid.token.here';
-      
+
       expect(() => {
         AuthUtils.verifyToken(invalidToken);
       }).toThrow();
@@ -79,7 +79,7 @@ describe('AuthUtils', () => {
     it('should generate a unique session ID', () => {
       const sessionId1 = AuthUtils.generateSessionId();
       const sessionId2 = AuthUtils.generateSessionId();
-      
+
       expect(sessionId1).toBeDefined();
       expect(sessionId2).toBeDefined();
       expect(sessionId1).not.toBe(sessionId2);

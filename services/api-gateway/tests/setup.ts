@@ -6,8 +6,8 @@ jest.mock('@ai-platform/common', () => ({
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
-    debug: jest.fn()
-  }
+    debug: jest.fn(),
+  },
 }));
 
 // Set test environment variables

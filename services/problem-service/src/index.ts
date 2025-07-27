@@ -26,7 +26,7 @@ async function startServer() {
   try {
     await connectToDatabase();
     logger.info('Connected to MongoDB');
-    
+
     app.listen(PORT, () => {
       logger.info(`Problem Service running on port ${PORT}`);
     });

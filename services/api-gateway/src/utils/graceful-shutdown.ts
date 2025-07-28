@@ -45,12 +45,15 @@ export function gracefulShutdown(server: Server): void {
   // Handle uncaught exceptions
   process.on('uncaughtException', error => {
     logger.error('Uncaught exception', { error });
+    logger.info('Received uncaughtException, starting graceful shutdown');
     shutdown('uncaughtException');
   });
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason, promise) => {
     logger.error('Unhandled promise rejection', { reason, promise });
-    shutdown('unhandledRejection');
+    logger.info('Received unhandledRejection, starting graceful shutdown');
+    // Don't shutdown for promise rejections, just log them
+    // shutdown('unhandledRejection');
   });
 }

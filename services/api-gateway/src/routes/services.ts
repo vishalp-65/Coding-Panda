@@ -48,8 +48,54 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
     changeOrigin: true,
     pathRewrite: config.pathRewrite,
     timeout: config.timeout,
+    secure: false,
+    ws: false,
+    followRedirects: false,
 
-    // Add request headers
+
+
+    // Handle proxy response
+    onProxyRes: (proxyRes, req, res) => {
+      logger.debug('Proxy response received', {
+        requestId: (req as any).requestId,
+        statusCode: proxyRes.statusCode,
+        target: config.target,
+      });
+    },
+
+    // Handle proxy errors
+    onError: (err, req, res) => {
+      logger.error('Proxy error', {
+        requestId: (req as any).requestId,
+        error: err.message,
+        target: config.target,
+        method: req.method,
+        url: req.url,
+      });
+
+      // Prevent the error from crashing the process
+      try {
+        if (!res.headersSent) {
+          res.status(503).json({
+            error: {
+              code: 'SERVICE_UNAVAILABLE',
+              message: 'Service temporarily unavailable',
+              service: path.replace('/', ''),
+              timestamp: new Date().toISOString(),
+              requestId: (req as any).requestId,
+            },
+          });
+        }
+      } catch (responseError) {
+        logger.error('Error sending proxy error response', { 
+          error: responseError,
+          originalError: err.message 
+        });
+        // Don't let this crash the process
+      }
+    },
+
+    // Handle proxy request errors
     onProxyReq: (proxyReq, req, res) => {
       // Forward user information if authenticated
       if ((req as any).user) {
@@ -72,6 +118,16 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
         proxyReq.setHeader('X-Real-IP', realIP);
       }
 
+      // Handle proxy request errors
+      proxyReq.on('error', (err) => {
+        logger.error('Proxy request error', {
+          error: err.message,
+          target: config.target,
+          method: req.method,
+          url: req.url,
+        });
+      });
+
       logger.debug('Proxying request', {
         requestId: (req as any).requestId,
         method: req.method,
@@ -79,38 +135,6 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
         target: config.target,
         userId: (req as any).user?.id,
       });
-    },
-
-    // Handle proxy response
-    onProxyRes: (proxyRes, req, res) => {
-      logger.debug('Proxy response received', {
-        requestId: (req as any).requestId,
-        statusCode: proxyRes.statusCode,
-        target: config.target,
-      });
-    },
-
-    // Handle proxy errors
-    onError: (err, req, res) => {
-      logger.error('Proxy error', {
-        requestId: (req as any).requestId,
-        error: err.message,
-        target: config.target,
-        method: req.method,
-        url: req.url,
-      });
-
-      if (!res.headersSent) {
-        res.status(503).json({
-          error: {
-            code: 'SERVICE_UNAVAILABLE',
-            message: 'Service temporarily unavailable',
-            service: path.replace('/', ''),
-            timestamp: new Date().toISOString(),
-            requestId: (req as any).requestId,
-          },
-        });
-      }
     },
   };
 

@@ -1,4 +1,4 @@
-import redis
+import redis.asyncio as redis
 import json
 import time
 from typing import Dict, Any, Optional
@@ -21,12 +21,21 @@ class MetricsCollector:
                 password=settings.redis_password if settings.redis_password else None,
                 decode_responses=True
             )
-            # Test connection
-            self.redis_client.ping()
             logger.info("Redis client initialized successfully")
         except Exception as e:
             logger.warning(f"Failed to initialize Redis client: {e}")
             self.redis_client = None
+    
+    async def test_connection(self):
+        """Test Redis connection asynchronously."""
+        if self.redis_client:
+            try:
+                await self.redis_client.ping()
+                return True
+            except Exception as e:
+                logger.error(f"Redis connection test failed: {e}")
+                return False
+        return False
     
     async def collect_execution_metrics(self, metrics: ExecutionMetrics):
         """Store execution metrics in Redis."""
@@ -37,7 +46,7 @@ class MetricsCollector:
             # Store individual execution record
             key = f"execution_metrics:{metrics.request_id}"
             data = metrics.model_dump_json()
-            self.redis_client.setex(key, 86400, data)  # 24 hours TTL
+            await self.redis_client.setex(key, 86400, data)  # 24 hours TTL
             
             # Update aggregated metrics
             await self._update_aggregated_metrics(metrics)
@@ -47,36 +56,39 @@ class MetricsCollector:
     
     async def _update_aggregated_metrics(self, metrics: ExecutionMetrics):
         """Update aggregated metrics for dashboards."""
+        if not self.redis_client:
+            return
+            
         try:
             current_hour = int(time.time() // 3600)
             
             # Language usage statistics
             lang_key = f"metrics:language:{metrics.language}:{current_hour}"
-            self.redis_client.incr(lang_key)
-            self.redis_client.expire(lang_key, 86400 * 7)  # 7 days
+            await self.redis_client.incr(lang_key)
+            await self.redis_client.expire(lang_key, 86400 * 7)  # 7 days
             
             # Status statistics
             status_key = f"metrics:status:{metrics.status}:{current_hour}"
-            self.redis_client.incr(status_key)
-            self.redis_client.expire(status_key, 86400 * 7)
+            await self.redis_client.incr(status_key)
+            await self.redis_client.expire(status_key, 86400 * 7)
             
             # Execution time histogram
             time_bucket = self._get_time_bucket(metrics.execution_time)
             time_key = f"metrics:execution_time:{time_bucket}:{current_hour}"
-            self.redis_client.incr(time_key)
-            self.redis_client.expire(time_key, 86400 * 7)
+            await self.redis_client.incr(time_key)
+            await self.redis_client.expire(time_key, 86400 * 7)
             
             # Memory usage histogram
             memory_bucket = self._get_memory_bucket(metrics.memory_used)
             memory_key = f"metrics:memory:{memory_bucket}:{current_hour}"
-            self.redis_client.incr(memory_key)
-            self.redis_client.expire(memory_key, 86400 * 7)
+            await self.redis_client.incr(memory_key)
+            await self.redis_client.expire(memory_key, 86400 * 7)
             
             # User activity (if user_id provided)
             if metrics.user_id:
                 user_key = f"metrics:user:{metrics.user_id}:{current_hour}"
-                self.redis_client.incr(user_key)
-                self.redis_client.expire(user_key, 86400 * 30)  # 30 days
+                await self.redis_client.incr(user_key)
+                await self.redis_client.expire(user_key, 86400 * 30)  # 30 days
             
         except Exception as e:
             logger.error(f"Failed to update aggregated metrics: {e}")
@@ -131,30 +143,31 @@ class MetricsCollector:
                 # Language metrics
                 for lang in ["python", "javascript", "java", "cpp", "go", "rust"]:
                     key = f"metrics:language:{lang}:{hour}"
-                    count = self.redis_client.get(key)
-                    if count:
-                        summary["languages"][lang] = summary["languages"].get(lang, 0) + int(count)
-                        summary["total_executions"] += int(count)
+                    count = await self.redis_client.get(key)
+                    if count is not None:
+                        count_int = int(count)
+                        summary["languages"][lang] = summary["languages"].get(lang, 0) + count_int
+                        summary["total_executions"] += count_int
                 
                 # Status metrics
                 for status in ["success", "runtime_error", "compile_error", "time_limit_exceeded", "memory_limit_exceeded"]:
                     key = f"metrics:status:{status}:{hour}"
-                    count = self.redis_client.get(key)
-                    if count:
+                    count = await self.redis_client.get(key)
+                    if count is not None:
                         summary["statuses"][status] = summary["statuses"].get(status, 0) + int(count)
                 
                 # Time buckets
                 for bucket in ["0-100ms", "100-500ms", "500ms-1s", "1-2s", "2-5s", "5s+"]:
                     key = f"metrics:execution_time:{bucket}:{hour}"
-                    count = self.redis_client.get(key)
-                    if count:
+                    count = await self.redis_client.get(key)
+                    if count is not None:
                         summary["execution_times"][bucket] = summary["execution_times"].get(bucket, 0) + int(count)
                 
                 # Memory buckets
                 for bucket in ["0-16MB", "16-32MB", "32-64MB", "64-128MB", "128MB+"]:
                     key = f"metrics:memory:{bucket}:{hour}"
-                    count = self.redis_client.get(key)
-                    if count:
+                    count = await self.redis_client.get(key)
+                    if count is not None:
                         summary["memory_usage"][bucket] = summary["memory_usage"].get(bucket, 0) + int(count)
             
             return summary
@@ -175,8 +188,8 @@ class MetricsCollector:
             for hour_offset in range(hours):
                 hour = current_hour - hour_offset
                 key = f"metrics:user:{user_id}:{hour}"
-                count = self.redis_client.get(key)
-                if count:
+                count = await self.redis_client.get(key)
+                if count is not None:
                     total_executions += int(count)
             
             return {
@@ -199,3 +212,12 @@ class MetricsCollector:
             logger.info("Metrics cleanup completed (handled by Redis TTL)")
         except Exception as e:
             logger.error(f"Failed to cleanup old metrics: {e}")
+    
+    async def close(self):
+        """Close Redis connection properly."""
+        if self.redis_client:
+            try:
+                await self.redis_client.aclose()
+                logger.info("Redis connection closed")
+            except Exception as e:
+                logger.error(f"Failed to close Redis connection: {e}")

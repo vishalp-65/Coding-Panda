@@ -26,8 +26,12 @@ class Settings(BaseSettings):
     
     # Security Configuration
     SECRET_KEY: str = "your_secret_key_here"
-    ALGORITHM: str = "HS256"
+    JWT_SECRET_KEY: str = "your_jwt_secret_key_here"
+    JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # Authentication Configuration
+    USE_MOCK_AUTH: bool = True  # Set to False in production
     
     # Analysis Configuration
     MAX_CODE_LENGTH: int = 50000

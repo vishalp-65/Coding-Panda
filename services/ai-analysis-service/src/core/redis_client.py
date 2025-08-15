@@ -46,6 +46,11 @@ async def get_redis() -> Redis:
     return redis_client
 
 
+async def get_redis_client() -> Redis:
+    """Get Redis client (alias for get_redis)"""
+    return await get_redis()
+
+
 async def cache_set(key: str, value: Any, expire: int = 3600):
     """Set cache value with expiration"""
     client = await get_redis()

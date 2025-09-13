@@ -3,14 +3,16 @@ Analysis API router
 """
 import logging
 from typing import List
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, BackgroundTasks, Depends
 
 from ..models.analysis import (
     AnalysisRequest, AnalysisResult, HintRequest, Hint,
     ExplanationRequest, CodeExplanation
 )
 from ..services.analysis_service import AnalysisService
+from ..utils.response_handler import ResponseHandler
+from ..utils.validation import ValidationUtils
+from ..core.exceptions import AnalysisServiceException
 from ..config import settings
 
 logger = logging.getLogger(__name__)
@@ -27,31 +29,20 @@ async def analyze_code(request: AnalysisRequest):
     """
     try:
         # Validate request
-        if len(request.code) > settings.MAX_CODE_LENGTH:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Code length exceeds maximum of {settings.MAX_CODE_LENGTH} characters"
-            )
-        
-        if not request.code.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="Code cannot be empty"
-            )
+        ValidationUtils.validate_code_length(request.code)
+        ValidationUtils.validate_code_not_empty(request.code)
         
         # Perform analysis
         result = await analysis_service.analyze_code(request)
         
         return result
         
-    except HTTPException:
-        raise
+    except AnalysisServiceException as e:
+        logger.error(f"Analysis service error: {e}")
+        raise ResponseHandler.error(e.message, e.code, e.status_code)
     except Exception as e:
         logger.error(f"Code analysis failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Internal server error during code analysis"
-        )
+        raise ResponseHandler.internal_error("Internal server error during code analysis")
 
 
 @router.post("/hints", response_model=List[Hint])
@@ -61,31 +52,20 @@ async def generate_hints(request: HintRequest):
     """
     try:
         # Validate request
-        if not request.problem_id:
-            raise HTTPException(
-                status_code=400,
-                detail="Problem ID is required"
-            )
-        
-        if len(request.user_code) > settings.MAX_CODE_LENGTH:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Code length exceeds maximum of {settings.MAX_CODE_LENGTH} characters"
-            )
+        ValidationUtils.validate_problem_id(request.problem_id)
+        ValidationUtils.validate_code_length(request.user_code)
         
         # Generate hints
         hints = await analysis_service.generate_hints(request)
         
         return hints
         
-    except HTTPException:
-        raise
+    except AnalysisServiceException as e:
+        logger.error(f"Hint generation error: {e}")
+        raise ResponseHandler.error(e.message, e.code, e.status_code)
     except Exception as e:
         logger.error(f"Hint generation failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Internal server error during hint generation"
-        )
+        raise ResponseHandler.internal_error("Internal server error during hint generation")
 
 
 @router.post("/explain", response_model=CodeExplanation)
@@ -157,25 +137,16 @@ async def batch_analyze_code(
     Analyze multiple code samples in batch
     """
     try:
-        if len(requests) > 10:  # Limit batch size
-            raise HTTPException(
-                status_code=400,
-                detail="Batch size cannot exceed 10 requests"
-            )
+        # Validate batch size
+        ValidationUtils.validate_batch_size(requests)
         
         # Validate all requests
         for i, request in enumerate(requests):
-            if len(request.code) > settings.MAX_CODE_LENGTH:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Request {i}: Code length exceeds maximum"
-                )
-            
-            if not request.code.strip():
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Request {i}: Code cannot be empty"
-                )
+            try:
+                ValidationUtils.validate_code_length(request.code)
+                ValidationUtils.validate_code_not_empty(request.code)
+            except AnalysisServiceException as e:
+                raise ResponseHandler.validation_error(f"Request {i}: {e.message}")
         
         # Process requests
         results = []
@@ -193,20 +164,18 @@ async def batch_analyze_code(
                     "error": str(e)
                 })
         
-        return {
-            "batch_id": "batch_" + str(hash(str(requests))),
+        return ResponseHandler.success({
+            "batch_id": f"batch_{hash(str(requests))}",
             "total_requests": len(requests),
             "results": results
-        }
+        })
         
-    except HTTPException:
-        raise
+    except AnalysisServiceException as e:
+        logger.error(f"Batch analysis validation error: {e}")
+        raise ResponseHandler.error(e.message, e.code, e.status_code)
     except Exception as e:
         logger.error(f"Batch analysis failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Internal server error during batch analysis"
-        )
+        raise ResponseHandler.internal_error("Internal server error during batch analysis")
 
 
 @router.get("/metrics")

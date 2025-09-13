@@ -8,6 +8,8 @@ import { EmailConfig } from './config/email';
 import { QueueService } from './services/QueueService';
 import { NotificationService } from './services/NotificationService';
 import { AnalyticsService } from './services/AnalyticsService';
+import { errorHandler } from '@ai-platform/common';
+import { logger } from '@ai-platform/common';
 import notificationRoutes from './routes/notifications';
 
 // Load environment variables
@@ -15,6 +17,10 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3005;
+
+// Constants
+const CLEANUP_CRON = '0 2 * * *'; // Daily at 2 AM
+const DIGEST_CRON = '0 9 * * *';  // Daily at 9 AM
 
 // Middleware
 app.use(helmet());
@@ -27,7 +33,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    logger.info(`${req.method} ${req.path}`, {
+        method: req.method,
+        path: req.path,
+        userAgent: req.get('User-Agent'),
+        ip: req.ip
+    });
     next();
 });
 
@@ -45,67 +56,64 @@ app.get('/', (req, res) => {
 });
 
 // Error handling middleware
-app.use((error: any, req: any, res: any, next: any) => {
-    console.error('Unhandled error:', error);
-    res.status(500).json({
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
-    });
-});
+app.use(errorHandler);
 
 // 404 handler
 app.use('*', (req, res) => {
     res.status(404).json({
-        error: 'Not found',
-        message: `Route ${req.method} ${req.originalUrl} not found`
+        error: {
+            code: 'NOT_FOUND',
+            message: `Route ${req.method} ${req.originalUrl} not found`,
+            timestamp: new Date().toISOString()
+        }
     });
 });
 
 // Initialize services
-async function initializeServices() {
+async function initializeServices(): Promise<void> {
     try {
-        console.log('Initializing Notification Service...');
+        logger.info('Initializing Notification Service...');
 
         // Initialize Redis connection
         const redis = RedisManager.getInstance();
         await redis.connect();
-        console.log('✓ Redis connected');
+        logger.info('Redis connected successfully');
 
         // Verify email configuration
         const emailConfig = EmailConfig.getInstance();
         const emailVerified = await emailConfig.verifyConnection();
         if (emailVerified) {
-            console.log('✓ Email configuration verified');
+            logger.info('Email configuration verified');
         } else {
-            console.warn('⚠ Email configuration could not be verified');
+            logger.warn('Email configuration could not be verified');
         }
 
         // Initialize queue service
         const queueService = QueueService.getInstance();
         await queueService.initialize();
-        console.log('✓ Queue service initialized');
+        logger.info('Queue service initialized');
 
         // Initialize other services
         const notificationService = NotificationService.getInstance();
         const analyticsService = AnalyticsService.getInstance();
-        console.log('✓ Core services initialized');
+        logger.info('Core services initialized');
 
         // Set up cron jobs
         setupCronJobs();
-        console.log('✓ Cron jobs scheduled');
+        logger.info('Cron jobs scheduled');
 
-        console.log('🚀 Notification Service fully initialized');
+        logger.info('Notification Service fully initialized');
     } catch (error) {
-        console.error('Failed to initialize services:', error);
+        logger.error('Failed to initialize services:', error);
         process.exit(1);
     }
 }
 
-function setupCronJobs() {
+function setupCronJobs(): void {
     // Clean up expired notifications daily at 2 AM
-    const cleanupJob = new cron.CronJob('0 2 * * *', async () => {
+    const cleanupJob = new cron.CronJob(CLEANUP_CRON, async () => {
         try {
-            console.log('Running notification cleanup...');
+            logger.info('Running notification cleanup...');
             const notificationService = NotificationService.getInstance();
             const analyticsService = AnalyticsService.getInstance();
 
@@ -114,21 +122,24 @@ function setupCronJobs() {
                 analyticsService.cleanupOldAnalytics()
             ]);
 
-            console.log(`Cleanup completed: ${notificationsCleaned} notifications, ${analyticsCleaned} analytics records`);
+            logger.info('Cleanup completed', {
+                notificationsCleaned,
+                analyticsCleaned
+            });
         } catch (error) {
-            console.error('Error during cleanup:', error);
+            logger.error('Error during cleanup:', error);
         }
     });
 
     // Schedule digest emails daily at 9 AM
-    const digestJob = new cron.CronJob('0 9 * * *', async () => {
+    const digestJob = new cron.CronJob(DIGEST_CRON, async () => {
         try {
-            console.log('Scheduling digest emails...');
+            logger.info('Scheduling digest emails...');
             const queueService = QueueService.getInstance();
             await queueService.scheduleDigestJobs();
-            console.log('Digest emails scheduled');
+            logger.info('Digest emails scheduled');
         } catch (error) {
-            console.error('Error scheduling digest emails:', error);
+            logger.error('Error scheduling digest emails:', error);
         }
     });
 
@@ -136,9 +147,10 @@ function setupCronJobs() {
     cleanupJob.start();
     digestJob.start();
 
-    console.log('Cron jobs started:');
-    console.log('- Cleanup: Daily at 2:00 AM');
-    console.log('- Digest emails: Daily at 9:00 AM');
+    logger.info('Cron jobs started', {
+        cleanup: 'Daily at 2:00 AM',
+        digest: 'Daily at 9:00 AM'
+    });
 }
 
 // Graceful shutdown

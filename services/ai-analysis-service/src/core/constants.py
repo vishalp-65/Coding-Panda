@@ -1,0 +1,46 @@
+"""
+Constants for AI Analysis Service
+"""
+
+# HTTP Status Codes
+class HTTPStatus:
+    OK = 200
+    CREATED = 201
+    NO_CONTENT = 204
+    BAD_REQUEST = 400
+    UNAUTHORIZED = 401
+    FORBIDDEN = 403
+    NOT_FOUND = 404
+    CONFLICT = 409
+    UNPROCESSABLE_ENTITY = 422
+    TOO_MANY_REQUESTS = 429
+    INTERNAL_SERVER_ERROR = 500
+    SERVICE_UNAVAILABLE = 503
+
+# Error Codes
+class ErrorCodes:
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    UNAUTHORIZED = "UNAUTHORIZED"
+    FORBIDDEN = "FORBIDDEN"
+    NOT_FOUND = "NOT_FOUND"
+    CONFLICT = "CONFLICT"
+    RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+    SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
+    CODE_TOO_LONG = "CODE_TOO_LONG"
+    EMPTY_CODE = "EMPTY_CODE"
+    ANALYSIS_FAILED = "ANALYSIS_FAILED"
+
+# Analysis Constants
+class AnalysisLimits:
+    MAX_CODE_LENGTH = 50000
+    MAX_BATCH_SIZE = 10
+    ANALYSIS_TIMEOUT = 30
+    MAX_CONCURRENT_ANALYSES = 10
+
+# Cache Keys
+class CacheKeys:
+    ANALYSIS_RESULT = "analysis:result:{}"
+    HINTS_CACHE = "hints:problem:{}"
+    EXPLANATION_CACHE = "explanation:{}"
+    SUPPORTED_LANGUAGES = "supported:languages"

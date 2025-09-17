@@ -39,6 +39,18 @@ This project follows a microservices architecture with the following services:
 
 This will start all required services using Docker Compose and run the development servers.
 
+### Service Ports
+
+When running in development mode, services will be available on the following ports:
+
+- **Frontend**: http://localhost:3000
+- **API Gateway**: http://localhost:8080
+- **User Service**: http://localhost:3006
+- **Problem Service**: http://localhost:3002
+- **Code Execution Service**: http://localhost:8000
+- **AI Analysis Service**: http://localhost:8001
+- **Contest Service**: http://localhost:3003
+
 ### Available Scripts
 
 - `npm run dev` - Start development environment

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, Trophy, TrendingUp, Target } from 'lucide-react';
+import { CheckCircle, Trophy, TrendingUp, Target, Award, BarChart3 } from 'lucide-react';
 import type { DashboardStats } from '../types/types';
 import { StatCard } from './StatCard';
 
@@ -12,31 +12,33 @@ export const StatsGrid: React.FC<StatsGridProps> = ({ stats }) => {
     {
       label: 'Problems Solved',
       value: stats.problemsSolved,
-      subtitle: `/${stats.totalProblems}`,
       icon: CheckCircle,
       bgColor: 'bg-success-100',
       iconColor: 'text-success-600',
     },
     {
-      label: 'Contests',
-      value: stats.contestsParticipated,
-      icon: Trophy,
-      bgColor: 'bg-warning-100',
-      iconColor: 'text-warning-600',
+      label: 'Acceptance Rate',
+      value: `${stats.acceptanceRate}%`,
+      subtitle: `${stats.acceptedSubmissions}/${stats.totalSubmissions}`,
+      icon: BarChart3,
+      bgColor: 'bg-blue-100',
+      iconColor: 'text-blue-600',
     },
     {
       label: 'Current Streak',
-      value: `${stats.currentStreak} days`,
+      value: `${stats.streak} days`,
+      subtitle: `Best: ${stats.longestStreak}`,
       icon: TrendingUp,
       bgColor: 'bg-primary-100',
       iconColor: 'text-primary-600',
     },
     {
-      label: 'Weekly Goal',
-      value: `${stats.weeklyProgress}/${stats.weeklyGoal}`,
-      icon: Target,
-      bgColor: 'bg-purple-100',
-      iconColor: 'text-purple-600',
+      label: 'Contests',
+      value: stats.contestsParticipated,
+      subtitle: stats.ranking > 0 ? `Rank: ${stats.ranking}` : undefined,
+      icon: Trophy,
+      bgColor: 'bg-warning-100',
+      iconColor: 'text-warning-600',
     },
   ];
 

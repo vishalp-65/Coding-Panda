@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from '@/hooks/redux'
-import { getCurrentUser } from '@/store/slices/authSlice'
+import { useAppDispatch } from '@/hooks/redux'
+import { useAuth } from '@/hooks/useAuth'
 import { setOnlineStatus } from '@/store/slices/uiSlice'
 import socketService from '@/services/socket'
 
@@ -28,14 +28,7 @@ import PublicRoute from '@/components/auth/PublicRoute'
 
 function App() {
   const dispatch = useAppDispatch()
-  const { isAuthenticated, token } = useAppSelector((state) => state.auth)
-
-  useEffect(() => {
-    // Check if user is authenticated on app start
-    if (token) {
-      dispatch(getCurrentUser())
-    }
-  }, [dispatch, token])
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     // Setup socket connection when authenticated

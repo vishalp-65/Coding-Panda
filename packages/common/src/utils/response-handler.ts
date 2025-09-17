@@ -77,4 +77,8 @@ export class ResponseHandler {
     static internalError(res: Response, message: string = 'Internal server error'): void {
         this.error(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, ERROR_CODES.INTERNAL_ERROR, message);
     }
+
+    static created<T>(res: Response, data?: T, message: string = 'Resource created successfully'): void {
+        this.success(res, data, message, HTTP_STATUS.CREATED);
+    }
 }

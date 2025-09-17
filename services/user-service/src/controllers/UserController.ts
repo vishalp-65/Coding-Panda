@@ -1,15 +1,16 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services';
 import { AuthenticatedRequest } from '../middleware/auth';
-import { ResponseHandler } from '@ai-platform/common';
+import { BaseController, ResponseHandler } from '@ai-platform/common';
 import { ValidationUtils } from '@ai-platform/common';
 import { asyncHandler } from '@ai-platform/common';
 import { logger } from '@ai-platform/common';
 
-export class UserController {
+export class UserController extends BaseController {
   private userService: UserService;
 
   constructor() {
+    super();
     this.userService = new UserService();
   }
 

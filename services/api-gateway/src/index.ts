@@ -17,16 +17,18 @@ async function startServer() {
     // Initialize monitoring
     const monitoring = setupMonitoring();
 
-    // Setup monitoring middleware (should be early in the chain)
-    app.use(createMonitoringMiddleware({
-      serviceName: 'api-gateway',
-      metricsCollector: monitoring.metricsCollector,
-      logger: monitoring.logger,
-      tracingManager: monitoring.tracingManager,
-    }));
-
-    // Setup middleware
+    // Setup basic middleware first (including logging that sets requestId)
     await setupMiddleware(app);
+
+    // Setup monitoring middleware after requestId is set
+    app.use(
+      createMonitoringMiddleware({
+        serviceName: 'api-gateway',
+        metricsCollector: monitoring.metricsCollector,
+        logger: monitoring.logger,
+        tracingManager: monitoring.tracingManager,
+      })
+    );
 
     // Setup monitoring routes
     app.use(createMonitoringRoutes(monitoring.healthManager));

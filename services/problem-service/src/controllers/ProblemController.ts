@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { ProblemService } from '../services/ProblemService';
-import { ResponseHandler } from '@ai-platform/common';
+import { BaseController, ResponseHandler } from '@ai-platform/common';
 import { ValidationUtils } from '@ai-platform/common';
 import { asyncHandler } from '@ai-platform/common';
 import { logger } from '@ai-platform/common';
@@ -17,10 +17,11 @@ interface ValidatedRequest extends Request {
   validatedQuery?: any;
 }
 
-export class ProblemController {
+export class ProblemController extends BaseController {
   private problemService: ProblemService;
 
   constructor() {
+    super();
     this.problemService = new ProblemService();
   }
 
@@ -389,13 +390,7 @@ export class ProblemController {
         limit
       );
 
-      this.sendSuccessResponse(
-        res,
-        result.data,
-        undefined,
-        200,
-        result.pagination
-      );
+      ResponseHandler.success(res, result.data, undefined, 200, result.pagination);
     } catch (error) {
       logger.error('Error in getUserBookmarks controller:', error);
       this.sendErrorResponse(

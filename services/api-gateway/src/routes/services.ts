@@ -13,7 +13,7 @@ const serviceConfig = {
     target: config.services.userService.url,
     timeout: config.services.userService.timeout,
     auth: 'optional', // Some user endpoints are public
-    pathRewrite: { '^/api/users': '' },
+    pathRewrite: { '^/api/users': '/api/v1' },
   },
   '/problems': {
     target: config.services.problemService.url,
@@ -41,6 +41,16 @@ const serviceConfig = {
   },
 };
 
+// Public routes that bypass authentication entirely
+const publicRoutes = [
+  '/users/health',
+  '/problems/health',
+  '/contests/health',
+  '/users/api/v1/health',
+  '/problems/api/v1/health',
+  '/contests/api/v1/health',
+];
+
 // Create proxy middleware for each service
 Object.entries(serviceConfig).forEach(([path, config]) => {
   const proxyOptions: Options = {
@@ -52,12 +62,10 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
     ws: false,
     followRedirects: false,
 
-
-
     // Handle proxy response
     onProxyRes: (proxyRes, req, res) => {
       logger.debug('Proxy response received', {
-        requestId: (req as any).requestId,
+        requestId: (req as any).requestId || 'unknown',
         statusCode: proxyRes.statusCode,
         target: config.target,
       });
@@ -66,7 +74,7 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
     // Handle proxy errors
     onError: (err, req, res) => {
       logger.error('Proxy error', {
-        requestId: (req as any).requestId,
+        requestId: (req as any).requestId || 'unknown',
         error: err.message,
         target: config.target,
         method: req.method,
@@ -82,14 +90,14 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
               message: 'Service temporarily unavailable',
               service: path.replace('/', ''),
               timestamp: new Date().toISOString(),
-              requestId: (req as any).requestId,
+              requestId: (req as any).requestId || 'unknown',
             },
           });
         }
       } catch (responseError) {
-        logger.error('Error sending proxy error response', { 
+        logger.error('Error sending proxy error response', {
           error: responseError,
-          originalError: err.message 
+          originalError: err.message,
         });
         // Don't let this crash the process
       }
@@ -108,9 +116,8 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
       }
 
       // Forward request ID for tracing
-      if ((req as any).requestId) {
-        proxyReq.setHeader('X-Request-ID', (req as any).requestId);
-      }
+      const requestId = (req as any).requestId || 'unknown';
+      proxyReq.setHeader('X-Request-ID', requestId);
 
       // Forward real IP
       const realIP = req.ip || req.connection.remoteAddress;
@@ -118,8 +125,16 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
         proxyReq.setHeader('X-Real-IP', realIP);
       }
 
+      // Forward req body to the services
+      if (req.body && Object.keys(req.body).length) {
+        const bodyData = JSON.stringify(req.body);
+        proxyReq.setHeader('Content-Type', 'application/json');
+        proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+        proxyReq.write(bodyData);
+      }
+
       // Handle proxy request errors
-      proxyReq.on('error', (err) => {
+      proxyReq.on('error', err => {
         logger.error('Proxy request error', {
           error: err.message,
           target: config.target,
@@ -129,7 +144,7 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
       });
 
       logger.debug('Proxying request', {
-        requestId: (req as any).requestId,
+        requestId: (req as any).requestId || 'unknown',
         method: req.method,
         originalUrl: req.originalUrl,
         target: config.target,
@@ -152,7 +167,25 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
       next();
     });
   } else if (config.auth === 'optional') {
-    router.use(path, optionalAuthMiddleware);
+    // Skip auth middleware for public health check routes
+    router.use(path, (req, res, next) => {
+      const isPublicRoute = req.path.includes('health');
+
+      logger.debug('Route processing', {
+        requestId: (req as any).requestId || 'unknown',
+        path: req.path,
+        originalUrl: req.originalUrl,
+        servicePath: path,
+        isPublicRoute,
+        method: req.method,
+      });
+
+      if (isPublicRoute) {
+        logger.debug('Skipping auth for health check route');
+        return next();
+      }
+      return optionalAuthMiddleware(req, res, next);
+    });
   }
 
   // Create and apply proxy middleware

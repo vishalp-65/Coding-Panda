@@ -162,7 +162,7 @@ async function validateCredentials(email: string, password: string): Promise<boo
 if (require.main === module) {
     const { app } = createMonitoredService('example-service');
 
-    const port = process.env.PORT || 3000;
+    const port = process.env.PORT || 8080;
     app.listen(port, () => {
         console.log(`Service running on port ${port}`);
         console.log(`Health check: http://localhost:${port}/health`);

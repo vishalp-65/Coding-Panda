@@ -1,5 +1,5 @@
 // Constants
-export * from './constants/http-status';
+export * from './constants';
 
 // Utils
 export * from './utils/response-handler';
@@ -7,21 +7,41 @@ export * from './utils/validation';
 export * from './utils/async-handler';
 
 // Middleware
-export * from './middleware/error-handler';
+export { errorHandler } from './middleware/error-handler';
 
 // Controllers
 export * from './controllers/base-controller';
 
 // Services
-export * from './services/base-service';
+export { BaseService } from './services/base-service';
 
 // Config
-export * from './config/base-config';
+export { BaseConfig, JWTConfig, EmailConfig, RateLimitConfig, CorsConfig } from './config/base-config';
+export * from './config/security';
 
-// Logger (placeholder - would be implemented)
-export const logger = {
-    info: (message: string, meta?: any) => console.log(message, meta),
-    error: (message: string, error?: any) => console.error(message, error),
-    warn: (message: string, meta?: any) => console.warn(message, meta),
-    debug: (message: string, meta?: any) => console.debug(message, meta),
-};
+// Auth
+export * from './auth';
+
+// Database - specific exports to avoid conflicts
+export { DatabaseUtils } from './database';
+
+// Validation
+export * from './validation';
+
+// Monitoring
+export * from './monitoring';
+
+// Logger
+export * from './logger';
+
+// Errors
+export * from './errors';
+
+// Security
+export * from './security';
+
+// Testing utilities
+export * from './testing/security';
+
+// Re-export types that are needed
+export type { PaginationOptions, PaginatedResult, DatabaseConfig } from './database';

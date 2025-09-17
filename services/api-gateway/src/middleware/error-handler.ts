@@ -136,7 +136,7 @@ export const errorHandlerMiddleware = (
   // Log error details
   const logLevel = statusCode >= 500 ? 'error' : 'warn';
   logger[logLevel]('Request error', {
-    requestId: req.requestId,
+    requestId: req.requestId || 'unknown',
     method: req.method,
     url: req.url,
     statusCode,
@@ -154,7 +154,7 @@ export const errorHandlerMiddleware = (
       code,
       message,
       timestamp: new Date().toISOString(),
-      requestId: req.requestId,
+      requestId: req.requestId || 'unknown',
     },
   };
 

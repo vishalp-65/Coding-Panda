@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const configSchema = z.object({
   nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
-  port: z.coerce.number().default(3000),
+  port: z.coerce.number().default(8080),
 
   // Redis configuration
   redis: z.object({
@@ -59,7 +59,7 @@ const configSchema = z.object({
 
 const env = {
   nodeEnv: process.env.NODE_ENV,
-  port: process.env.PORT,
+  port: process.env.PORT || process.env.API_GATEWAY_PORT,
 
   redis: {
     host: process.env.REDIS_HOST,

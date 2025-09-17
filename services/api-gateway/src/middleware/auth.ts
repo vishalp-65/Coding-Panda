@@ -44,14 +44,24 @@ const extractToken = (req: Request): string | null => {
 };
 
 // Verify JWT token
-const verifyToken = async (token: string): Promise<JWTPayload | null> => {
+const verifyToken = async (token: string, skipRedisCheck = false): Promise<JWTPayload | null> => {
   try {
     const decoded = jwt.verify(token, config.jwt.secret) as JWTPayload;
 
-    // Check if token is blacklisted in Redis
-    const isBlacklisted = await redisClient.get(`blacklist:${token}`);
-    if (isBlacklisted) {
-      return null;
+    // Skip Redis checks for optional auth to avoid blocking requests
+    if (!skipRedisCheck) {
+      try {
+        // Check if token is blacklisted in Redis
+        const isBlacklisted = await redisClient.get(`blacklist:${token}`);
+        if (isBlacklisted) {
+          return null;
+        }
+      } catch (redisError) {
+        logger.warn('Redis blacklist check failed, continuing with token validation', {
+          error: redisError instanceof Error ? redisError.message : String(redisError),
+        });
+        // Continue without Redis check if Redis is unavailable
+      }
     }
 
     return decoded;
@@ -142,7 +152,7 @@ export const authMiddleware = async (
     SecurityAuditLogger.logAuthenticationAttempt(req, true, payload.id);
 
     logger.debug('User authenticated', {
-      requestId: req.requestId,
+      requestId: req.requestId || 'unknown',
       userId: payload.id,
       username: payload.username,
     });
@@ -156,7 +166,7 @@ export const authMiddleware = async (
     );
 
     logger.error('Authentication middleware error', {
-      requestId: req.requestId,
+      requestId: req.requestId || 'unknown',
       error,
     });
 
@@ -180,9 +190,11 @@ export const optionalAuthMiddleware = async (
     const token = extractToken(req);
 
     if (token) {
-      const payload = await verifyToken(token);
+      const payload = await verifyToken(token, true); // Skip Redis checks for optional auth
 
       if (payload) {
+        // For optional auth, skip session validation to avoid Redis dependency issues
+        // Only validate sessions for required auth endpoints
         req.user = {
           id: payload.id,
           email: payload.email,
@@ -192,11 +204,12 @@ export const optionalAuthMiddleware = async (
       }
     }
 
+    // Always continue for optional middleware, regardless of token validity
     next();
   } catch (error) {
-    logger.error('Optional authentication middleware error', {
-      requestId: req.requestId,
-      error,
+    logger.debug('Optional authentication middleware error (continuing)', {
+      requestId: req.requestId || 'unknown',
+      error: error instanceof Error ? error.message : String(error),
     });
 
     // Continue without authentication for optional middleware
@@ -226,7 +239,7 @@ export const requireRole = (requiredRoles: string | string[]) => {
       SecurityAuditLogger.logAuthorizationAttempt(req, false, req.user.id, req.path, req.method);
 
       logger.warn('Insufficient permissions', {
-        requestId: req.requestId,
+        requestId: req.requestId || 'unknown',
         userId: req.user.id,
         userRoles: req.user.roles,
         requiredRoles: roles,

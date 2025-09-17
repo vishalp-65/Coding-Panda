@@ -51,7 +51,7 @@ const rateLimitHandler = (req: Request, res: Response) => {
   );
 
   logger.warn('Rate limit exceeded', {
-    requestId: req.requestId,
+    requestId: req.requestId || 'unknown',
     userId,
     ip,
     method: req.method,

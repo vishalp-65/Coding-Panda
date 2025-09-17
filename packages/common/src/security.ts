@@ -305,3 +305,97 @@ export const secureCorsOptions = {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-Key'],
 };
+
+// Additional Security Middleware
+export const securityMiddleware = [
+    securityHeaders,
+    sanitizeInput,
+];
+
+export const suspiciousActivityDetector = (req: Request, res: Response, next: NextFunction) => {
+    const suspiciousPatterns = [
+        { pattern: /\.\.\//g, type: 'path_traversal' },
+        { pattern: /<script/gi, type: 'xss_attempt' },
+        { pattern: /union.*select/gi, type: 'sql_injection' },
+    ];
+
+    const url = req.url;
+    const body = JSON.stringify(req.body || {});
+
+    for (const { pattern, type } of suspiciousPatterns) {
+        if (pattern.test(url) || pattern.test(body)) {
+            SecurityAuditLogger.logSuspiciousActivity(req, type, { pattern: pattern.source });
+            break;
+        }
+    }
+
+    next();
+};
+
+export const validateContentType = (allowedTypes: string[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const contentType = req.headers['content-type'];
+
+        if (req.method !== 'GET' && req.method !== 'DELETE' && contentType) {
+            const isAllowed = allowedTypes.some(type => contentType.includes(type));
+
+            if (!isAllowed) {
+                return res.status(415).json({
+                    error: {
+                        code: 'UNSUPPORTED_MEDIA_TYPE',
+                        message: 'Content type not supported',
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+            }
+        }
+
+        next();
+    };
+};
+
+export const requestTimeout = (timeoutMs: number) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const timeout = setTimeout(() => {
+            if (!res.headersSent) {
+                res.status(408).json({
+                    error: {
+                        code: 'REQUEST_TIMEOUT',
+                        message: 'Request timeout',
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+            }
+        }, timeoutMs);
+
+        res.on('finish', () => clearTimeout(timeout));
+        res.on('close', () => clearTimeout(timeout));
+
+        next();
+    };
+};
+
+export const securityMonitoring = (req: Request, res: Response, next: NextFunction) => {
+    // Monitor for security events
+    const userAgent = req.headers['user-agent'];
+
+    if (!userAgent || userAgent.length < 10) {
+        SecurityAuditLogger.logSecurityEvent('Suspicious user agent', 'LOW', {
+            userAgent,
+            ip: req.ip,
+            path: req.path,
+        });
+    }
+
+    // Monitor for large requests
+    const contentLength = parseInt(req.headers['content-length'] || '0');
+    if (contentLength > 10 * 1024 * 1024) { // 10MB
+        SecurityAuditLogger.logSecurityEvent('Large request detected', 'MEDIUM', {
+            contentLength,
+            ip: req.ip,
+            path: req.path,
+        });
+    }
+
+    next();
+};

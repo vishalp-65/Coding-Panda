@@ -52,4 +52,36 @@ export abstract class BaseController {
 
         throw error;
     }
+
+    protected sendSuccessResponse(res: Response, data?: any, message?: string): void {
+        ResponseHandler.success(res, data, message);
+    }
+
+    protected sendErrorResponse(res: Response, statusCode: number, code: string, message: string): void {
+        ResponseHandler.error(res, statusCode, code, message);
+    }
+
+    protected sendCreatedResponse(res: Response, data: any, message?: string): void {
+        ResponseHandler.created(res, data, message);
+    }
+
+    protected sendNotFoundResponse(res: Response, message?: string): void {
+        ResponseHandler.notFound(res, message);
+    }
+
+    protected sendBadRequestResponse(res: Response, message?: string): void {
+        ResponseHandler.badRequest(res, message);
+    }
+
+    protected sendUnauthorizedResponse(res: Response, message?: string): void {
+        ResponseHandler.unauthorized(res, message);
+    }
+
+    protected sendConflictResponse(res: Response, message?: string): void {
+        ResponseHandler.conflict(res, message);
+    }
+
+    protected sendInternalErrorResponse(res: Response, message?: string): void {
+        ResponseHandler.internalError(res, message);
+    }
 }

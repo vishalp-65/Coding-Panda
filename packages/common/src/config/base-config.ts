@@ -43,7 +43,7 @@ export abstract class BaseConfig {
     public readonly debug: boolean;
 
     constructor() {
-        this.port = parseInt(process.env.PORT || '3000');
+        this.port = parseInt(process.env.PORT || '8080');
         this.nodeEnv = process.env.NODE_ENV || 'development';
         this.debug = this.nodeEnv === 'development';
     }

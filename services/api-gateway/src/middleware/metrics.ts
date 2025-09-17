@@ -83,7 +83,7 @@ const getRoutePattern = (req: Request): string => {
   }
 
   // Fallback to URL pathname with parameter normalization
-  const pathname = req.path;
+  const pathname = req.path || req.url || '/unknown';
 
   // Replace UUIDs with :id
   const normalizedPath = pathname.replace(
@@ -120,9 +120,9 @@ export const metricsMiddleware = (
     metrics.activeConnections -= 1;
 
     // Log slow requests
-    if (duration > 1000) {
+    if (duration > 5000) {
       logger.warn('Slow request detected', {
-        requestId: req.requestId,
+        requestId: req.requestId || 'unknown',
         method: req.method,
         url: req.url,
         duration,
@@ -136,7 +136,7 @@ export const metricsMiddleware = (
       updateErrorMetrics(errorType);
 
       logger.warn('Error response', {
-        requestId: req.requestId,
+        requestId: req.requestId || 'unknown',
         method: req.method,
         url: req.url,
         statusCode: res.statusCode,

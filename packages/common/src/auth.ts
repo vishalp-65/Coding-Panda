@@ -52,9 +52,8 @@ export class AuthUtils {
     } as SignOptions);
   }
 
-  static generateRefreshToken(payload: Omit<JWTPayload, 'sessionId'>): string {
-    const sessionId = uuidv4();
-    return jwt.sign({ ...payload, sessionId }, this.JWT_SECRET, {
+  static generateRefreshToken(payload: JWTPayload): string {
+    return jwt.sign(payload, this.JWT_SECRET, {
       expiresIn: this.REFRESH_TOKEN_EXPIRES_IN,
       issuer: 'ai-platform',
       audience: 'ai-platform-users',

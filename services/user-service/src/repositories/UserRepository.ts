@@ -79,7 +79,7 @@ export class UserRepository {
   async findById(id: string): Promise<User | null> {
     return this.repository.findOne({
       where: { id },
-      relations: ['stats'],
+      relations: ['stats', 'profile', 'preferences'],
     });
   }
 

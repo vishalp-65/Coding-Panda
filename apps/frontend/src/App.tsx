@@ -1,61 +1,61 @@
-import { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAppDispatch } from '@/hooks/redux'
-import { useAuth } from '@/hooks/useAuth'
-import { setOnlineStatus } from '@/store/slices/uiSlice'
-import socketService from '@/services/socket'
+import { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAppDispatch } from '@/hooks/redux';
+import { useAuth } from '@/hooks/useAuth';
+import { setOnlineStatus } from '@/store/slices/uiSlice';
+import socketService from '@/services/socket';
 
 // Layout components
-import Layout from '@/components/layout/Layout'
-import AuthLayout from '@/components/layout/AuthLayout'
+import Layout from '@/components/layout/Layout';
+import AuthLayout from '@/components/layout/AuthLayout';
 
 // Page components
-import HomePage from '@/pages/HomePage'
-import LoginPage from '@/pages/auth/LoginPage'
-import RegisterPage from '@/pages/auth/RegisterPage'
-import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage'
-import ResetPasswordPage from '@/pages/auth/ResetPasswordPage'
-import DashboardPage from '@/pages/DashboardPage'
-import ProblemsPage from '@/pages/problems/ProblemsPage'
-import ProblemDetailPage from '@/pages/problems/ProblemDetailPage'
-import ProfilePage from '@/pages/ProfilePage'
-import SettingsPage from '@/pages/SettingsPage'
-import ContestsPage from '@/pages/ContestsPage'
+import HomePage from '@/pages/HomePage';
+import LoginPage from '@/pages/auth/LoginPage';
+import RegisterPage from '@/pages/auth/RegisterPage';
+import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
+import DashboardPage from '@/pages/DashboardPage';
+import ProblemsPage from '@/pages/problems/ProblemsPage';
+import ProblemDetailPage from '@/pages/problems/ProblemDetailPage';
+import ProfilePage from '@/pages/ProfilePage';
+import SettingsPage from '@/pages/SettingsPage';
+import ContestsPage from '@/pages/ContestsPage';
 
 // Route guards
-import ProtectedRoute from '@/components/auth/ProtectedRoute'
-import PublicRoute from '@/components/auth/PublicRoute'
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import PublicRoute from '@/components/auth/PublicRoute';
 
 function App() {
-  const dispatch = useAppDispatch()
-  const { isAuthenticated } = useAuth()
+  const dispatch = useAppDispatch();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     // Setup socket connection when authenticated
     if (isAuthenticated) {
-      socketService.connect()
+      // socketService.connect()
     } else {
-      socketService.disconnect()
+      socketService.disconnect();
     }
 
     return () => {
-      socketService.disconnect()
-    }
-  }, [isAuthenticated])
+      socketService.disconnect();
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // Monitor online/offline status
-    const handleOnline = () => dispatch(setOnlineStatus(true))
-    const handleOffline = () => dispatch(setOnlineStatus(false))
+    const handleOnline = () => dispatch(setOnlineStatus(true));
+    const handleOffline = () => dispatch(setOnlineStatus(false));
 
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [dispatch])
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [dispatch]);
 
   return (
     <Routes>
@@ -125,7 +125,7 @@ function App() {
       {/* Catch all route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  )
+  );
 }
 
-export default App
+export default App;

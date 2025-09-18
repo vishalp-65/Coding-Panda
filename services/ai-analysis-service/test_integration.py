@@ -33,7 +33,9 @@ if __name__ == "__main__":
         code=python_code,
         language=ProgrammingLanguage.PYTHON,
         analysis_types=[AnalysisType.GENERAL],
-        include_ai_feedback=False  # Skip AI to avoid API key requirement
+        include_ai_feedback=False,  # Skip AI to avoid API key requirement
+        user_id="test_user_ID",
+        problem_context="Two_sum"
     )
     
     try:
@@ -104,7 +106,9 @@ def dangerous_function(user_input):
         code=insecure_code,
         language=ProgrammingLanguage.PYTHON,
         analysis_types=[AnalysisType.SECURITY],
-        include_ai_feedback=False
+        include_ai_feedback=False,
+        problem_context="Security_test_case",
+        user_id="test_user"
     )
     
     try:

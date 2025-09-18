@@ -28,14 +28,18 @@ def sample_analysis_result():
             cyclomatic_complexity=5,
             cognitive_complexity=6,
             lines_of_code=50,
-            maintainability_index=75.0
+            maintainability_index=75.0,
+            halstead_difficulty=10.0,
+            halstead_volume=200.0
         ),
         security_issues=[],
         performance_issues=[],
         code_smells=[],
         suggestions=[],
         analysis_duration=1.5,
-        cached=False
+        cached=False,
+        ai_feedback="Good job!",
+        explanation="This code does X, Y, Z."
     )
 
 

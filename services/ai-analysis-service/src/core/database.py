@@ -68,6 +68,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, Any]:
             await session.close()
 
 
+async def get_database() -> AsyncSession:
+    """Get database session for direct use"""
+    if not async_session_maker:
+        raise RuntimeError("Database not initialized")
+    
+    return async_session_maker()
+
+
 async def close_db():
     """Close database connection"""
     global engine

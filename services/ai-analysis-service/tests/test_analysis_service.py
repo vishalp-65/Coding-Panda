@@ -61,6 +61,8 @@ class TestAnalysisService:
     async def test_analyze_python_code(self, analysis_service, sample_python_code):
         """Test Python code analysis"""
         request = AnalysisRequest(
+            user_id="test-user",
+            problem_context="Test problem context",
             code=sample_python_code,
             language=ProgrammingLanguage.PYTHON,
             analysis_types=[AnalysisType.GENERAL]
@@ -89,6 +91,8 @@ class TestAnalysisService:
     async def test_analyze_javascript_code(self, analysis_service, sample_javascript_code):
         """Test JavaScript code analysis"""
         request = AnalysisRequest(
+            user_id="test-user",
+            problem_context="Test problem context",
             code=sample_javascript_code,
             language=ProgrammingLanguage.JAVASCRIPT,
             analysis_types=[AnalysisType.GENERAL]
@@ -112,6 +116,8 @@ class TestAnalysisService:
     async def test_cached_analysis(self, analysis_service, sample_python_code):
         """Test that cached results are returned"""
         request = AnalysisRequest(
+            user_id="test-user",
+            problem_context="Test problem context",
             code=sample_python_code,
             language=ProgrammingLanguage.PYTHON
         )
@@ -147,6 +153,7 @@ class TestAnalysisService:
     async def test_generate_hints(self, analysis_service):
         """Test hint generation"""
         request = HintRequest(
+            user_id="test-user",
             problem_id="test-problem",
             user_code="def solution(): pass",
             language=ProgrammingLanguage.PYTHON,
@@ -208,6 +215,8 @@ def dangerous_function(user_input):
 """
         
         request = AnalysisRequest(
+            user_id="test-user",
+            problem_context="Test problem context",
             code=insecure_code,
             language=ProgrammingLanguage.PYTHON,
             analysis_types=[AnalysisType.SECURITY]
@@ -245,6 +254,8 @@ def nested_loops(matrix):
 """
         
         request = AnalysisRequest(
+            user_id="test-user",
+            problem_context="Test problem context",
             code=inefficient_code,
             language=ProgrammingLanguage.PYTHON,
             analysis_types=[AnalysisType.PERFORMANCE]
@@ -284,6 +295,8 @@ def complex_function(x, y, z):
 """
         
         request = AnalysisRequest(
+            user_id="test-user",
+            problem_context="Test problem context",
             code=complex_code,
             language=ProgrammingLanguage.PYTHON,
             analysis_types=[AnalysisType.COMPLEXITY]
@@ -311,14 +324,19 @@ def complex_function(x, y, z):
             cyclomatic_complexity=5,
             cognitive_complexity=6,
             lines_of_code=50,
-            maintainability_index=75.0
+            maintainability_index=75.0,
+            halstead_difficulty=10.0,
+            halstead_volume=200.0
         )
         
         security_issues = [
             SecurityIssue(
                 type="Test Issue",
                 severity=SeverityLevel.HIGH,
-                description="Test security issue"
+                description="Test security issue",
+                line=1,
+                cwe_id="CWE-000",
+                recommendation="Review and fix the security issue"
             )
         ]
         
@@ -327,7 +345,8 @@ def complex_function(x, y, z):
                 type="Test Issue",
                 severity=SeverityLevel.MEDIUM,
                 description="Test performance issue",
-                suggestion="Fix it"
+                suggestion="Fix it",
+                impact="Moderate impact"
             )
         ]
         
@@ -335,7 +354,8 @@ def complex_function(x, y, z):
             CodeSmell(
                 type="Test Smell",
                 description="Test code smell",
-                suggestion="Fix it"
+                suggestion="Fix it",
+                line=2
             )
         ]
         

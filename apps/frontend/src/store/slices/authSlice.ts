@@ -92,7 +92,6 @@ export const register = createAsyncThunk(
   'auth/register',
   async (userData: { email: string; username: string; password: string }) => {
     const response = await authApi.register(userData);
-    console.log('Register response:', response);
 
     // Store tokens in localStorage
     TokenManager.setTokens(
@@ -109,7 +108,9 @@ export const refreshAccessToken = createAsyncThunk(
   'auth/refreshToken',
   async (_, { getState, rejectWithValue }) => {
     const state = getState() as { auth: AuthState };
-    const refreshToken = state.auth.refreshToken || TokenManager.getRefreshToken();
+    let refreshToken =
+      state.auth.refreshToken || TokenManager.getRefreshToken();
+    // refreshToken = `Barrier ${refreshToken}`;
 
     if (!refreshToken) {
       return rejectWithValue('No refresh token available');
@@ -223,7 +224,7 @@ const authSlice = createSlice({
         state.refreshToken = null;
         state.expiresIn = null;
         state.isAuthenticated = false;
-        state.error = action.payload as string || 'Token refresh failed';
+        state.error = (action.payload as string) || 'Token refresh failed';
       })
       // Get current user
       .addCase(getCurrentUser.fulfilled, (state, action) => {

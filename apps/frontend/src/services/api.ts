@@ -97,24 +97,57 @@ const apiClient = new ApiClient();
 
 // Auth API
 export const authApi = {
-  login: (credentials: { email: string; password: string }) =>
-    apiClient.post<{
-      user: any;
-      token: string;
-      refreshToken: string;
-    }>('/users/auth/login', credentials),
+  login: async (credentials: { email: string; password: string }) => {
+    const response = await apiClient.post<{
+      success: boolean;
+      data: {
+        user: any;
+        accessToken: string;
+        refreshToken: string;
+        expiresIn: number;
+      };
+      message: string;
+    }>('/users/auth/login', credentials);
+    return response.data;
+  },
 
-  register: (userData: { email: string; username: string; password: string }) =>
-    apiClient.post<{
-      user: any;
-      token: string;
-      refreshToken: string;
-    }>('/users/auth/register', userData),
+  register: async (userData: { email: string; username: string; password: string }) => {
+    const response = await apiClient.post<{
+      success: boolean;
+      data: {
+        user: any;
+        accessToken: string;
+        refreshToken: string;
+        expiresIn: number;
+      };
+      message: string;
+    }>('/users/auth/register', userData);
+    return response.data;
+  },
 
-  refreshToken: (refreshToken: string) =>
-    apiClient.post<{ token: string }>('/users/auth/refresh-token', { refreshToken }),
+  refreshToken: async (refreshToken: string) => {
+    const response = await apiClient.post<{
+      success: boolean;
+      data: {
+        user: any;
+        accessToken: string;
+        refreshToken: string;
+        expiresIn: number;
+      };
+      message: string;
+    }>('/users/auth/refresh-token', { refreshToken });
+    return response.data;
+  },
 
-  getCurrentUser: () => apiClient.get<any>('/users/auth/me'),
+  getCurrentUser: async () => {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: {
+        user: any;
+      };
+    }>('/users/auth/me');
+    return response.data.user;
+  },
 
   logout: () => apiClient.post('/users/auth/logout'),
 
@@ -141,8 +174,7 @@ export const problemsApi = {
 
   getProblem: (id: string) => apiClient.get<any>(`/problems/${id}`),
 
-  getRecommendedProblems: () =>
-    apiClient.get<any[]>('/problems/recommended'),
+  getRecommendedProblems: () => apiClient.get<any[]>('/problems/recommended'),
 
   bookmarkProblem: (problemId: string) =>
     apiClient.post(`/problems/${problemId}/bookmark`),

@@ -57,7 +57,7 @@ const CodeEditor = ({
   };
 
   return (
-    <div className="border border-gray-300 rounded-md overflow-hidden">
+    <div className="border border-gray-300 rounded-md h-screen overflow-hidden">
       <Editor
         height={height}
         language={language}

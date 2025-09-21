@@ -2,10 +2,7 @@ module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint'],
-  extends: [
-    'eslint:recommended',
-    '@typescript-eslint/recommended',
-  ],
+  extends: ['eslint:recommended', '@typescript-eslint/recommended'],
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
@@ -23,9 +20,5 @@ module.exports = {
     node: true,
     es2022: true,
   },
-  ignorePatterns: [
-    'dist/',
-    'node_modules/',
-    '*.js',
-  ],
+  ignorePatterns: ['dist/', 'node_modules/', '*.js'],
 };

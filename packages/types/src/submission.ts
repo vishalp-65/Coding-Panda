@@ -14,9 +14,15 @@ export interface Submission {
   judgedAt?: Date;
 }
 
-export type ProgrammingLanguage = 'python' | 'javascript' | 'java' | 'cpp' | 'go' | 'rust';
+export type ProgrammingLanguage =
+  | 'python'
+  | 'javascript'
+  | 'java'
+  | 'cpp'
+  | 'go'
+  | 'rust';
 
-export type SubmissionStatus = 
+export type SubmissionStatus =
   | 'pending'
   | 'running'
   | 'accepted'

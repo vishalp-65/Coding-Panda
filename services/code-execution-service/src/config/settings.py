@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import Dict, Any
+from typing import Dict, Any, List
+from pydantic import Field
 import os
 
 
@@ -17,15 +18,15 @@ class Settings(BaseSettings):
     # Security settings
     max_code_length: int = 50000
     max_test_cases: int = 100
-    allowed_file_extensions: list = [".py", ".js", ".java", ".cpp", ".go", ".rs"]
-    blocked_imports: Dict[str, list] = {
+    allowed_file_extensions: List[str] = Field(default_factory=lambda: [".py", ".js", ".java", ".cpp", ".go", ".rs"])
+    blocked_imports: Dict[str, list] = Field(default_factory=lambda: {
         "python": ["os", "sys", "subprocess", "socket", "urllib", "requests"],
         "javascript": ["fs", "child_process", "net", "http", "https"],
         "java": ["java.io", "java.net", "java.lang.Runtime"],
         "cpp": ["system", "exec", "popen"],
         "go": ["os/exec", "net", "syscall"],
         "rust": ["std::process", "std::net", "std::fs"]
-    }
+    })
     
     # Redis settings
     redis_host: str = "localhost"
@@ -38,7 +39,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     
     # Language-specific settings
-    language_configs: Dict[str, Dict[str, Any]] = {
+    language_configs: Dict[str, Dict[str, Any]] = Field(default_factory=lambda: {
         "python": {
             "image": "python:3.11-alpine",
             "compile_command": None,
@@ -76,7 +77,7 @@ class Settings(BaseSettings):
             "run_command": "/app/solution",
             "file_extension": ".rs"
         }
-    }
+    })
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

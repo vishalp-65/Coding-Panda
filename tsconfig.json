@@ -23,12 +23,7 @@
       "@ai-platform/types": ["./packages/types/src"]
     }
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
   "references": [
     { "path": "./packages/common" },
     { "path": "./packages/types" },

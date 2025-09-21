@@ -27,6 +27,7 @@ This project follows a microservices architecture with the following services:
 
 1. Clone the repository
 2. Install dependencies:
+
    ```bash
    npm install
    ```

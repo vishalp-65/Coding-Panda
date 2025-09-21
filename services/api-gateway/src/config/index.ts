@@ -29,7 +29,7 @@ const configSchema = z.object({
   // Service discovery configuration
   services: z.object({
     userService: z.object({
-      url: z.string().default('http://localhost:3001'),
+      url: z.string().default('http://localhost:3006'),
       timeout: z.coerce.number().default(5000),
     }),
     problemService: z.object({
@@ -37,15 +37,15 @@ const configSchema = z.object({
       timeout: z.coerce.number().default(5000),
     }),
     executionService: z.object({
-      url: z.string().default('http://localhost:3003'),
+      url: z.string().default('http://localhost:8000'),
       timeout: z.coerce.number().default(30000),
     }),
     aiService: z.object({
-      url: z.string().default('http://localhost:3004'),
+      url: z.string().default('http://localhost:8001'),
       timeout: z.coerce.number().default(10000),
     }),
     contestService: z.object({
-      url: z.string().default('http://localhost:3005'),
+      url: z.string().default('http://localhost:3003'),
       timeout: z.coerce.number().default(5000),
     }),
   }),

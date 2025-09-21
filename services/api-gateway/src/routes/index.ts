@@ -1,13 +1,13 @@
-import express, { Express, Router } from 'express';
+import express, { Express } from 'express';
 import { getHealth, getMetrics } from '../middleware/metrics';
 import { notFoundHandler } from '../middleware/error-handler';
 import { serviceRoutes } from './services';
 import { authRateLimitMiddleware } from '../middleware/rate-limit';
 
-export function setupRoutes(app: Express | express.Application): void {
+export function setupRoutes(app: Express): void {
   // Health check endpoint (no authentication required)
   app.get('/health', getHealth);
-  
+
   // Metrics endpoint (no authentication required)
   app.get('/metrics', getMetrics);
 

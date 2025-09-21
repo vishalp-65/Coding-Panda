@@ -5,7 +5,7 @@ dotenv.config();
 export const config = {
   port: parseInt(process.env.PORT || '3002'),
   nodeEnv: process.env.NODE_ENV || 'development',
-  
+
   // Database
   database: {
     host: process.env.DB_HOST || 'localhost',
@@ -35,7 +35,7 @@ export const config = {
 
   // Security
   bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12'),
-  
+
   // Rate limiting
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes

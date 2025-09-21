@@ -12,10 +12,10 @@ const redisClient = new Redis({
   password: config.redis.password,
   db: config.redis.db,
   maxRetriesPerRequest: 3,
-  lazyConnect: true
+  lazyConnect: true,
 });
 
-redisClient.on('error', (error) => {
+redisClient.on('error', error => {
   logger.error('Redis rate limit store error', { error });
 });
 
@@ -27,7 +27,7 @@ redisClient.on('connect', () => {
 const keyGenerator = (req: Request): string => {
   const userId = (req as any).user?.id;
   const ip = req.ip || req.connection.remoteAddress || 'unknown';
-  
+
   // Use user ID if authenticated, otherwise use IP
   return userId ? `user:${userId}` : `ip:${ip}`;
 };
@@ -36,21 +36,21 @@ const keyGenerator = (req: Request): string => {
 const rateLimitHandler = (req: Request, res: Response) => {
   const userId = (req as any).user?.id;
   const ip = req.ip || req.connection.remoteAddress;
-  
+
   logger.warn('Rate limit exceeded', {
     requestId: req.requestId,
     userId,
     ip,
     method: req.method,
-    url: req.url
+    url: req.url,
   });
 
   res.status(429).json({
     error: {
       code: 'RATE_LIMIT_EXCEEDED',
       message: 'Too many requests, please try again later',
-      retryAfter: Math.ceil(config.rateLimit.windowMs / 1000)
-    }
+      retryAfter: Math.ceil(config.rateLimit.windowMs / 1000),
+    },
   });
 };
 
@@ -72,7 +72,8 @@ const skipRateLimit = (req: Request): boolean => {
 // Main rate limiting middleware
 export const rateLimitMiddleware = rateLimit({
   store: new RedisStore({
-    sendCommand: (...args: any[]) => redisClient.call(args[0], ...args.slice(1)) as any,
+    sendCommand: (...args: any[]) =>
+      redisClient.call(args[0], ...args.slice(1)) as any,
   }),
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.max,
@@ -85,15 +86,16 @@ export const rateLimitMiddleware = rateLimit({
   message: {
     error: {
       code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Too many requests, please try again later'
-    }
-  }
+      message: 'Too many requests, please try again later',
+    },
+  },
 });
 
 // Stricter rate limiting for authentication endpoints
 export const authRateLimitMiddleware = rateLimit({
   store: new RedisStore({
-    sendCommand: (...args: any[]) => redisClient.call(args[0], ...args.slice(1)) as any,
+    sendCommand: (...args: any[]) =>
+      redisClient.call(args[0], ...args.slice(1)) as any,
   }),
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit each IP to 5 auth requests per windowMs
@@ -107,9 +109,9 @@ export const authRateLimitMiddleware = rateLimit({
   message: {
     error: {
       code: 'AUTH_RATE_LIMIT_EXCEEDED',
-      message: 'Too many authentication attempts, please try again later'
-    }
-  }
+      message: 'Too many authentication attempts, please try again later',
+    },
+  },
 });
 
 // Export Redis client for cleanup

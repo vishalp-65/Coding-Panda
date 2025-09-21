@@ -1,31 +1,35 @@
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { authMiddleware, optionalAuthMiddleware, requireRole } from '../../src/middleware/auth';
+import {
+  authMiddleware,
+  optionalAuthMiddleware,
+  requireRole,
+} from '../../src/middleware/auth';
 
 // Mock Redis client
 jest.mock('../../src/middleware/rate-limit', () => ({
   redisClient: {
-    get: jest.fn().mockResolvedValue(null)
-  }
+    get: jest.fn().mockResolvedValue(null),
+  },
 }));
 
 describe('Auth Middleware', () => {
   let app: express.Application;
   const JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
-  
+
   const validUser = {
     id: 'user-123',
     email: 'test@example.com',
     username: 'testuser',
-    roles: ['user']
+    roles: ['user'],
   };
 
   const adminUser = {
     id: 'admin-123',
     email: 'admin@example.com',
     username: 'admin',
-    roles: ['admin', 'user']
+    roles: ['admin', 'user'],
   };
 
   const createToken = (payload: any, expiresIn: string = '1h') => {
@@ -46,9 +50,7 @@ describe('Auth Middleware', () => {
     });
 
     it('should reject requests without token', async () => {
-      const response = await request(app)
-        .get('/protected')
-        .expect(401);
+      const response = await request(app).get('/protected').expect(401);
 
       expect(response.body.error.code).toBe('MISSING_TOKEN');
     });
@@ -64,7 +66,7 @@ describe('Auth Middleware', () => {
 
     it('should accept requests with valid token', async () => {
       const token = createToken(validUser);
-      
+
       const response = await request(app)
         .get('/protected')
         .set('Authorization', `Bearer ${token}`)
@@ -75,7 +77,7 @@ describe('Auth Middleware', () => {
 
     it('should accept token from query parameter', async () => {
       const token = createToken(validUser);
-      
+
       const response = await request(app)
         .get('/protected')
         .query({ token })
@@ -86,7 +88,7 @@ describe('Auth Middleware', () => {
 
     it('should reject expired tokens', async () => {
       const expiredToken = createToken(validUser, '-1h');
-      
+
       const response = await request(app)
         .get('/protected')
         .set('Authorization', `Bearer ${expiredToken}`)
@@ -105,16 +107,14 @@ describe('Auth Middleware', () => {
     });
 
     it('should allow requests without token', async () => {
-      const response = await request(app)
-        .get('/optional')
-        .expect(200);
+      const response = await request(app).get('/optional').expect(200);
 
       expect(response.body.user).toBeNull();
     });
 
     it('should attach user if valid token provided', async () => {
       const token = createToken(validUser);
-      
+
       const response = await request(app)
         .get('/optional')
         .set('Authorization', `Bearer ${token}`)
@@ -144,7 +144,7 @@ describe('Auth Middleware', () => {
       });
 
       const token = createToken(adminUser);
-      
+
       const response = await request(app)
         .get('/admin')
         .set('Authorization', `Bearer ${token}`)
@@ -159,7 +159,7 @@ describe('Auth Middleware', () => {
       });
 
       const token = createToken(validUser);
-      
+
       const response = await request(app)
         .get('/admin')
         .set('Authorization', `Bearer ${token}`)
@@ -174,7 +174,7 @@ describe('Auth Middleware', () => {
       });
 
       const token = createToken(adminUser);
-      
+
       const response = await request(app)
         .get('/moderate')
         .set('Authorization', `Bearer ${token}`)
@@ -188,9 +188,7 @@ describe('Auth Middleware', () => {
         res.json({ success: true });
       });
 
-      const response = await request(app)
-        .get('/admin')
-        .expect(401);
+      const response = await request(app).get('/admin').expect(401);
 
       expect(response.body.error.code).toBe('MISSING_TOKEN');
     });

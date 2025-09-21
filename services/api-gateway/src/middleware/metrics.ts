@@ -28,43 +28,51 @@ const metrics: Metrics = {
     total: 0,
     byMethod: {},
     byStatus: {},
-    byRoute: {}
+    byRoute: {},
   },
   responseTime: {
     total: 0,
     count: 0,
     average: 0,
     min: Infinity,
-    max: 0
+    max: 0,
   },
   errors: {
     total: 0,
-    byType: {}
+    byType: {},
   },
-  activeConnections: 0
+  activeConnections: 0,
 };
 
 // Update response time metrics
 const updateResponseTimeMetrics = (duration: number) => {
   metrics.responseTime.total += duration;
   metrics.responseTime.count += 1;
-  metrics.responseTime.average = metrics.responseTime.total / metrics.responseTime.count;
+  metrics.responseTime.average =
+    metrics.responseTime.total / metrics.responseTime.count;
   metrics.responseTime.min = Math.min(metrics.responseTime.min, duration);
   metrics.responseTime.max = Math.max(metrics.responseTime.max, duration);
 };
 
 // Update request metrics
-const updateRequestMetrics = (method: string, route: string, statusCode: number) => {
+const updateRequestMetrics = (
+  method: string,
+  route: string,
+  statusCode: number
+) => {
   metrics.requests.total += 1;
-  metrics.requests.byMethod[method] = (metrics.requests.byMethod[method] || 0) + 1;
-  metrics.requests.byStatus[statusCode] = (metrics.requests.byStatus[statusCode] || 0) + 1;
+  metrics.requests.byMethod[method] =
+    (metrics.requests.byMethod[method] || 0) + 1;
+  metrics.requests.byStatus[statusCode] =
+    (metrics.requests.byStatus[statusCode] || 0) + 1;
   metrics.requests.byRoute[route] = (metrics.requests.byRoute[route] || 0) + 1;
 };
 
 // Update error metrics
 const updateErrorMetrics = (errorType: string) => {
   metrics.errors.total += 1;
-  metrics.errors.byType[errorType] = (metrics.errors.byType[errorType] || 0) + 1;
+  metrics.errors.byType[errorType] =
+    (metrics.errors.byType[errorType] || 0) + 1;
 };
 
 // Get route pattern from request
@@ -73,16 +81,16 @@ const getRoutePattern = (req: Request): string => {
   if (req.route && req.route.path) {
     return req.route.path;
   }
-  
+
   // Fallback to URL pathname with parameter normalization
   const pathname = req.path;
-  
+
   // Replace UUIDs with :id
   const normalizedPath = pathname.replace(
     /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
     '/:id'
   );
-  
+
   // Replace numeric IDs with :id
   return normalizedPath.replace(/\/\d+/g, '/:id');
 };
@@ -95,22 +103,22 @@ export const metricsMiddleware = (
 ) => {
   // Increment active connections
   metrics.activeConnections += 1;
-  
+
   // Track request start time
   const startTime = Date.now();
-  
+
   // Handle response completion
   const onResponseFinish = () => {
     const duration = Date.now() - startTime;
     const route = getRoutePattern(req);
-    
+
     // Update metrics
     updateRequestMetrics(req.method, route, res.statusCode);
     updateResponseTimeMetrics(duration);
-    
+
     // Decrement active connections
     metrics.activeConnections -= 1;
-    
+
     // Log slow requests
     if (duration > 1000) {
       logger.warn('Slow request detected', {
@@ -118,29 +126,29 @@ export const metricsMiddleware = (
         method: req.method,
         url: req.url,
         duration,
-        statusCode: res.statusCode
+        statusCode: res.statusCode,
       });
     }
-    
+
     // Log error responses
     if (res.statusCode >= 400) {
       const errorType = res.statusCode >= 500 ? 'server_error' : 'client_error';
       updateErrorMetrics(errorType);
-      
+
       logger.warn('Error response', {
         requestId: req.requestId,
         method: req.method,
         url: req.url,
         statusCode: res.statusCode,
-        duration
+        duration,
       });
     }
   };
-  
+
   // Listen for response finish
   res.on('finish', onResponseFinish);
   res.on('close', onResponseFinish);
-  
+
   next();
 };
 
@@ -148,7 +156,7 @@ export const metricsMiddleware = (
 export const getMetrics = (req: Request, res: Response) => {
   const uptime = process.uptime();
   const memoryUsage = process.memoryUsage();
-  
+
   const metricsData = {
     timestamp: new Date().toISOString(),
     uptime,
@@ -156,17 +164,17 @@ export const getMetrics = (req: Request, res: Response) => {
       rss: memoryUsage.rss,
       heapTotal: memoryUsage.heapTotal,
       heapUsed: memoryUsage.heapUsed,
-      external: memoryUsage.external
+      external: memoryUsage.external,
     },
     requests: metrics.requests,
     responseTime: {
       ...metrics.responseTime,
-      min: metrics.responseTime.min === Infinity ? 0 : metrics.responseTime.min
+      min: metrics.responseTime.min === Infinity ? 0 : metrics.responseTime.min,
     },
     errors: metrics.errors,
-    activeConnections: metrics.activeConnections
+    activeConnections: metrics.activeConnections,
   };
-  
+
   res.json(metricsData);
 };
 
@@ -177,9 +185,9 @@ export const getHealth = (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     version: process.env.npm_package_version || '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
   };
-  
+
   res.json(health);
 };
 

@@ -74,7 +74,9 @@ describe('UserRepository', () => {
     });
 
     it('should return null if user not found', async () => {
-      const foundUser = await userRepository.findByEmail('nonexistent@example.com');
+      const foundUser = await userRepository.findByEmail(
+        'nonexistent@example.com'
+      );
       expect(foundUser).toBeNull();
     });
   });
@@ -113,7 +115,9 @@ describe('UserRepository', () => {
     });
 
     it('should return false if email does not exist', async () => {
-      const exists = await userRepository.existsByEmail('nonexistent@example.com');
+      const exists = await userRepository.existsByEmail(
+        'nonexistent@example.com'
+      );
       expect(exists).toBe(false);
     });
   });
@@ -134,7 +138,10 @@ describe('UserRepository', () => {
         skillLevel: 'intermediate' as const,
       };
 
-      const updatedUser = await userRepository.updateProfile(user.id, profileUpdate);
+      const updatedUser = await userRepository.updateProfile(
+        user.id,
+        profileUpdate
+      );
 
       expect(updatedUser).toBeDefined();
       expect(updatedUser?.profile.bio).toBe(profileUpdate.bio);

@@ -12,9 +12,7 @@ describe('CORS Middleware', () => {
   });
 
   it('should allow requests with no origin', async () => {
-    const response = await request(app)
-      .get('/test')
-      .expect(200);
+    const response = await request(app).get('/test').expect(200);
 
     expect(response.headers['access-control-allow-origin']).toBeDefined();
   });
@@ -27,9 +25,13 @@ describe('CORS Middleware', () => {
       .set('Access-Control-Request-Headers', 'Content-Type,Authorization')
       .expect(204);
 
-    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+    expect(response.headers['access-control-allow-origin']).toBe(
+      'http://localhost:3000'
+    );
     expect(response.headers['access-control-allow-methods']).toContain('POST');
-    expect(response.headers['access-control-allow-headers']).toContain('Authorization');
+    expect(response.headers['access-control-allow-headers']).toContain(
+      'Authorization'
+    );
   });
 
   it('should expose required headers', async () => {
@@ -38,8 +40,12 @@ describe('CORS Middleware', () => {
       .set('Origin', 'http://localhost:3000')
       .expect(200);
 
-    expect(response.headers['access-control-expose-headers']).toContain('X-Request-ID');
-    expect(response.headers['access-control-expose-headers']).toContain('X-Rate-Limit-Remaining');
+    expect(response.headers['access-control-expose-headers']).toContain(
+      'X-Request-ID'
+    );
+    expect(response.headers['access-control-expose-headers']).toContain(
+      'X-Rate-Limit-Remaining'
+    );
   });
 
   it('should set max age for preflight cache', async () => {

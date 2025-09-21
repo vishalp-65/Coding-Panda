@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import { AuthUtils } from '@ai-platform/common';
-import { UserRepository, EmailVerificationTokenRepository } from '../repositories';
+import {
+  UserRepository,
+  EmailVerificationTokenRepository,
+} from '../repositories';
 import { EmailService } from './EmailService';
 
 export class EmailVerificationService {
@@ -30,7 +33,7 @@ export class EmailVerificationService {
     // Generate secure token
     const token = uuidv4();
     const tokenHash = await AuthUtils.hashPassword(token);
-    
+
     // Set expiration to 24 hours
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
@@ -48,7 +51,8 @@ export class EmailVerificationService {
 
   async verifyEmail(token: string): Promise<void> {
     const tokenHash = await AuthUtils.hashPassword(token);
-    const verificationToken = await this.tokenRepository.findValidToken(tokenHash);
+    const verificationToken =
+      await this.tokenRepository.findValidToken(tokenHash);
 
     if (!verificationToken) {
       throw new Error('Invalid or expired verification token');
@@ -69,7 +73,10 @@ export class EmailVerificationService {
     await this.tokenRepository.markAsUsed(verificationToken.id);
 
     // Send welcome email
-    await this.emailService.sendWelcomeEmail(verificationToken.user.email, verificationToken.user.username);
+    await this.emailService.sendWelcomeEmail(
+      verificationToken.user.email,
+      verificationToken.user.username
+    );
   }
 
   async resendVerificationEmail(email: string): Promise<void> {

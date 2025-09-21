@@ -76,6 +76,19 @@ app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["analysis"])
 app.include_router(learning.router, prefix="/api/v1/learning", tags=["learning"])
 
+# Add metrics endpoint at root level
+@app.get("/metrics")
+async def metrics():
+    """Service metrics endpoint"""
+    return {
+        "service": "AI Analysis Service",
+        "status": "healthy",
+        "uptime": "running",
+        "requests_processed": 0,
+        "cache_hits": 0,
+        "cache_misses": 0
+    }
+
 
 @app.get("/")
 async def root():

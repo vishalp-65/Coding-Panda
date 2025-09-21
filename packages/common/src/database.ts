@@ -38,7 +38,7 @@ export class DatabaseUtils {
     limit: number
   ): PaginatedResult<T> {
     const totalPages = Math.ceil(total / limit);
-    
+
     return {
       data,
       pagination: {

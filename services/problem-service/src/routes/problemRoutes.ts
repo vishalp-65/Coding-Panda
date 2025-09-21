@@ -6,7 +6,7 @@ import {
   updateProblemSchema,
   searchProblemsSchema,
   ratingSchema,
-  paginationSchema
+  paginationSchema,
 } from '../validation/problemValidation';
 
 const router = Router();
@@ -25,10 +25,7 @@ router.get(
   problemController.searchProblems
 );
 
-router.get(
-  '/tags/popular',
-  problemController.getPopularTags
-);
+router.get('/tags/popular', problemController.getPopularTags);
 
 router.get(
   '/bookmarks',
@@ -36,10 +33,7 @@ router.get(
   problemController.getUserBookmarks
 );
 
-router.get(
-  '/:id',
-  problemController.getProblem
-);
+router.get('/:id', problemController.getProblem);
 
 router.put(
   '/:id',
@@ -47,21 +41,12 @@ router.put(
   problemController.updateProblem
 );
 
-router.delete(
-  '/:id',
-  problemController.deleteProblem
-);
+router.delete('/:id', problemController.deleteProblem);
 
 // User-specific problem operations
-router.post(
-  '/:id/bookmark',
-  problemController.bookmarkProblem
-);
+router.post('/:id/bookmark', problemController.bookmarkProblem);
 
-router.delete(
-  '/:id/bookmark',
-  problemController.unbookmarkProblem
-);
+router.delete('/:id/bookmark', problemController.unbookmarkProblem);
 
 router.post(
   '/:id/rate',
@@ -70,9 +55,6 @@ router.post(
 );
 
 // Statistics update (typically called by other services)
-router.post(
-  '/:id/statistics',
-  problemController.updateProblemStatistics
-);
+router.post('/:id/statistics', problemController.updateProblemStatistics);
 
 export { router as problemRoutes };

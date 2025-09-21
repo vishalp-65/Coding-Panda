@@ -33,16 +33,19 @@ The service follows a modular architecture:
 ### Installation
 
 1. Clone the repository and navigate to the service directory:
+
 ```bash
 cd services/code-execution-service
 ```
 
 2. Copy environment configuration:
+
 ```bash
 cp .env.example .env
 ```
 
 3. Start the service with Docker Compose:
+
 ```bash
 docker-compose up -d
 ```
@@ -52,16 +55,19 @@ docker-compose up -d
 ### Development Setup
 
 1. Install Python dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 2. Start Redis:
+
 ```bash
 docker run -d -p 6379:6379 redis:7-alpine
 ```
 
 3. Run the service:
+
 ```bash
 uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -69,6 +75,7 @@ uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ## API Endpoints
 
 ### Execute Code
+
 ```http
 POST /api/v1/execute
 ```
@@ -93,21 +100,25 @@ Execute code with test cases:
 ```
 
 ### Health Check
+
 ```http
 GET /api/v1/health
 ```
 
 ### Get Metrics
+
 ```http
 GET /api/v1/metrics?hours=24
 ```
 
 ### Get User Metrics
+
 ```http
 GET /api/v1/metrics/user/{user_id}?hours=24
 ```
 
 ### Get Supported Languages
+
 ```http
 GET /api/v1/languages
 ```
@@ -115,11 +126,13 @@ GET /api/v1/languages
 ### Admin Endpoints
 
 Pull Docker images:
+
 ```http
 POST /api/v1/admin/pull-images
 ```
 
 Cleanup resources:
+
 ```http
 POST /api/v1/admin/cleanup
 ```
@@ -127,7 +140,7 @@ POST /api/v1/admin/cleanup
 ## Supported Languages
 
 | Language   | Version | Compilation | File Extension |
-|------------|---------|-------------|----------------|
+| ---------- | ------- | ----------- | -------------- |
 | Python     | 3.11    | No          | .py            |
 | JavaScript | Node 18 | No          | .js            |
 | Java       | 17      | Yes         | .java          |
@@ -138,12 +151,14 @@ POST /api/v1/admin/cleanup
 ## Security Features
 
 ### Code Validation
+
 - Blocked dangerous imports and functions
 - Suspicious keyword detection
 - Code length and complexity limits
 - Input/output validation
 
 ### Container Security
+
 - Isolated execution environments
 - Resource limits (CPU, memory, time)
 - Network disabled
@@ -152,6 +167,7 @@ POST /api/v1/admin/cleanup
 - Security options and capability dropping
 
 ### Resource Limits
+
 - CPU: 0.5 cores maximum
 - Memory: 32-512 MB configurable
 - Time: 1-30 seconds configurable
@@ -181,22 +197,23 @@ pytest tests/test_performance.py  # Performance tests
 
 Environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DEBUG` | false | Enable debug mode |
-| `LOG_LEVEL` | INFO | Logging level |
-| `REDIS_HOST` | localhost | Redis host |
-| `REDIS_PORT` | 6379 | Redis port |
-| `MAX_CODE_LENGTH` | 50000 | Maximum code length |
-| `MAX_TEST_CASES` | 100 | Maximum test cases |
-| `EXECUTION_TIMEOUT` | 30 | Container timeout |
-| `METRICS_ENABLED` | true | Enable metrics collection |
+| Variable            | Default   | Description               |
+| ------------------- | --------- | ------------------------- |
+| `DEBUG`             | false     | Enable debug mode         |
+| `LOG_LEVEL`         | INFO      | Logging level             |
+| `REDIS_HOST`        | localhost | Redis host                |
+| `REDIS_PORT`        | 6379      | Redis port                |
+| `MAX_CODE_LENGTH`   | 50000     | Maximum code length       |
+| `MAX_TEST_CASES`    | 100       | Maximum test cases        |
+| `EXECUTION_TIMEOUT` | 30        | Container timeout         |
+| `METRICS_ENABLED`   | true      | Enable metrics collection |
 
 ## Monitoring
 
 The service provides comprehensive monitoring:
 
 ### Metrics
+
 - Execution counts by language
 - Success/failure rates
 - Execution time histograms
@@ -204,11 +221,13 @@ The service provides comprehensive monitoring:
 - User activity tracking
 
 ### Health Checks
+
 - Docker daemon connectivity
 - Redis connectivity
 - Service responsiveness
 
 ### Logging
+
 - Structured JSON logging
 - Request/response logging
 - Error tracking
@@ -217,12 +236,14 @@ The service provides comprehensive monitoring:
 ## Performance
 
 ### Benchmarks
+
 - Concurrent execution support
 - Sub-second response times for simple code
 - Efficient resource cleanup
 - Scalable metrics collection
 
 ### Optimization
+
 - Container reuse where possible
 - Efficient Docker image management
 - Background cleanup processes
@@ -231,12 +252,14 @@ The service provides comprehensive monitoring:
 ## Security Considerations
 
 ### Threat Model
+
 - Malicious code execution prevention
 - Resource exhaustion protection
 - Container escape prevention
 - Data exfiltration protection
 
 ### Security Measures
+
 - Input validation and sanitization
 - Secure container configuration
 - Resource limits enforcement
@@ -246,6 +269,7 @@ The service provides comprehensive monitoring:
 ## Deployment
 
 ### Production Deployment
+
 1. Use production-ready Docker images
 2. Configure proper resource limits
 3. Set up monitoring and alerting
@@ -253,6 +277,7 @@ The service provides comprehensive monitoring:
 5. Configure backup and recovery
 
 ### Scaling
+
 - Horizontal scaling with load balancers
 - Container orchestration with Kubernetes
 - Redis clustering for metrics

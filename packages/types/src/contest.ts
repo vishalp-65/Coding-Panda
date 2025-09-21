@@ -14,7 +14,12 @@ export interface Contest {
   updatedAt: Date;
 }
 
-export type ContestStatus = 'draft' | 'scheduled' | 'running' | 'finished' | 'cancelled';
+export type ContestStatus =
+  | 'draft'
+  | 'scheduled'
+  | 'running'
+  | 'finished'
+  | 'cancelled';
 
 export interface ContestRules {
   maxParticipants?: number;

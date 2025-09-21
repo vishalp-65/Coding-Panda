@@ -22,7 +22,8 @@ describe('AuthController', () => {
   beforeEach(() => {
     app = createApp();
     mockAuthService = new AuthService() as jest.Mocked<AuthService>;
-    mockEmailVerificationService = new EmailVerificationService() as jest.Mocked<EmailVerificationService>;
+    mockEmailVerificationService =
+      new EmailVerificationService() as jest.Mocked<EmailVerificationService>;
   });
 
   describe('POST /api/v1/auth/register', () => {
@@ -125,7 +126,9 @@ describe('AuthController', () => {
         password: 'Password123!',
       };
 
-      mockAuthService.register.mockRejectedValue(new Error('User already exists'));
+      mockAuthService.register.mockRejectedValue(
+        new Error('User already exists')
+      );
 
       const response = await request(app)
         .post('/api/v1/auth/register')
@@ -274,7 +277,9 @@ describe('AuthController', () => {
         refreshToken: 'invalid-refresh-token',
       };
 
-      mockAuthService.refreshToken.mockRejectedValue(new Error('Invalid refresh token'));
+      mockAuthService.refreshToken.mockRejectedValue(
+        new Error('Invalid refresh token')
+      );
 
       const response = await request(app)
         .post('/api/v1/auth/refresh-token')

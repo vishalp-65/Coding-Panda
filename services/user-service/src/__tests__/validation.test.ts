@@ -33,11 +33,7 @@ describe('Validation Schemas', () => {
 
   describe('password validation', () => {
     it('should validate strong passwords', () => {
-      const validPasswords = [
-        'Password123!',
-        'MyStr0ng@Pass',
-        'C0mplex#Pass1',
-      ];
+      const validPasswords = ['Password123!', 'MyStr0ng@Pass', 'C0mplex#Pass1'];
 
       validPasswords.forEach(password => {
         const { error } = commonSchemas.password.validate(password);

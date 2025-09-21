@@ -66,7 +66,9 @@ describe('Auth Integration Tests', () => {
 
       expect(profileResponse.body.success).toBe(true);
       expect(profileResponse.body.data.email).toBe(userData.email);
-      expect(profileResponse.body.data.profile.firstName).toBe(userData.firstName);
+      expect(profileResponse.body.data.profile.firstName).toBe(
+        userData.firstName
+      );
     });
 
     it('should prevent duplicate email registration', async () => {
@@ -193,8 +195,12 @@ describe('Auth Integration Tests', () => {
 
       expect(updateResponse.body.success).toBe(true);
       expect(updateResponse.body.data.profile.bio).toBe(profileUpdate.bio);
-      expect(updateResponse.body.data.profile.location).toBe(profileUpdate.location);
-      expect(updateResponse.body.data.profile.skillLevel).toBe(profileUpdate.skillLevel);
+      expect(updateResponse.body.data.profile.location).toBe(
+        profileUpdate.location
+      );
+      expect(updateResponse.body.data.profile.skillLevel).toBe(
+        profileUpdate.skillLevel
+      );
     });
 
     it('should update user preferences', async () => {
@@ -229,8 +235,12 @@ describe('Auth Integration Tests', () => {
         .expect(200);
 
       expect(updateResponse.body.success).toBe(true);
-      expect(updateResponse.body.data.preferences.theme).toBe(preferencesUpdate.theme);
-      expect(updateResponse.body.data.preferences.language).toBe(preferencesUpdate.language);
+      expect(updateResponse.body.data.preferences.theme).toBe(
+        preferencesUpdate.theme
+      );
+      expect(updateResponse.body.data.preferences.language).toBe(
+        preferencesUpdate.language
+      );
     });
   });
 });

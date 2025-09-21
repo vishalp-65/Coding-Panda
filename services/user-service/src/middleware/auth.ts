@@ -34,7 +34,7 @@ export const authenticate = async (
     // Verify user still exists and is active
     const userService = new UserService();
     const user = await userService.getUserById(payload.userId);
-    
+
     if (!user) {
       res.status(401).json({
         error: {
@@ -65,7 +65,11 @@ export const authenticate = async (
 };
 
 export const authorize = (requiredRoles: string[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+  return (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): void => {
     if (!req.user) {
       res.status(401).json({
         error: {
@@ -77,8 +81,10 @@ export const authorize = (requiredRoles: string[]) => {
       return;
     }
 
-    const hasRequiredRole = requiredRoles.some(role => req.user!.roles.includes(role));
-    
+    const hasRequiredRole = requiredRoles.some(role =>
+      req.user!.roles.includes(role)
+    );
+
     if (!hasRequiredRole) {
       res.status(403).json({
         error: {
@@ -107,7 +113,7 @@ export const optionalAuth = async (
 
       const userService = new UserService();
       const user = await userService.getUserById(payload.userId);
-      
+
       if (user) {
         req.user = {
           id: user.id,

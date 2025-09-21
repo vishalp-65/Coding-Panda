@@ -14,15 +14,17 @@ export class AuthController {
   register = async (req: Request, res: Response): Promise<void> => {
     try {
       const result = await this.authService.register(req.body);
-      
+
       res.status(201).json({
         success: true,
         data: result,
-        message: 'User registered successfully. Please check your email for verification.',
+        message:
+          'User registered successfully. Please check your email for verification.',
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
-      
+      const message =
+        error instanceof Error ? error.message : 'Registration failed';
+
       res.status(400).json({
         error: {
           code: 'REGISTRATION_FAILED',
@@ -37,9 +39,13 @@ export class AuthController {
     try {
       const userAgent = req.headers['user-agent'];
       const ipAddress = req.ip || req.connection.remoteAddress;
-      
-      const result = await this.authService.login(req.body, userAgent, ipAddress);
-      
+
+      const result = await this.authService.login(
+        req.body,
+        userAgent,
+        ipAddress
+      );
+
       res.json({
         success: true,
         data: result,
@@ -47,7 +53,7 @@ export class AuthController {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed';
-      
+
       res.status(401).json({
         error: {
           code: 'LOGIN_FAILED',
@@ -62,15 +68,16 @@ export class AuthController {
     try {
       const { refreshToken } = req.body;
       const result = await this.authService.refreshToken(refreshToken);
-      
+
       res.json({
         success: true,
         data: result,
         message: 'Token refreshed successfully',
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Token refresh failed';
-      
+      const message =
+        error instanceof Error ? error.message : 'Token refresh failed';
+
       res.status(401).json({
         error: {
           code: 'TOKEN_REFRESH_FAILED',
@@ -91,7 +98,7 @@ export class AuthController {
         // For now, we'll implement logout all sessions
         await this.authService.logoutAll(req.user!.id);
       }
-      
+
       res.json({
         success: true,
         message: 'Logged out successfully',
@@ -107,10 +114,13 @@ export class AuthController {
     }
   };
 
-  logoutAll = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  logoutAll = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
     try {
       await this.authService.logoutAll(req.user!.id);
-      
+
       res.json({
         success: true,
         message: 'Logged out from all devices successfully',
@@ -130,14 +140,15 @@ export class AuthController {
     try {
       const { token } = req.query;
       await this.emailVerificationService.verifyEmail(token as string);
-      
+
       res.json({
         success: true,
         message: 'Email verified successfully',
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Email verification failed';
-      
+      const message =
+        error instanceof Error ? error.message : 'Email verification failed';
+
       res.status(400).json({
         error: {
           code: 'EMAIL_VERIFICATION_FAILED',
@@ -148,18 +159,24 @@ export class AuthController {
     }
   };
 
-  resendVerificationEmail = async (req: Request, res: Response): Promise<void> => {
+  resendVerificationEmail = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
       const { email } = req.body;
       await this.emailVerificationService.resendVerificationEmail(email);
-      
+
       res.json({
         success: true,
         message: 'Verification email sent successfully',
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to send verification email';
-      
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to send verification email';
+
       res.status(400).json({
         error: {
           code: 'VERIFICATION_EMAIL_FAILED',
@@ -170,7 +187,10 @@ export class AuthController {
     }
   };
 
-  validateToken = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  validateToken = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
     // If we reach here, the token is valid (middleware already validated it)
     res.json({
       success: true,

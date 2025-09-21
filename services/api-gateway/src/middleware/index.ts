@@ -8,7 +8,9 @@ import { metricsMiddleware } from './metrics';
 import { errorHandlerMiddleware } from './error-handler';
 import { logger } from '@ai-platform/common';
 
-export async function setupMiddleware(app: Express | express.Application): Promise<void> {
+export async function setupMiddleware(
+  app: Express | express.Application
+): Promise<void> {
   try {
     // Security headers (should be first)
     app.use(securityMiddleware);

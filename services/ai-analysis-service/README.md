@@ -15,6 +15,7 @@ A comprehensive AI-powered code analysis service that provides intelligent feedb
 ## Architecture
 
 The service is built using:
+
 - **FastAPI**: Modern, fast web framework for building APIs
 - **Python 3.11**: Latest Python with async/await support
 - **Redis**: Caching and session storage
@@ -54,27 +55,32 @@ The service is built using:
 ### Local Development
 
 1. Clone the repository and navigate to the service directory:
+
 ```bash
 cd services/ai-analysis-service
 ```
 
 2. Create a virtual environment:
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 3. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. Copy environment configuration:
+
 ```bash
 cp .env.example .env
 ```
 
 5. Update the `.env` file with your configuration:
+
 ```env
 # Database Configuration
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/ai_analysis_db
@@ -90,6 +96,7 @@ SECRET_KEY=your_secret_key_here
 ```
 
 6. Start the service:
+
 ```bash
 uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -97,11 +104,13 @@ uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ### Docker Deployment
 
 1. Build the Docker image:
+
 ```bash
 docker build -t ai-analysis-service .
 ```
 
 2. Run with Docker Compose:
+
 ```bash
 docker-compose up -d
 ```
@@ -212,18 +221,18 @@ pytest tests/test_analysis_service.py -v
 
 Key configuration options in `.env`:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Service port | 8000 |
-| `DEBUG` | Debug mode | true |
-| `DATABASE_URL` | PostgreSQL connection string | - |
-| `REDIS_URL` | Redis connection string | - |
-| `OPENAI_API_KEY` | OpenAI API key | - |
-| `ANTHROPIC_API_KEY` | Anthropic API key | - |
-| `AI_MODEL_PROVIDER` | AI provider (openai/anthropic) | openai |
-| `AI_MODEL_NAME` | AI model name | gpt-4 |
-| `MAX_CODE_LENGTH` | Maximum code length | 50000 |
-| `ANALYSIS_TIMEOUT` | Analysis timeout (seconds) | 30 |
+| Variable            | Description                    | Default |
+| ------------------- | ------------------------------ | ------- |
+| `PORT`              | Service port                   | 8000    |
+| `DEBUG`             | Debug mode                     | true    |
+| `DATABASE_URL`      | PostgreSQL connection string   | -       |
+| `REDIS_URL`         | Redis connection string        | -       |
+| `OPENAI_API_KEY`    | OpenAI API key                 | -       |
+| `ANTHROPIC_API_KEY` | Anthropic API key              | -       |
+| `AI_MODEL_PROVIDER` | AI provider (openai/anthropic) | openai  |
+| `AI_MODEL_NAME`     | AI model name                  | gpt-4   |
+| `MAX_CODE_LENGTH`   | Maximum code length            | 50000   |
+| `ANALYSIS_TIMEOUT`  | Analysis timeout (seconds)     | 30      |
 
 ## Monitoring
 
@@ -250,6 +259,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 For support and questions:
+
 - Create an issue in the repository
 - Check the documentation
 - Review the test cases for usage examples

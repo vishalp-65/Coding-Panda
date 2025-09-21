@@ -75,3 +75,16 @@ async def readiness_check():
 async def liveness_check():
     """Kubernetes liveness probe"""
     return {"status": "alive"}
+
+
+@router.get("/metrics")
+async def metrics():
+    """Service metrics endpoint"""
+    return {
+        "service": "AI Analysis Service",
+        "status": "healthy",
+        "uptime": "running",
+        "requests_processed": 0,
+        "cache_hits": 0,
+        "cache_misses": 0
+    }

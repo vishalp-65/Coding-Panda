@@ -1,5 +1,9 @@
 import Joi from 'joi';
-import { validateRequest, validateQuery, commonSchemas } from '@ai-platform/common';
+import {
+  validateRequest,
+  validateQuery,
+  commonSchemas,
+} from '@ai-platform/common';
 
 // User registration validation
 export const validateRegistration = validateRequest(
@@ -48,7 +52,9 @@ export const validateProfileUpdate = validateRequest(
     linkedinProfile: Joi.string().uri().optional(),
     company: Joi.string().max(100).optional(),
     jobTitle: Joi.string().max(100).optional(),
-    skillLevel: Joi.string().valid('beginner', 'intermediate', 'advanced', 'expert').optional(),
+    skillLevel: Joi.string()
+      .valid('beginner', 'intermediate', 'advanced', 'expert')
+      .optional(),
     programmingLanguages: Joi.array().items(Joi.string()).optional(),
   })
 );
@@ -67,7 +73,9 @@ export const validatePreferencesUpdate = validateRequest(
       socialActivity: Joi.boolean().optional(),
     }).optional(),
     privacySettings: Joi.object({
-      profileVisibility: Joi.string().valid('public', 'private', 'friends').optional(),
+      profileVisibility: Joi.string()
+        .valid('public', 'private', 'friends')
+        .optional(),
       showEmail: Joi.boolean().optional(),
       showRealName: Joi.boolean().optional(),
       showLocation: Joi.boolean().optional(),
@@ -96,8 +104,9 @@ export const validatePagination = validateQuery(commonSchemas.pagination);
 // Role update validation (admin only)
 export const validateRoleUpdate = validateRequest(
   Joi.object({
-    roles: Joi.array().items(
-      Joi.string().valid('admin', 'moderator', 'user', 'premium_user')
-    ).min(1).required(),
+    roles: Joi.array()
+      .items(Joi.string().valid('admin', 'moderator', 'user', 'premium_user'))
+      .min(1)
+      .required(),
   })
 );

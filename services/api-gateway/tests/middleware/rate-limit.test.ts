@@ -5,7 +5,7 @@ import express from 'express';
 const mockRedisClient = {
   call: jest.fn().mockResolvedValue('OK'),
   on: jest.fn(),
-  quit: jest.fn().mockResolvedValue('OK')
+  quit: jest.fn().mockResolvedValue('OK'),
 };
 
 jest.mock('ioredis', () => {
@@ -17,11 +17,14 @@ jest.mock('rate-limit-redis', () => {
   return jest.fn().mockImplementation(() => ({
     incr: jest.fn().mockResolvedValue(1),
     decrement: jest.fn().mockResolvedValue(0),
-    resetKey: jest.fn().mockResolvedValue(undefined)
+    resetKey: jest.fn().mockResolvedValue(undefined),
   }));
 });
 
-import { rateLimitMiddleware, authRateLimitMiddleware } from '../../src/middleware/rate-limit';
+import {
+  rateLimitMiddleware,
+  authRateLimitMiddleware,
+} from '../../src/middleware/rate-limit';
 
 describe('Rate Limit Middleware', () => {
   let app: express.Application;
@@ -36,7 +39,10 @@ describe('Rate Limit Middleware', () => {
     beforeEach(() => {
       app.use((req, res, next) => {
         req.requestId = 'test-request-id';
-        Object.defineProperty(req, 'ip', { value: '127.0.0.1', writable: true });
+        Object.defineProperty(req, 'ip', {
+          value: '127.0.0.1',
+          writable: true,
+        });
         next();
       });
       app.use(rateLimitMiddleware);
@@ -45,9 +51,7 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should allow requests under rate limit', async () => {
-      const response = await request(app)
-        .get('/test')
-        .expect(200);
+      const response = await request(app).get('/test').expect(200);
 
       expect(response.body.message).toBe('success');
       expect(response.headers['ratelimit-limit']).toBeDefined();
@@ -55,9 +59,7 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should skip rate limiting for health checks', async () => {
-      const response = await request(app)
-        .get('/health')
-        .expect(200);
+      const response = await request(app).get('/health').expect(200);
 
       expect(response.body.status).toBe('healthy');
     });
@@ -68,18 +70,14 @@ describe('Rate Limit Middleware', () => {
         next();
       });
 
-      await request(app)
-        .get('/test')
-        .expect(200);
+      await request(app).get('/test').expect(200);
 
       // The actual rate limiting logic is handled by express-rate-limit
       // We're testing that our middleware is properly configured
     });
 
     it('should use IP address as key when not authenticated', async () => {
-      await request(app)
-        .get('/test')
-        .expect(200);
+      await request(app).get('/test').expect(200);
 
       // The actual rate limiting logic is handled by express-rate-limit
       // We're testing that our middleware is properly configured
@@ -90,7 +88,10 @@ describe('Rate Limit Middleware', () => {
     beforeEach(() => {
       app.use((req, res, next) => {
         req.requestId = 'test-request-id';
-        Object.defineProperty(req, 'ip', { value: '127.0.0.1', writable: true });
+        Object.defineProperty(req, 'ip', {
+          value: '127.0.0.1',
+          writable: true,
+        });
         next();
       });
       app.use('/auth', authRateLimitMiddleware);
@@ -120,8 +121,14 @@ describe('Rate Limit Middleware', () => {
   describe('Redis client', () => {
     it('should handle Redis connection errors gracefully', () => {
       // Test that error handlers are set up
-      expect(mockRedisClient.on).toHaveBeenCalledWith('error', expect.any(Function));
-      expect(mockRedisClient.on).toHaveBeenCalledWith('connect', expect.any(Function));
+      expect(mockRedisClient.on).toHaveBeenCalledWith(
+        'error',
+        expect.any(Function)
+      );
+      expect(mockRedisClient.on).toHaveBeenCalledWith(
+        'connect',
+        expect.any(Function)
+      );
     });
   });
 
@@ -135,9 +142,7 @@ describe('Rate Limit Middleware', () => {
       app.use(rateLimitMiddleware);
       app.get('/test', (req, res) => res.json({ success: true }));
 
-      await request(app)
-        .get('/test')
-        .expect(200);
+      await request(app).get('/test').expect(200);
 
       // The key generation is internal to the rate limiter
       // We verify it's configured correctly by testing the middleware works
@@ -152,9 +157,7 @@ describe('Rate Limit Middleware', () => {
       app.use(rateLimitMiddleware);
       app.get('/test', (req, res) => res.json({ success: true }));
 
-      await request(app)
-        .get('/test')
-        .expect(200);
+      await request(app).get('/test').expect(200);
     });
   });
 
@@ -164,12 +167,15 @@ describe('Rate Limit Middleware', () => {
       const mockStore = {
         incr: jest.fn().mockRejectedValue(new Error('Redis connection failed')),
         decrement: jest.fn(),
-        resetKey: jest.fn()
+        resetKey: jest.fn(),
       };
 
       // This would be handled by express-rate-limit internally
       // We're testing that our configuration is correct
-      expect(mockRedisClient.on).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(mockRedisClient.on).toHaveBeenCalledWith(
+        'error',
+        expect.any(Function)
+      );
     });
   });
 });

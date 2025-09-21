@@ -7,8 +7,8 @@ export const corsMiddleware = cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = Array.isArray(config.cors.origin) 
-      ? config.cors.origin 
+    const allowedOrigins = Array.isArray(config.cors.origin)
+      ? config.cors.origin
       : [config.cors.origin];
 
     // Allow all origins in development
@@ -32,8 +32,8 @@ export const corsMiddleware = cors({
     'Accept',
     'Authorization',
     'X-API-Key',
-    'X-Request-ID'
+    'X-Request-ID',
   ],
   exposedHeaders: ['X-Request-ID', 'X-Rate-Limit-Remaining'],
-  maxAge: 86400 // 24 hours
+  maxAge: 86400, // 24 hours
 });

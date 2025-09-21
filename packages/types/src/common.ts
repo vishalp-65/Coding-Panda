@@ -80,7 +80,11 @@ export interface UserAchievement {
 export interface ActivityFeed {
   id: string;
   userId: string;
-  type: 'problem_solved' | 'contest_participated' | 'achievement_unlocked' | 'streak_milestone';
+  type:
+    | 'problem_solved'
+    | 'contest_participated'
+    | 'achievement_unlocked'
+    | 'streak_milestone';
   title: string;
   description: string;
   metadata: Record<string, any>;

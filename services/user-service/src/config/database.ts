@@ -1,5 +1,11 @@
 import { DataSource } from 'typeorm';
-import { User, UserSession, PasswordResetToken, EmailVerificationToken, UserStats } from '../entities';
+import {
+  User,
+  UserSession,
+  PasswordResetToken,
+  EmailVerificationToken,
+  UserStats,
+} from '../entities';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -10,7 +16,13 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME || 'user_service',
   synchronize: process.env.NODE_ENV === 'development',
   logging: process.env.NODE_ENV === 'development',
-  entities: [User, UserSession, PasswordResetToken, EmailVerificationToken, UserStats],
+  entities: [
+    User,
+    UserSession,
+    PasswordResetToken,
+    EmailVerificationToken,
+    UserStats,
+  ],
   migrations: ['src/migrations/*.ts'],
   subscribers: ['src/subscribers/*.ts'],
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,

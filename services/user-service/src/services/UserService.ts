@@ -22,11 +22,16 @@ export class UserService {
     return this.userRepository.findByUsername(username);
   }
 
-  async getAllUsers(options: PaginationOptions): Promise<PaginatedResult<User>> {
+  async getAllUsers(
+    options: PaginationOptions
+  ): Promise<PaginatedResult<User>> {
     return this.userRepository.findAll(options);
   }
 
-  async updateProfile(userId: string, profileData: Partial<UserProfile>): Promise<User | null> {
+  async updateProfile(
+    userId: string,
+    profileData: Partial<UserProfile>
+  ): Promise<User | null> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
@@ -35,7 +40,10 @@ export class UserService {
     return this.userRepository.updateProfile(userId, profileData);
   }
 
-  async updatePreferences(userId: string, preferences: Partial<UserPreferences>): Promise<User | null> {
+  async updatePreferences(
+    userId: string,
+    preferences: Partial<UserPreferences>
+  ): Promise<User | null> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');

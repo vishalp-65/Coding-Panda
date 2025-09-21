@@ -1,7 +1,10 @@
 import request from 'supertest';
 import express from 'express';
 import { problemRoutes } from '../../src/routes/problemRoutes';
-import { connectToDatabase, disconnectFromDatabase } from '../../src/config/database';
+import {
+  connectToDatabase,
+  disconnectFromDatabase,
+} from '../../src/config/database';
 import { ProblemModel } from '../../src/models/Problem';
 import { UserProblemModel } from '../../src/models/UserProblem';
 import { CreateProblemRequest, ProblemDifficulty } from '@ai-platform/types';
@@ -22,7 +25,8 @@ app.use('/api/problems', problemRoutes);
 describe('Problem Service Integration Tests', () => {
   const mockProblemData: CreateProblemRequest = {
     title: 'Two Sum Integration Test',
-    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+    description:
+      'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
     difficulty: 'easy' as ProblemDifficulty,
     tags: ['array', 'hash-table'],
     constraints: {
@@ -31,26 +35,26 @@ describe('Problem Service Integration Tests', () => {
       inputFormat: 'First line contains array, second line contains target',
       outputFormat: 'Return array of two indices',
       sampleInput: '[2,7,11,15]\n9',
-      sampleOutput: '[0,1]'
+      sampleOutput: '[0,1]',
     },
     testCases: [
       {
         input: '[2,7,11,15]\n9',
         expectedOutput: '[0,1]',
         isHidden: false,
-        explanation: 'nums[0] + nums[1] = 2 + 7 = 9'
+        explanation: 'nums[0] + nums[1] = 2 + 7 = 9',
       },
       {
         input: '[3,2,4]\n6',
         expectedOutput: '[1,2]',
-        isHidden: false
+        isHidden: false,
       },
       {
         input: '[3,3]\n6',
         expectedOutput: '[0,1]',
-        isHidden: true
-      }
-    ]
+        isHidden: true,
+      },
+    ],
   };
 
   describe('Complete Problem Workflow', () => {
@@ -66,7 +70,7 @@ describe('Problem Service Integration Tests', () => {
       expect(createResponse.body.success).toBe(true);
       expect(createResponse.body.data.title).toBe(mockProblemData.title);
       expect(createResponse.body.data.slug).toBe('two-sum-integration-test');
-      
+
       problemId = createResponse.body.data.id;
 
       // Retrieve problem by ID
@@ -88,7 +92,7 @@ describe('Problem Service Integration Tests', () => {
       // Update problem
       const updateData = {
         title: 'Two Sum Updated',
-        difficulty: 'medium' as ProblemDifficulty
+        difficulty: 'medium' as ProblemDifficulty,
       };
 
       const updateResponse = await request(app)
@@ -118,9 +122,7 @@ describe('Problem Service Integration Tests', () => {
       expect(deleteResponse.body.success).toBe(true);
 
       // Verify deletion
-      await request(app)
-        .get(`/api/problems/${problemId}`)
-        .expect(404);
+      await request(app).get(`/api/problems/${problemId}`).expect(404);
     });
   });
 
@@ -131,7 +133,7 @@ describe('Problem Service Integration Tests', () => {
       const createResponse = await request(app)
         .post('/api/problems')
         .send(mockProblemData);
-      
+
       problemId = createResponse.body.data.id;
     });
 
@@ -144,7 +146,7 @@ describe('Problem Service Integration Tests', () => {
       // Verify bookmark in database
       const userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: problemId
+        problemId: problemId,
       });
 
       expect(userProblem).toBeDefined();
@@ -182,7 +184,7 @@ describe('Problem Service Integration Tests', () => {
       // Verify rating in database
       const userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: problemId
+        problemId: problemId,
       });
 
       expect(userProblem!.rating).toBe(4);
@@ -237,26 +239,24 @@ describe('Problem Service Integration Tests', () => {
           ...mockProblemData,
           title: 'Easy Array Problem',
           difficulty: 'easy' as ProblemDifficulty,
-          tags: ['array', 'sorting']
+          tags: ['array', 'sorting'],
         },
         {
           ...mockProblemData,
           title: 'Medium String Problem',
           difficulty: 'medium' as ProblemDifficulty,
-          tags: ['string', 'dynamic-programming']
+          tags: ['string', 'dynamic-programming'],
         },
         {
           ...mockProblemData,
           title: 'Hard Graph Problem',
           difficulty: 'hard' as ProblemDifficulty,
-          tags: ['graph', 'dfs']
-        }
+          tags: ['graph', 'dfs'],
+        },
       ];
 
       for (const problem of problems) {
-        await request(app)
-          .post('/api/problems')
-          .send(problem);
+        await request(app).post('/api/problems').send(problem);
       }
     });
 
@@ -267,8 +267,8 @@ describe('Problem Service Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.length).toBeGreaterThan(0);
-      
-      const hasArrayProblem = response.body.data.some((p: any) => 
+
+      const hasArrayProblem = response.body.data.some((p: any) =>
         p.title.toLowerCase().includes('array')
       );
       expect(hasArrayProblem).toBe(true);
@@ -281,9 +281,9 @@ describe('Problem Service Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.length).toBeGreaterThan(0);
-      
-      const allEasyOrMedium = response.body.data.every((p: any) => 
-        p.difficulty === 'easy' || p.difficulty === 'medium'
+
+      const allEasyOrMedium = response.body.data.every(
+        (p: any) => p.difficulty === 'easy' || p.difficulty === 'medium'
       );
       expect(allEasyOrMedium).toBe(true);
     });
@@ -295,8 +295,8 @@ describe('Problem Service Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.length).toBeGreaterThan(0);
-      
-      const allHaveArrayTag = response.body.data.every((p: any) => 
+
+      const allHaveArrayTag = response.body.data.every((p: any) =>
         p.tags.includes('array')
       );
       expect(allHaveArrayTag).toBe(true);
@@ -308,7 +308,7 @@ describe('Problem Service Integration Tests', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      
+
       const titles = response.body.data.map((p: any) => p.title);
       const sortedTitles = [...titles].sort();
       expect(titles).toEqual(sortedTitles);
@@ -334,7 +334,7 @@ describe('Problem Service Integration Tests', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
       expect(response.body.data.length).toBeGreaterThan(0);
-      
+
       // Verify structure
       response.body.data.forEach((tag: any) => {
         expect(tag).toHaveProperty('tag');
@@ -379,16 +379,14 @@ describe('Problem Service Integration Tests', () => {
         .expect(404);
 
       // Try to delete non-existent problem
-      await request(app)
-        .delete(`/api/problems/${nonExistentId}`)
-        .expect(404);
+      await request(app).delete(`/api/problems/${nonExistentId}`).expect(404);
     });
 
     it('should validate rating values', async () => {
       const createResponse = await request(app)
         .post('/api/problems')
         .send(mockProblemData);
-      
+
       const problemId = createResponse.body.data.id;
 
       // Invalid rating (too low)
@@ -417,7 +415,7 @@ describe('Problem Service Integration Tests', () => {
       const createResponse = await request(app)
         .post('/api/problems')
         .send(mockProblemData);
-      
+
       const problemId = createResponse.body.data.id;
 
       // Create user interactions
@@ -433,19 +431,17 @@ describe('Problem Service Integration Tests', () => {
       // Verify user problem record exists
       let userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: problemId
+        problemId: problemId,
       });
       expect(userProblem).toBeDefined();
 
       // Delete problem
-      await request(app)
-        .delete(`/api/problems/${problemId}`)
-        .expect(200);
+      await request(app).delete(`/api/problems/${problemId}`).expect(200);
 
       // Verify user problem record is also deleted
       userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: problemId
+        problemId: problemId,
       });
       expect(userProblem).toBeNull();
     });
@@ -455,14 +451,20 @@ describe('Problem Service Integration Tests', () => {
       const createResponse = await request(app)
         .post('/api/problems')
         .send(mockProblemData);
-      
+
       const problemId = createResponse.body.data.id;
 
       // Simulate concurrent ratings from different users
       const ratingPromises = [
-        request(app).post(`/api/problems/${problemId}/rate`).send({ rating: 5 }),
-        request(app).post(`/api/problems/${problemId}/rate`).send({ rating: 3 }),
-        request(app).post(`/api/problems/${problemId}/rate`).send({ rating: 4 })
+        request(app)
+          .post(`/api/problems/${problemId}/rate`)
+          .send({ rating: 5 }),
+        request(app)
+          .post(`/api/problems/${problemId}/rate`)
+          .send({ rating: 3 }),
+        request(app)
+          .post(`/api/problems/${problemId}/rate`)
+          .send({ rating: 4 }),
       ];
 
       // Note: These will all be from the same user due to our mock middleware

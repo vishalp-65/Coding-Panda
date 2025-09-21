@@ -16,8 +16,9 @@ describe('AuthService', () => {
   beforeEach(() => {
     authService = new AuthService();
     mockUserRepository = new UserRepository() as jest.Mocked<UserRepository>;
-    mockSessionRepository = new UserSessionRepository() as jest.Mocked<UserSessionRepository>;
-    
+    mockSessionRepository =
+      new UserSessionRepository() as jest.Mocked<UserSessionRepository>;
+
     // Replace the repositories in the service
     (authService as any).userRepository = mockUserRepository;
     (authService as any).sessionRepository = mockSessionRepository;
@@ -114,7 +115,9 @@ describe('AuthService', () => {
         }),
       };
 
-      mockUserRepository.findByEmailOrUsername.mockResolvedValue(mockUser as any);
+      mockUserRepository.findByEmailOrUsername.mockResolvedValue(
+        mockUser as any
+      );
       jest.spyOn(AuthUtils, 'comparePassword').mockResolvedValue(true);
       mockSessionRepository.create.mockResolvedValue({} as any);
 
@@ -134,7 +137,9 @@ describe('AuthService', () => {
 
       mockUserRepository.findByEmailOrUsername.mockResolvedValue(null);
 
-      await expect(authService.login(credentials)).rejects.toThrow('Invalid credentials');
+      await expect(authService.login(credentials)).rejects.toThrow(
+        'Invalid credentials'
+      );
     });
 
     it('should throw error for wrong password', async () => {
@@ -147,10 +152,14 @@ describe('AuthService', () => {
         passwordHash: 'hashedpassword',
       };
 
-      mockUserRepository.findByEmailOrUsername.mockResolvedValue(mockUser as any);
+      mockUserRepository.findByEmailOrUsername.mockResolvedValue(
+        mockUser as any
+      );
       jest.spyOn(AuthUtils, 'comparePassword').mockResolvedValue(false);
 
-      await expect(authService.login(credentials)).rejects.toThrow('Invalid credentials');
+      await expect(authService.login(credentials)).rejects.toThrow(
+        'Invalid credentials'
+      );
     });
   });
 
@@ -183,7 +192,9 @@ describe('AuthService', () => {
 
       expect(result).toBeDefined();
       expect(result.accessToken).toBeDefined();
-      expect(mockSessionRepository.updateLastUsed).toHaveBeenCalledWith('session-id');
+      expect(mockSessionRepository.updateLastUsed).toHaveBeenCalledWith(
+        'session-id'
+      );
     });
 
     it('should throw error for invalid refresh token', async () => {
@@ -226,7 +237,9 @@ describe('AuthService', () => {
         throw new Error('Invalid token');
       });
 
-      await expect(authService.validateToken(token)).rejects.toThrow('Invalid token');
+      await expect(authService.validateToken(token)).rejects.toThrow(
+        'Invalid token'
+      );
     });
   });
 });

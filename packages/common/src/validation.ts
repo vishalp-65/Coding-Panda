@@ -2,7 +2,10 @@ import Joi from 'joi';
 
 export const commonSchemas = {
   email: Joi.string().email().required(),
-  password: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/).required(),
+  password: Joi.string()
+    .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .required(),
   uuid: Joi.string().uuid().required(),
   pagination: Joi.object({
     page: Joi.number().integer().min(1).default(1),

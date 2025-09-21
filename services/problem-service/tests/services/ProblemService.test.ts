@@ -12,7 +12,8 @@ describe('ProblemService', () => {
 
   const mockProblemData: CreateProblemRequest = {
     title: 'Two Sum',
-    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+    description:
+      'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
     difficulty: 'easy' as ProblemDifficulty,
     tags: ['array', 'hash-table'],
     constraints: {
@@ -21,26 +22,26 @@ describe('ProblemService', () => {
       inputFormat: 'First line contains array, second line contains target',
       outputFormat: 'Return array of two indices',
       sampleInput: '[2,7,11,15]\n9',
-      sampleOutput: '[0,1]'
+      sampleOutput: '[0,1]',
     },
     testCases: [
       {
         input: '[2,7,11,15]\n9',
         expectedOutput: '[0,1]',
         isHidden: false,
-        explanation: 'nums[0] + nums[1] = 2 + 7 = 9'
+        explanation: 'nums[0] + nums[1] = 2 + 7 = 9',
       },
       {
         input: '[3,2,4]\n6',
         expectedOutput: '[1,2]',
-        isHidden: false
+        isHidden: false,
       },
       {
         input: '[3,3]\n6',
         expectedOutput: '[0,1]',
-        isHidden: true
-      }
-    ]
+        isHidden: true,
+      },
+    ],
   };
 
   describe('createProblem', () => {
@@ -71,7 +72,7 @@ describe('ProblemService', () => {
 
       const similarProblem = {
         ...mockProblemData,
-        title: 'Two Sum II'
+        title: 'Two Sum II',
       };
 
       const problem = await problemService.createProblem(similarProblem);
@@ -81,8 +82,11 @@ describe('ProblemService', () => {
 
   describe('getProblemById', () => {
     it('should return problem by valid ID', async () => {
-      const createdProblem = await problemService.createProblem(mockProblemData);
-      const foundProblem = await problemService.getProblemById(createdProblem.id);
+      const createdProblem =
+        await problemService.createProblem(mockProblemData);
+      const foundProblem = await problemService.getProblemById(
+        createdProblem.id
+      );
 
       expect(foundProblem).toBeDefined();
       expect(foundProblem!.id).toBe(createdProblem.id);
@@ -95,14 +99,17 @@ describe('ProblemService', () => {
     });
 
     it('should return null for non-existent ID', async () => {
-      const problem = await problemService.getProblemById('507f1f77bcf86cd799439011');
+      const problem = await problemService.getProblemById(
+        '507f1f77bcf86cd799439011'
+      );
       expect(problem).toBeNull();
     });
   });
 
   describe('getProblemBySlug', () => {
     it('should return problem by slug', async () => {
-      const createdProblem = await problemService.createProblem(mockProblemData);
+      const createdProblem =
+        await problemService.createProblem(mockProblemData);
       const foundProblem = await problemService.getProblemBySlug('two-sum');
 
       expect(foundProblem).toBeDefined();
@@ -118,14 +125,18 @@ describe('ProblemService', () => {
 
   describe('updateProblem', () => {
     it('should update problem successfully', async () => {
-      const createdProblem = await problemService.createProblem(mockProblemData);
-      
+      const createdProblem =
+        await problemService.createProblem(mockProblemData);
+
       const updates = {
         title: 'Two Sum Updated',
-        difficulty: 'medium' as ProblemDifficulty
+        difficulty: 'medium' as ProblemDifficulty,
       };
 
-      const updatedProblem = await problemService.updateProblem(createdProblem.id, updates);
+      const updatedProblem = await problemService.updateProblem(
+        createdProblem.id,
+        updates
+      );
 
       expect(updatedProblem).toBeDefined();
       expect(updatedProblem!.title).toBe('Two Sum Updated');
@@ -134,9 +145,12 @@ describe('ProblemService', () => {
     });
 
     it('should return null for non-existent problem', async () => {
-      const result = await problemService.updateProblem('507f1f77bcf86cd799439011', {
-        title: 'Updated Title'
-      });
+      const result = await problemService.updateProblem(
+        '507f1f77bcf86cd799439011',
+        {
+          title: 'Updated Title',
+        }
+      );
 
       expect(result).toBeNull();
     });
@@ -145,7 +159,7 @@ describe('ProblemService', () => {
       const problem1 = await problemService.createProblem(mockProblemData);
       const problem2 = await problemService.createProblem({
         ...mockProblemData,
-        title: 'Three Sum'
+        title: 'Three Sum',
       });
 
       await expect(
@@ -156,30 +170,36 @@ describe('ProblemService', () => {
 
   describe('deleteProblem', () => {
     it('should delete problem successfully', async () => {
-      const createdProblem = await problemService.createProblem(mockProblemData);
+      const createdProblem =
+        await problemService.createProblem(mockProblemData);
       const deleted = await problemService.deleteProblem(createdProblem.id);
 
       expect(deleted).toBe(true);
 
-      const foundProblem = await problemService.getProblemById(createdProblem.id);
+      const foundProblem = await problemService.getProblemById(
+        createdProblem.id
+      );
       expect(foundProblem).toBeNull();
     });
 
     it('should return false for non-existent problem', async () => {
-      const deleted = await problemService.deleteProblem('507f1f77bcf86cd799439011');
+      const deleted = await problemService.deleteProblem(
+        '507f1f77bcf86cd799439011'
+      );
       expect(deleted).toBe(false);
     });
 
     it('should delete related user problem records', async () => {
-      const createdProblem = await problemService.createProblem(mockProblemData);
-      
+      const createdProblem =
+        await problemService.createProblem(mockProblemData);
+
       // Create user problem record
       await problemService.bookmarkProblem('user123', createdProblem.id);
-      
+
       // Verify user problem exists
       const userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: createdProblem.id
+        problemId: createdProblem.id,
       });
       expect(userProblem).toBeDefined();
 
@@ -189,7 +209,7 @@ describe('ProblemService', () => {
       // Verify user problem is also deleted
       const deletedUserProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: createdProblem.id
+        problemId: createdProblem.id,
       });
       expect(deletedUserProblem).toBeNull();
     });
@@ -203,13 +223,13 @@ describe('ProblemService', () => {
         ...mockProblemData,
         title: 'Three Sum',
         difficulty: 'medium' as ProblemDifficulty,
-        tags: ['array', 'two-pointers']
+        tags: ['array', 'two-pointers'],
       });
       await problemService.createProblem({
         ...mockProblemData,
         title: 'Valid Parentheses',
         difficulty: 'easy' as ProblemDifficulty,
-        tags: ['string', 'stack']
+        tags: ['string', 'stack'],
       });
     });
 
@@ -224,7 +244,7 @@ describe('ProblemService', () => {
 
     it('should filter by difficulty', async () => {
       const result = await problemService.searchProblems({
-        difficulty: ['easy']
+        difficulty: ['easy'],
       });
 
       expect(result.data).toHaveLength(2);
@@ -233,7 +253,7 @@ describe('ProblemService', () => {
 
     it('should filter by tags', async () => {
       const result = await problemService.searchProblems({
-        tags: ['array']
+        tags: ['array'],
       });
 
       expect(result.data).toHaveLength(2);
@@ -243,7 +263,7 @@ describe('ProblemService', () => {
     it('should sort by title ascending', async () => {
       const result = await problemService.searchProblems({
         sortBy: 'title',
-        sortOrder: 'asc'
+        sortOrder: 'asc',
       });
 
       expect(result.data[0].title).toBe('Three Sum');
@@ -254,7 +274,7 @@ describe('ProblemService', () => {
     it('should paginate results', async () => {
       const result = await problemService.searchProblems({
         page: 1,
-        limit: 2
+        limit: 2,
       });
 
       expect(result.data).toHaveLength(2);
@@ -272,7 +292,7 @@ describe('ProblemService', () => {
 
       expect(problem).toBeDefined();
       expect(problem!.testCases).toHaveLength(3);
-      
+
       const hiddenTestCase = problem!.testCases.find(tc => tc.isHidden);
       expect(hiddenTestCase).toBeDefined();
       expect(hiddenTestCase!.input).toBeUndefined();
@@ -287,12 +307,12 @@ describe('ProblemService', () => {
       await problemService.createProblem({
         ...mockProblemData,
         title: 'Three Sum',
-        tags: ['array', 'two-pointers']
+        tags: ['array', 'two-pointers'],
       });
       await problemService.createProblem({
         ...mockProblemData,
         title: 'Valid Parentheses',
-        tags: ['string', 'stack']
+        tags: ['string', 'stack'],
       });
     });
 
@@ -300,7 +320,7 @@ describe('ProblemService', () => {
       const tags = await problemService.getPopularTags();
 
       expect(tags).toHaveLength(5);
-      
+
       const arrayTag = tags.find(t => t.tag === 'array');
       expect(arrayTag).toBeDefined();
       expect(arrayTag!.count).toBe(2);
@@ -365,12 +385,12 @@ describe('ProblemService', () => {
   describe('bookmarkProblem', () => {
     it('should bookmark a problem', async () => {
       const problem = await problemService.createProblem(mockProblemData);
-      
+
       await problemService.bookmarkProblem('user123', problem.id);
 
       const userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: problem.id
+        problemId: problem.id,
       });
 
       expect(userProblem).toBeDefined();
@@ -380,20 +400,20 @@ describe('ProblemService', () => {
 
     it('should update existing user problem record', async () => {
       const problem = await problemService.createProblem(mockProblemData);
-      
+
       // Create initial record
       await UserProblemModel.create({
         userId: 'user123',
         problemId: problem.id,
         status: 'attempted',
-        attempts: 1
+        attempts: 1,
       });
 
       await problemService.bookmarkProblem('user123', problem.id);
 
       const userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: problem.id
+        problemId: problem.id,
       });
 
       expect(userProblem!.status).toBe('bookmarked');
@@ -405,13 +425,13 @@ describe('ProblemService', () => {
   describe('unbookmarkProblem', () => {
     it('should remove bookmark-only record', async () => {
       const problem = await problemService.createProblem(mockProblemData);
-      
+
       await problemService.bookmarkProblem('user123', problem.id);
       await problemService.unbookmarkProblem('user123', problem.id);
 
       const userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: problem.id
+        problemId: problem.id,
       });
 
       expect(userProblem).toBeNull();
@@ -419,21 +439,21 @@ describe('ProblemService', () => {
 
     it('should remove bookmark from existing record', async () => {
       const problem = await problemService.createProblem(mockProblemData);
-      
+
       // Create record with multiple statuses
       await UserProblemModel.create({
         userId: 'user123',
         problemId: problem.id,
         status: 'solved',
         bookmarkedAt: new Date(),
-        solvedAt: new Date()
+        solvedAt: new Date(),
       });
 
       await problemService.unbookmarkProblem('user123', problem.id);
 
       const userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: problem.id
+        problemId: problem.id,
       });
 
       expect(userProblem).toBeDefined();
@@ -446,12 +466,12 @@ describe('ProblemService', () => {
   describe('rateProblem', () => {
     it('should rate a problem for the first time', async () => {
       const problem = await problemService.createProblem(mockProblemData);
-      
+
       await problemService.rateProblem('user123', problem.id, 4);
 
       const userProblem = await UserProblemModel.findOne({
         userId: 'user123',
-        problemId: problem.id
+        problemId: problem.id,
       });
 
       expect(userProblem!.rating).toBe(4);
@@ -463,7 +483,7 @@ describe('ProblemService', () => {
 
     it('should update existing rating', async () => {
       const problem = await problemService.createProblem(mockProblemData);
-      
+
       await problemService.rateProblem('user123', problem.id, 3);
       await problemService.rateProblem('user123', problem.id, 5);
 
@@ -474,7 +494,7 @@ describe('ProblemService', () => {
 
     it('should calculate average rating correctly', async () => {
       const problem = await problemService.createProblem(mockProblemData);
-      
+
       await problemService.rateProblem('user1', problem.id, 5);
       await problemService.rateProblem('user2', problem.id, 3);
       await problemService.rateProblem('user3', problem.id, 4);
@@ -486,7 +506,7 @@ describe('ProblemService', () => {
 
     it('should throw error for invalid rating', async () => {
       const problem = await problemService.createProblem(mockProblemData);
-      
+
       await expect(
         problemService.rateProblem('user123', problem.id, 0)
       ).rejects.toThrow('Rating must be between 1 and 5');
@@ -502,16 +522,16 @@ describe('ProblemService', () => {
       const problem1 = await problemService.createProblem(mockProblemData);
       const problem2 = await problemService.createProblem({
         ...mockProblemData,
-        title: 'Three Sum'
+        title: 'Three Sum',
       });
       const problem3 = await problemService.createProblem({
         ...mockProblemData,
-        title: 'Valid Parentheses'
+        title: 'Valid Parentheses',
       });
 
       await problemService.bookmarkProblem('user123', problem1.id);
       await problemService.bookmarkProblem('user123', problem2.id);
-      
+
       // Different user
       await problemService.bookmarkProblem('user456', problem3.id);
     });
@@ -521,7 +541,7 @@ describe('ProblemService', () => {
 
       expect(result.data).toHaveLength(2);
       expect(result.pagination.total).toBe(2);
-      
+
       const titles = result.data.map(p => p.title);
       expect(titles).toContain('Two Sum');
       expect(titles).toContain('Three Sum');
@@ -529,7 +549,11 @@ describe('ProblemService', () => {
     });
 
     it('should paginate bookmarked problems', async () => {
-      const result = await problemService.getUserBookmarkedProblems('user123', 1, 1);
+      const result = await problemService.getUserBookmarkedProblems(
+        'user123',
+        1,
+        1
+      );
 
       expect(result.data).toHaveLength(1);
       expect(result.pagination.page).toBe(1);

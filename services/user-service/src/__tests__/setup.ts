@@ -1,5 +1,11 @@
 import { DataSource } from 'typeorm';
-import { User, UserSession, PasswordResetToken, EmailVerificationToken, UserStats } from '../entities';
+import {
+  User,
+  UserSession,
+  PasswordResetToken,
+  EmailVerificationToken,
+  UserStats,
+} from '../entities';
 
 // Test database configuration
 export const TestDataSource = new DataSource({
@@ -11,7 +17,13 @@ export const TestDataSource = new DataSource({
   database: process.env.TEST_DB_NAME || 'user_service_test',
   synchronize: true,
   dropSchema: true,
-  entities: [User, UserSession, PasswordResetToken, EmailVerificationToken, UserStats],
+  entities: [
+    User,
+    UserSession,
+    PasswordResetToken,
+    EmailVerificationToken,
+    UserStats,
+  ],
   logging: false,
 });
 

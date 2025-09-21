@@ -9,10 +9,13 @@ export class UserController {
     this.userService = new UserService();
   }
 
-  getProfile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  getProfile = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
     try {
       const user = await this.userService.getUserById(req.user!.id);
-      
+
       if (!user) {
         res.status(404).json({
           error: {
@@ -44,7 +47,7 @@ export class UserController {
     try {
       const { id } = req.params;
       const user = await this.userService.getUserById(id);
-      
+
       if (!user) {
         res.status(404).json({
           error: {
@@ -76,7 +79,7 @@ export class UserController {
     try {
       const { username } = req.params;
       const user = await this.userService.getUserByUsername(username);
-      
+
       if (!user) {
         res.status(404).json({
           error: {
@@ -134,10 +137,16 @@ export class UserController {
     }
   };
 
-  updateProfile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  updateProfile = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
     try {
-      const updatedUser = await this.userService.updateProfile(req.user!.id, req.body);
-      
+      const updatedUser = await this.userService.updateProfile(
+        req.user!.id,
+        req.body
+      );
+
       if (!updatedUser) {
         res.status(404).json({
           error: {
@@ -155,8 +164,9 @@ export class UserController {
         message: 'Profile updated successfully',
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update profile';
-      
+      const message =
+        error instanceof Error ? error.message : 'Failed to update profile';
+
       res.status(400).json({
         error: {
           code: 'PROFILE_UPDATE_FAILED',
@@ -167,10 +177,16 @@ export class UserController {
     }
   };
 
-  updatePreferences = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  updatePreferences = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
     try {
-      const updatedUser = await this.userService.updatePreferences(req.user!.id, req.body);
-      
+      const updatedUser = await this.userService.updatePreferences(
+        req.user!.id,
+        req.body
+      );
+
       if (!updatedUser) {
         res.status(404).json({
           error: {
@@ -188,8 +204,9 @@ export class UserController {
         message: 'Preferences updated successfully',
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update preferences';
-      
+      const message =
+        error instanceof Error ? error.message : 'Failed to update preferences';
+
       res.status(400).json({
         error: {
           code: 'PREFERENCES_UPDATE_FAILED',
@@ -200,10 +217,13 @@ export class UserController {
     }
   };
 
-  deleteAccount = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  deleteAccount = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
     try {
       const deleted = await this.userService.deleteUser(req.user!.id);
-      
+
       if (!deleted) {
         res.status(404).json({
           error: {
@@ -220,8 +240,9 @@ export class UserController {
         message: 'Account deleted successfully',
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete account';
-      
+      const message =
+        error instanceof Error ? error.message : 'Failed to delete account';
+
       res.status(400).json({
         error: {
           code: 'ACCOUNT_DELETE_FAILED',
@@ -232,11 +253,16 @@ export class UserController {
     }
   };
 
-  checkEmailAvailability = async (req: Request, res: Response): Promise<void> => {
+  checkEmailAvailability = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
       const { email } = req.query;
-      const available = await this.userService.checkEmailAvailability(email as string);
-      
+      const available = await this.userService.checkEmailAvailability(
+        email as string
+      );
+
       res.json({
         success: true,
         data: { available },
@@ -253,15 +279,22 @@ export class UserController {
     }
   };
 
-  checkUsernameAvailability = async (req: Request, res: Response): Promise<void> => {
+  checkUsernameAvailability = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
       const { username } = req.query;
-      const available = await this.userService.checkUsernameAvailability(username as string);
-      
+      const available = await this.userService.checkUsernameAvailability(
+        username as string
+      );
+
       res.json({
         success: true,
         data: { available },
-        message: available ? 'Username is available' : 'Username is already taken',
+        message: available
+          ? 'Username is available'
+          : 'Username is already taken',
       });
     } catch (error) {
       res.status(500).json({
@@ -278,9 +311,9 @@ export class UserController {
     try {
       const { id } = req.params;
       const { roles } = req.body;
-      
+
       const updatedUser = await this.userService.updateUserRoles(id, roles);
-      
+
       if (!updatedUser) {
         res.status(404).json({
           error: {
@@ -298,8 +331,9 @@ export class UserController {
         message: 'User roles updated successfully',
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update user roles';
-      
+      const message =
+        error instanceof Error ? error.message : 'Failed to update user roles';
+
       res.status(400).json({
         error: {
           code: 'ROLE_UPDATE_FAILED',

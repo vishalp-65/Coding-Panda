@@ -18,7 +18,7 @@ export const loggingMiddleware = (
   next: NextFunction
 ) => {
   // Generate unique request ID
-  req.requestId = req.headers['x-request-id'] as string || uuidv4();
+  req.requestId = (req.headers['x-request-id'] as string) || uuidv4();
   req.startTime = Date.now();
 
   // Add request ID to response headers
@@ -34,22 +34,22 @@ export const loggingMiddleware = (
     headers: {
       authorization: req.headers.authorization ? '[REDACTED]' : undefined,
       'content-type': req.headers['content-type'],
-      'x-forwarded-for': req.headers['x-forwarded-for']
-    }
+      'x-forwarded-for': req.headers['x-forwarded-for'],
+    },
   });
 
   // Capture response details
   const originalSend = res.send;
-  res.send = function(body) {
+  res.send = function (body) {
     const duration = Date.now() - req.startTime;
-    
+
     logger.info('Outgoing response', {
       requestId: req.requestId,
       method: req.method,
       url: req.url,
       statusCode: res.statusCode,
       duration,
-      contentLength: res.get('content-length') || (body ? body.length : 0)
+      contentLength: res.get('content-length') || (body ? body.length : 0),
     });
 
     return originalSend.call(this, body);
@@ -58,14 +58,14 @@ export const loggingMiddleware = (
   // Handle response finish event for cases where send() isn't called
   res.on('finish', () => {
     const duration = Date.now() - req.startTime;
-    
+
     if (!res.headersSent) {
       logger.info('Response finished', {
         requestId: req.requestId,
         method: req.method,
         url: req.url,
         statusCode: res.statusCode,
-        duration
+        duration,
       });
     }
   });

@@ -18,7 +18,9 @@ export class EmailVerificationTokenRepository {
     return this.repository.save(token);
   }
 
-  async findValidToken(tokenHash: string): Promise<EmailVerificationToken | null> {
+  async findValidToken(
+    tokenHash: string
+  ): Promise<EmailVerificationToken | null> {
     return this.repository.findOne({
       where: {
         tokenHash,
@@ -43,7 +45,7 @@ export class EmailVerificationTokenRepository {
       .delete()
       .where('expires_at < :now', { now: new Date() })
       .execute();
-    
+
     return result.affected || 0;
   }
 

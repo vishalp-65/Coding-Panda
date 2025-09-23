@@ -18,6 +18,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql
+      - ./scripts/init-contest-db.sql:/docker-entrypoint-initdb.d/02-init-contest-db.sql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d ai_platform']
       interval: 5s

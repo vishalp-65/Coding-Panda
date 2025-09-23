@@ -1,4 +1,33 @@
 import '@testing-library/jest-dom'
+
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+    observe() { }
+    unobserve() { }
+    disconnect() { }
+}
+
+// Mock MediaDevices
+Object.defineProperty(navigator, 'mediaDevices', {
+    writable: true,
+    value: {
+        getUserMedia: vi.fn().mockResolvedValue({
+            getTracks: () => [
+                { stop: vi.fn(), enabled: true },
+                { stop: vi.fn(), enabled: true }
+            ]
+        })
+    }
+})
+
+// Mock MediaRecorder
+global.MediaRecorder = class MediaRecorder {
+    constructor() { }
+    start() { }
+    stop() { }
+    pause() { }
+    resume() { }
+} as any
 import { vi } from 'vitest'
 
 // Mock environment variables

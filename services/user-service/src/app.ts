@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { apiRoutes } from './routes';
 import { config } from './config/env';
+import { HTTP_STATUS } from '@ai-platform/common';
 
 export const createApp = (): express.Application => {
   const app = express();
@@ -28,7 +29,7 @@ export const createApp = (): express.Application => {
     standardHeaders: true,
     legacyHeaders: false,
   });
-  app.use(limiter);
+  // app.use(limiter);
 
   // Body parsing middleware
   app.use(express.json({ limit: '10mb' }));
@@ -52,7 +53,7 @@ export const createApp = (): express.Application => {
 
   // 404 handler
   app.use('*', (req, res) => {
-    res.status(404).json({
+    res.status(HTTP_STATUS.NOT_FOUND).json({
       error: {
         code: 'NOT_FOUND',
         message: 'Endpoint not found',
@@ -71,7 +72,7 @@ export const createApp = (): express.Application => {
     ) => {
       console.error('Unhandled error:', err);
 
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         error: {
           code: 'INTERNAL_SERVER_ERROR',
           message:

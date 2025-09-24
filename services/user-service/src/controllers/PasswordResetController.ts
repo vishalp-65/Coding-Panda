@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PasswordResetService } from '../services';
+import { HTTP_STATUS } from '@ai-platform/common';
 
 export class PasswordResetController {
   private passwordResetService: PasswordResetService;
@@ -20,7 +21,7 @@ export class PasswordResetController {
           'If an account with that email exists, a password reset link has been sent.',
       });
     } catch (error) {
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         error: {
           code: 'PASSWORD_RESET_REQUEST_FAILED',
           message: 'Failed to process password reset request',
@@ -43,7 +44,7 @@ export class PasswordResetController {
       const message =
         error instanceof Error ? error.message : 'Password reset failed';
 
-      res.status(400).json({
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
         error: {
           code: 'PASSWORD_RESET_FAILED',
           message,
@@ -66,7 +67,7 @@ export class PasswordResetController {
         message: isValid ? 'Token is valid' : 'Token is invalid or expired',
       });
     } catch (error) {
-      res.status(400).json({
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
         error: {
           code: 'TOKEN_VALIDATION_FAILED',
           message: 'Failed to validate reset token',

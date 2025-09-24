@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '@ai-platform/common';
+import { HTTP_STATUS, logger } from '@ai-platform/common';
 
 // Custom error class
 export class APIError extends Error {
@@ -9,7 +9,7 @@ export class APIError extends Error {
 
   constructor(
     message: string,
-    statusCode: number = 500,
+    statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR,
     code: string = 'INTERNAL_ERROR',
     details?: any
   ) {
@@ -27,7 +27,7 @@ export class APIError extends Error {
 // Validation error class
 export class ValidationError extends APIError {
   constructor(message: string, details?: any) {
-    super(message, 400, 'VALIDATION_ERROR', details);
+    super(message, HTTP_STATUS.BAD_REQUEST, 'VALIDATION_ERROR', details);
     this.name = 'ValidationError';
   }
 }
@@ -35,7 +35,7 @@ export class ValidationError extends APIError {
 // Authentication error class
 export class AuthenticationError extends APIError {
   constructor(message: string = 'Authentication required') {
-    super(message, 401, 'AUTHENTICATION_ERROR');
+    super(message, HTTP_STATUS.UNAUTHORIZED, 'AUTHENTICATION_ERROR');
     this.name = 'AuthenticationError';
   }
 }
@@ -43,7 +43,7 @@ export class AuthenticationError extends APIError {
 // Authorization error class
 export class AuthorizationError extends APIError {
   constructor(message: string = 'Insufficient permissions') {
-    super(message, 403, 'AUTHORIZATION_ERROR');
+    super(message, HTTP_STATUS.FORBIDDEN, 'AUTHORIZATION_ERROR');
     this.name = 'AuthorizationError';
   }
 }
@@ -51,7 +51,7 @@ export class AuthorizationError extends APIError {
 // Not found error class
 export class NotFoundError extends APIError {
   constructor(message: string = 'Resource not found') {
-    super(message, 404, 'NOT_FOUND');
+    super(message, HTTP_STATUS.NOT_FOUND, 'NOT_FOUND');
     this.name = 'NotFoundError';
   }
 }
@@ -59,7 +59,7 @@ export class NotFoundError extends APIError {
 // Rate limit error class
 export class RateLimitError extends APIError {
   constructor(message: string = 'Rate limit exceeded') {
-    super(message, 429, 'RATE_LIMIT_EXCEEDED');
+    super(message, HTTP_STATUS.TOO_MANY_REQUESTS, 'RATE_LIMIT_EXCEEDED');
     this.name = 'RateLimitError';
   }
 }
@@ -67,7 +67,7 @@ export class RateLimitError extends APIError {
 // Service unavailable error class
 export class ServiceUnavailableError extends APIError {
   constructor(message: string = 'Service temporarily unavailable') {
-    super(message, 503, 'SERVICE_UNAVAILABLE');
+    super(message, HTTP_STATUS.SERVICE_UNAVAILABLE, 'SERVICE_UNAVAILABLE');
     this.name = 'ServiceUnavailableError';
   }
 }

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthUtils } from '@ai-platform/common';
+import { AuthUtils, HTTP_STATUS } from '@ai-platform/common';
 import { UserService } from '../services';
 
 export interface AuthenticatedRequest extends Request {
@@ -18,7 +18,7 @@ export const authenticate = async (
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
         error: {
           code: 'UNAUTHORIZED',
           message: 'Access token required',
@@ -36,7 +36,7 @@ export const authenticate = async (
     const user = await userService.getUserById(payload.userId);
 
     if (!user) {
-      res.status(401).json({
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
         error: {
           code: 'UNAUTHORIZED',
           message: 'User not found',
@@ -54,7 +54,7 @@ export const authenticate = async (
 
     next();
   } catch (error) {
-    res.status(401).json({
+    res.status(HTTP_STATUS.UNAUTHORIZED).json({
       error: {
         code: 'UNAUTHORIZED',
         message: 'Invalid or expired token',
@@ -71,7 +71,7 @@ export const authorize = (requiredRoles: string[]) => {
     next: NextFunction
   ): void => {
     if (!req.user) {
-      res.status(401).json({
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
         error: {
           code: 'UNAUTHORIZED',
           message: 'Authentication required',
@@ -86,7 +86,7 @@ export const authorize = (requiredRoles: string[]) => {
     );
 
     if (!hasRequiredRole) {
-      res.status(403).json({
+      res.status(HTTP_STATUS.FORBIDDEN).json({
         error: {
           code: 'FORBIDDEN',
           message: 'Insufficient permissions',

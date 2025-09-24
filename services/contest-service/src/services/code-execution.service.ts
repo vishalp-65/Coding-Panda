@@ -97,7 +97,7 @@ export class CodeExecutionService {
       testCasesPassed = 0;
     } else if (!hasBasicStructure) {
       // No proper structure
-      status = SubmissionStatus.COMPILE_ERROR;
+      status = SubmissionStatus.COMPILATION_ERROR;
       score = 0;
       testCasesPassed = 0;
     } else {
@@ -115,7 +115,7 @@ export class CodeExecutionService {
         testCasesPassed = Math.floor(totalTestCases * (score / 100));
       } else if (random < 0.9) {
         // 10% chance of time limit
-        status = SubmissionStatus.TIME_LIMIT;
+        status = SubmissionStatus.TIME_LIMIT_EXCEEDED;
         score = Math.floor(Math.random() * 50); // 0-50 points
         testCasesPassed = Math.floor(totalTestCases * 0.3);
       } else {
@@ -138,7 +138,7 @@ export class CodeExecutionService {
           ? 'All test cases passed!'
           : 'Some test cases failed',
       error:
-        status === SubmissionStatus.COMPILE_ERROR
+        status === SubmissionStatus.COMPILATION_ERROR
           ? 'Compilation failed'
           : status === SubmissionStatus.RUNTIME_ERROR
             ? 'Runtime error occurred'

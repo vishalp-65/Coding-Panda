@@ -32,7 +32,7 @@ describe('ContestService', () => {
     problemIds: ['problem1', 'problem2'],
     rules: {},
     scoringType: ScoringType.STANDARD,
-    status: ContestStatus.DRAFT,
+    status: ContestStatus.UPCOMING,
     isPublic: true,
     createdBy: 'user123',
     prizePool: 1000,
@@ -268,7 +268,7 @@ describe('ContestService', () => {
 
     it('should throw error if contest is active', async () => {
       // Arrange
-      const activeContest = { ...mockContest, status: ContestStatus.ACTIVE };
+      const activeContest = { ...mockContest, status: ContestStatus.ONGOING };
       mockContestRepository.getContestById.mockResolvedValue(activeContest);
 
       // Act & Assert

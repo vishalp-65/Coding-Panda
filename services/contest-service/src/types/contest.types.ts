@@ -108,27 +108,29 @@ export interface LeaderboardEntry {
 
 // Enums
 export enum ContestStatus {
-  DRAFT = 'draft',
   UPCOMING = 'upcoming',
-  ACTIVE = 'active',
+  REGISTRATION_OPEN = 'registration_open',
+  ONGOING = 'ongoing',
   ENDED = 'ended',
   CANCELLED = 'cancelled',
 }
 
 export enum ParticipantStatus {
   REGISTERED = 'registered',
-  PARTICIPATING = 'participating',
+  ACTIVE = 'active',
   DISQUALIFIED = 'disqualified',
+  WITHDRAWN = 'withdrawn',
 }
 
 export enum SubmissionStatus {
   PENDING = 'pending',
+  JUDGING = 'judging',
   ACCEPTED = 'accepted',
   WRONG_ANSWER = 'wrong_answer',
-  TIME_LIMIT = 'time_limit',
-  MEMORY_LIMIT = 'memory_limit',
+  TIME_LIMIT_EXCEEDED = 'time_limit_exceeded',
+  MEMORY_LIMIT_EXCEEDED = 'memory_limit_exceeded',
   RUNTIME_ERROR = 'runtime_error',
-  COMPILE_ERROR = 'compile_error',
+  COMPILATION_ERROR = 'compilation_error',
 }
 
 export enum ScoringType {

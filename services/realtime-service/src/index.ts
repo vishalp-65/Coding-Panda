@@ -19,7 +19,7 @@ const server = createServer(app);
 const corsOptions = {
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true,
-  methods: ['GET', 'POST']
+  methods: ['GET', 'POST'],
 };
 
 // Middleware
@@ -29,10 +29,10 @@ app.use(express.json());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     service: 'realtime-service',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -41,7 +41,7 @@ const io = new Server(server, {
   cors: corsOptions,
   transports: ['websocket', 'polling'],
   pingTimeout: 60000,
-  pingInterval: 25000
+  pingInterval: 25000,
 });
 
 // Authentication middleware for Socket.IO
@@ -62,7 +62,7 @@ async function startServer() {
     socketHandlers.setupHandlers();
 
     // Start server
-    const port = process.env.PORT || 3006;
+    const port = process.env.PORT || 3007;
     server.listen(port, () => {
       console.log(`Real-time service running on port ${port}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -71,15 +71,15 @@ async function startServer() {
     // Graceful shutdown
     process.on('SIGTERM', async () => {
       console.log('SIGTERM received, shutting down gracefully');
-      
+
       // Close Socket.IO server
       io.close(() => {
         console.log('Socket.IO server closed');
       });
-      
+
       // Close Redis connections
       await redisManager.disconnect();
-      
+
       // Close HTTP server
       server.close(() => {
         console.log('HTTP server closed');
@@ -89,19 +89,18 @@ async function startServer() {
 
     process.on('SIGINT', async () => {
       console.log('SIGINT received, shutting down gracefully');
-      
+
       io.close(() => {
         console.log('Socket.IO server closed');
       });
-      
+
       await redisManager.disconnect();
-      
+
       server.close(() => {
         console.log('HTTP server closed');
         process.exit(0);
       });
     });
-
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
@@ -109,7 +108,7 @@ async function startServer() {
 }
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
   process.exit(1);
 });

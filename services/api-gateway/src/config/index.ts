@@ -37,7 +37,7 @@ const configSchema = z.object({
       timeout: z.coerce.number().default(5000),
     }),
     executionService: z.object({
-      url: z.string().default('http://localhost:8000'),
+      url: z.string().default('http://localhost:3004'),
       timeout: z.coerce.number().default(30000),
     }),
     aiService: z.object({

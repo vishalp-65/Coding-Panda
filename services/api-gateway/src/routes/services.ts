@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createProxyMiddleware, Options } from 'http-proxy-middleware';
 import { config } from '../config';
-import { logger } from '@ai-platform/common';
+import { HTTP_STATUS, logger } from '@ai-platform/common';
 import { ServiceUnavailableError } from '../middleware/error-handler';
 import { optionalAuthMiddleware, requireRole } from '../middleware/auth';
 
@@ -37,7 +37,7 @@ const serviceConfig = {
     target: config.services.contestService.url,
     timeout: config.services.contestService.timeout,
     auth: 'optional', // Contest viewing is public, participation requires auth
-    pathRewrite: { '^/api/contests': '' },
+    pathRewrite: { '^/api/v1': '' },
   },
 };
 
@@ -84,7 +84,7 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
       // Prevent the error from crashing the process
       try {
         if (!res.headersSent) {
-          res.status(503).json({
+          res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
             error: {
               code: 'SERVICE_UNAVAILABLE',
               message: 'Service temporarily unavailable',

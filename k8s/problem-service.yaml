@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: problem-service
+  namespace: ai-coding-platform
+  labels:
+    app: problem-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: problem-service
+  template:
+    metadata:
+      labels:
+        app: problem-service
+        version: v1
+    spec:
+      containers:
+      - name: problem-service
+        image: ai-coding-platform/problem-service:latest
+        ports:
+        - containerPort: 3002
+        env:
+        - name: PORT
+          value: "3002"
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - configMapRef:
+            name: database-config
+        - secretRef:
+            name: app-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "400m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: problem-service
+  namespace: ai-coding-platform
+  labels:
+    app: problem-service
+spec:
+  selector:
+    app: problem-service
+  ports:
+  - port: 80
+    targetPort: 3002
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: problem-service-hpa
+  namespace: ai-coding-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: problem-service
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

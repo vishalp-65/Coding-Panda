@@ -1,0 +1,279 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: ai-coding-platform
+  labels:
+    app: postgres-backup
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: postgres-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: postgres-backup
+            image: postgres:15-alpine
+            env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: POSTGRES_DB
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: S3_BUCKET
+              value: "ai-coding-platform-backups"
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              BACKUP_FILE="postgres_backup_${TIMESTAMP}.sql.gz"
+              
+              echo "Starting PostgreSQL backup at $(date)"
+              
+              # Create backup
+              pg_dump -h $POSTGRES_HOST -U postgres -d $POSTGRES_DB --no-password | gzip > /tmp/$BACKUP_FILE
+              
+              # Install AWS CLI
+              apk add --no-cache aws-cli
+              
+              # Upload to S3
+              aws s3 cp /tmp/$BACKUP_FILE s3://$S3_BUCKET/postgres/daily/$BACKUP_FILE
+              
+              # Create weekly backup on Sundays
+              if [ $(date +%u) -eq 7 ]; then
+                aws s3 cp /tmp/$BACKUP_FILE s3://$S3_BUCKET/postgres/weekly/postgres_backup_weekly_${TIMESTAMP}.sql.gz
+              fi
+              
+              # Create monthly backup on 1st of month
+              if [ $(date +%d) -eq 01 ]; then
+                aws s3 cp /tmp/$BACKUP_FILE s3://$S3_BUCKET/postgres/monthly/postgres_backup_monthly_${TIMESTAMP}.sql.gz
+              fi
+              
+              echo "PostgreSQL backup completed successfully"
+              
+              # Cleanup old daily backups (keep 7 days)
+              aws s3 ls s3://$S3_BUCKET/postgres/daily/ | head -n -7 | awk '{print $4}' | xargs -I {} aws s3 rm s3://$S3_BUCKET/postgres/daily/{}
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "200m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongodb-backup
+  namespace: ai-coding-platform
+  labels:
+    app: mongodb-backup
+spec:
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: mongodb-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: mongodb-backup
+            image: mongo:6
+            env:
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGODB_PASSWORD
+            - name: MONGODB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: MONGODB_HOST
+            - name: MONGODB_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: MONGODB_DB
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: S3_BUCKET
+              value: "ai-coding-platform-backups"
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              BACKUP_FILE="mongodb_backup_${TIMESTAMP}.gz"
+              
+              echo "Starting MongoDB backup at $(date)"
+              
+              # Create backup
+              mongodump --host $MONGODB_HOST --username admin --password $MONGODB_PASSWORD --authenticationDatabase admin --db $MONGODB_DB --gzip --archive=/tmp/$BACKUP_FILE
+              
+              # Install AWS CLI
+              apt-get update && apt-get install -y awscli
+              
+              # Upload to S3
+              aws s3 cp /tmp/$BACKUP_FILE s3://$S3_BUCKET/mongodb/daily/$BACKUP_FILE
+              
+              # Create weekly backup on Sundays
+              if [ $(date +%u) -eq 7 ]; then
+                aws s3 cp /tmp/$BACKUP_FILE s3://$S3_BUCKET/mongodb/weekly/mongodb_backup_weekly_${TIMESTAMP}.gz
+              fi
+              
+              # Create monthly backup on 1st of month
+              if [ $(date +%d) -eq 01 ]; then
+                aws s3 cp /tmp/$BACKUP_FILE s3://$S3_BUCKET/mongodb/monthly/mongodb_backup_monthly_${TIMESTAMP}.gz
+              fi
+              
+              echo "MongoDB backup completed successfully"
+              
+              # Cleanup old daily backups (keep 7 days)
+              aws s3 ls s3://$S3_BUCKET/mongodb/daily/ | head -n -7 | awk '{print $4}' | xargs -I {} aws s3 rm s3://$S3_BUCKET/mongodb/daily/{}
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "200m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-backup
+  namespace: ai-coding-platform
+  labels:
+    app: redis-backup
+spec:
+  schedule: "0 4 * * *"  # Daily at 4 AM
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: redis-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: redis-backup
+            image: redis:7-alpine
+            env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: REDIS_PASSWORD
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: REDIS_HOST
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: S3_BUCKET
+              value: "ai-coding-platform-backups"
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              BACKUP_FILE="redis_backup_${TIMESTAMP}.rdb"
+              
+              echo "Starting Redis backup at $(date)"
+              
+              # Create backup using BGSAVE
+              redis-cli -h $REDIS_HOST -a $REDIS_PASSWORD BGSAVE
+              
+              # Wait for backup to complete
+              while [ $(redis-cli -h $REDIS_HOST -a $REDIS_PASSWORD LASTSAVE) -eq $(redis-cli -h $REDIS_HOST -a $REDIS_PASSWORD LASTSAVE) ]; do
+                sleep 1
+              done
+              
+              # Copy RDB file
+              redis-cli -h $REDIS_HOST -a $REDIS_PASSWORD --rdb /tmp/$BACKUP_FILE
+              
+              # Install AWS CLI
+              apk add --no-cache aws-cli
+              
+              # Upload to S3
+              aws s3 cp /tmp/$BACKUP_FILE s3://$S3_BUCKET/redis/daily/$BACKUP_FILE
+              
+              echo "Redis backup completed successfully"
+              
+              # Cleanup old daily backups (keep 7 days)
+              aws s3 ls s3://$S3_BUCKET/redis/daily/ | head -n -7 | awk '{print $4}' | xargs -I {} aws s3 rm s3://$S3_BUCKET/redis/daily/{}
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "300m"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backup-secrets
+  namespace: ai-coding-platform
+type: Opaque
+data:
+  # Base64 encoded AWS credentials for backup storage
+  AWS_ACCESS_KEY_ID: <base64-encoded-aws-access-key>
+  AWS_SECRET_ACCESS_KEY: <base64-encoded-aws-secret-key>

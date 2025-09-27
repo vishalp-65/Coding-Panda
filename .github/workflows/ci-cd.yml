@@ -1,0 +1,289 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ai-coding-platform
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api-gateway, user-service, problem-service, code-execution-service, ai-analysis-service]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      if: matrix.service != 'code-execution-service' && matrix.service != 'ai-analysis-service'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Setup Python
+      if: matrix.service == 'code-execution-service' || matrix.service == 'ai-analysis-service'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Node.js dependencies
+      if: matrix.service != 'code-execution-service' && matrix.service != 'ai-analysis-service'
+      run: |
+        cd services/${{ matrix.service }}
+        npm ci
+
+    - name: Install Python dependencies
+      if: matrix.service == 'code-execution-service' || matrix.service == 'ai-analysis-service'
+      run: |
+        cd services/${{ matrix.service }}
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+
+    - name: Run linting (Node.js)
+      if: matrix.service != 'code-execution-service' && matrix.service != 'ai-analysis-service'
+      run: |
+        cd services/${{ matrix.service }}
+        npm run lint
+
+    - name: Run linting (Python)
+      if: matrix.service == 'code-execution-service' || matrix.service == 'ai-analysis-service'
+      run: |
+        cd services/${{ matrix.service }}
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        black --check .
+
+    - name: Run unit tests (Node.js)
+      if: matrix.service != 'code-execution-service' && matrix.service != 'ai-analysis-service'
+      run: |
+        cd services/${{ matrix.service }}
+        npm run test:unit
+
+    - name: Run unit tests (Python)
+      if: matrix.service == 'code-execution-service' || matrix.service == 'ai-analysis-service'
+      run: |
+        cd services/${{ matrix.service }}
+        pytest tests/unit --cov=src --cov-report=xml
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./services/${{ matrix.service }}/coverage.xml
+        flags: ${{ matrix.service }}
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: test
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      mongodb:
+        image: mongo:6
+        ports:
+          - 27017:27017
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run integration tests
+      run: npm run test:integration
+      env:
+        DATABASE_URL: postgresql://postgres:test@localhost:5432/test
+        MONGODB_URL: mongodb://localhost:27017/test
+        REDIS_URL: redis://localhost:6379
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs: [test, integration-test, security-scan]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    strategy:
+      matrix:
+        service: [api-gateway, user-service, problem-service, code-execution-service, ai-analysis-service, frontend]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/${{ matrix.service }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy to staging
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/secrets.yaml
+        kubectl apply -f k8s/databases.yaml
+        kubectl apply -f k8s/
+        kubectl rollout restart deployment -n ai-coding-platform-staging
+
+    - name: Verify deployment
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl wait --for=condition=available --timeout=300s deployment --all -n ai-coding-platform-staging
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Run database migrations
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl apply -f k8s/migration-job.yaml
+        kubectl wait --for=condition=complete --timeout=300s job/db-migration -n ai-coding-platform
+
+    - name: Blue-Green Deployment
+      run: |
+        export KUBECONFIG=kubeconfig
+        ./scripts/blue-green-deploy.sh
+
+    - name: Verify deployment
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl wait --for=condition=available --timeout=300s deployment --all -n ai-coding-platform
+
+    - name: Run smoke tests
+      run: |
+        ./scripts/smoke-tests.sh https://api.coding-platform.com
+
+  notify:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+
+    steps:
+    - name: Notify Slack
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

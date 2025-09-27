@@ -10,13 +10,17 @@ from ..core.ai_client import get_ai_client
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("/health")
 async def health_check():
     """Basic health check"""
     return {
-        "status": "healthy",
-        "service": "AI Analysis Service",
-        "version": "1.0.0"
+        "success": True,
+        "data": {
+            "service": "AI Analysis Service",
+            "status": "healthy",
+            "version": "1.0.0",
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
     }
 
 

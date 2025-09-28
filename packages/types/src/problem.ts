@@ -1,3 +1,10 @@
+export interface InitialCode {
+  javascript?: string;
+  python?: string;
+  java?: string;
+  cpp?: string;
+}
+
 export interface Problem {
   id: string;
   title: string;
@@ -8,6 +15,7 @@ export interface Problem {
   constraints: ProblemConstraints;
   testCases: TestCase[];
   editorial?: Editorial;
+  initialCode?: InitialCode;
   statistics: ProblemStatistics;
   createdAt: Date;
   updatedAt: Date;

@@ -3,7 +3,7 @@ import cron from 'node-cron';
 import { BehaviorAnalysisService } from './services/BehaviorAnalysisService';
 import { DashboardService } from './services/DashboardService';
 
-const PORT = process.env.PORT || 3007;
+const PORT = process.env.PORT || 3005;
 
 const behaviorAnalysisService = new BehaviorAnalysisService();
 const dashboardService = new DashboardService();

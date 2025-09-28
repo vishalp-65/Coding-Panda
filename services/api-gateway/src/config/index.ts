@@ -48,6 +48,18 @@ const configSchema = z.object({
       url: z.string().default('http://localhost:3003'),
       timeout: z.coerce.number().default(5000),
     }),
+    analyticsService: z.object({
+      url: z.string().default('http://localhost:3005'),
+      timeout: z.coerce.number().default(5000),
+    }),
+    notificationService: z.object({
+      url: z.string().default('http://localhost:3007'),
+      timeout: z.coerce.number().default(5000),
+    }),
+    realtimeService: z.object({
+      url: z.string().default('http://localhost:3008'),
+      timeout: z.coerce.number().default(5000),
+    }),
   }),
 
   // CORS configuration
@@ -102,6 +114,18 @@ const env = {
     contestService: {
       url: process.env.CONTEST_SERVICE_URL,
       timeout: process.env.CONTEST_SERVICE_TIMEOUT,
+    },
+    analyticsService: {
+      url: process.env.ANALYTICS_SERVICE_URL,
+      timeout: process.env.ANALYTICS_SERVICE_TIMEOUT,
+    },
+    notificationService: {
+      url: process.env.NOTIFICATION_SERVICE_URL,
+      timeout: process.env.NOTIFICATION_SERVICE_TIMEOUT,
+    },
+    realtimeService: {
+      url: process.env.REALTIME_SERVICE_URL,
+      timeout: process.env.REALTIME_SERVICE_TIMEOUT,
     },
   },
 

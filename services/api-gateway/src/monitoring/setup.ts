@@ -54,16 +54,16 @@ const DEFAULT_CONFIG = {
 
 const EXTERNAL_SERVICES: ExternalService[] = [
   { name: 'user-service', url: 'http://localhost:3006/api/v1/health' },
-  { name: 'problem-service', url: 'http://localhost:3002/health' },
-  { name: 'notification-service', url: 'http://localhost:3005/health' },
+  { name: 'problem-service', url: 'http://localhost:3002/api/v1/health' },
+  { name: 'notification-service', url: 'http://localhost:3005/api/v1/health' },
   {
     name: 'code-execution-service',
     url: 'http://localhost:3004/api/v1/health',
   },
-  { name: 'ai-analysis-service', url: 'http://localhost:8001/metrics' },
-  { name: 'realtime-service', url: 'http://localhost:3007/health' },
-  { name: 'contest-service', url: 'http://localhost:3003/health' },
-  { name: 'analytics-service', url: 'http://localhost:3008/health' },
+  { name: 'ai-analysis-service', url: 'http://localhost:8001/api/v1/metrics' },
+  { name: 'realtime-service', url: 'http://localhost:3007/api/v1/health' },
+  { name: 'contest-service', url: 'http://localhost:3003/api/v1/health' },
+  { name: 'analytics-service', url: 'http://localhost:3008/api/v1/health' },
 ];
 
 // ============================================================================

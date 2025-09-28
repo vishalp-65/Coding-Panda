@@ -68,12 +68,15 @@ export const createApp = (): express.Application => {
   app.use('/api/v1', createContestRoutes(contestController));
 
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.get('/api/v1/health', (req, res) => {
     res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      service: 'contest-service',
-      version: '1.0.0',
+      success: true,
+      data: {
+        service: 'Contest Service',
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+      },
     });
   });
 

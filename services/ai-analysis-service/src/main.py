@@ -76,6 +76,10 @@ app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["analysis"])
 app.include_router(learning.router, prefix="/api/v1/learning", tags=["learning"])
 
+# Import and include interview router
+from .routers import interview
+app.include_router(interview.router, prefix="/api/v1/interview", tags=["interview"])
+
 # Add metrics endpoint at root level
 @app.get("/metrics")
 async def metrics():

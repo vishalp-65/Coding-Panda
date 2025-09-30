@@ -1,8 +1,8 @@
 import { Server } from 'http';
-import { logger } from '@ai-platform/common';
+import { logger, TracingManager } from '@ai-platform/common';
 import { redisClient } from '../middleware/rate-limit';
 
-export function gracefulShutdown(server: Server): void {
+export function gracefulShutdown(server: Server, tracingManager?: TracingManager): void {
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}, starting graceful shutdown`);
 
@@ -17,6 +17,12 @@ export function gracefulShutdown(server: Server): void {
         // Close Redis connection
         await redisClient.quit();
         logger.info('Redis connection closed');
+
+        // Shutdown tracing
+        if (tracingManager) {
+          await tracingManager.shutdown();
+          logger.info('Tracing shutdown completed');
+        }
 
         // Add other cleanup tasks here
         // - Close database connections

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { logger } from '@ai-platform/common';
+import { logger, SecurityAuditLogger, AuthUtils } from '@ai-platform/common';
 import { redisClient } from './rate-limit';
 
 // Extend Request interface to include user
@@ -73,24 +73,63 @@ export const authMiddleware = async (
     const token = extractToken(req);
 
     if (!token) {
+      SecurityAuditLogger.logAuthenticationAttempt(req, false, undefined, 'Missing token');
       return res.status(401).json({
         error: {
           code: 'MISSING_TOKEN',
           message: 'Authentication token is required',
+          timestamp: new Date().toISOString(),
         },
       });
+    }
+
+    // Check for API key authentication as alternative
+    const apiKey = req.headers['x-api-key'] as string;
+    if (apiKey && !token) {
+      if (!AuthUtils.validateApiKey(apiKey)) {
+        SecurityAuditLogger.logAuthenticationAttempt(req, false, undefined, 'Invalid API key format');
+        return res.status(401).json({
+          error: {
+            code: 'INVALID_API_KEY',
+            message: 'Invalid API key format',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+      // TODO: Validate API key against database
+      // For now, we'll continue with JWT validation
     }
 
     const payload = await verifyToken(token);
 
     if (!payload) {
+      SecurityAuditLogger.logAuthenticationAttempt(req, false, undefined, 'Invalid or expired token');
       return res.status(401).json({
         error: {
           code: 'INVALID_TOKEN',
           message: 'Invalid or expired authentication token',
+          timestamp: new Date().toISOString(),
         },
       });
     }
+
+    // Check for session validity
+    const sessionKey = `session:${payload.id}:${token.substring(0, 10)}`;
+    const sessionValid = await redisClient.get(sessionKey);
+
+    if (!sessionValid) {
+      SecurityAuditLogger.logAuthenticationAttempt(req, false, payload.id, 'Session expired or invalid');
+      return res.status(401).json({
+        error: {
+          code: 'SESSION_EXPIRED',
+          message: 'Session has expired, please login again',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    // Update session activity
+    await redisClient.setex(sessionKey, 3600, 'active'); // Extend session for 1 hour
 
     // Attach user info to request
     req.user = {
@@ -100,6 +139,8 @@ export const authMiddleware = async (
       roles: payload.roles,
     };
 
+    SecurityAuditLogger.logAuthenticationAttempt(req, true, payload.id);
+
     logger.debug('User authenticated', {
       requestId: req.requestId,
       userId: payload.id,
@@ -108,6 +149,12 @@ export const authMiddleware = async (
 
     next();
   } catch (error) {
+    SecurityAuditLogger.logSecurityEvent(
+      'AUTHENTICATION_ERROR',
+      'HIGH',
+      { error: (error as Error).message, ip: req.ip, path: req.path }
+    );
+
     logger.error('Authentication middleware error', {
       requestId: req.requestId,
       error,
@@ -117,6 +164,7 @@ export const authMiddleware = async (
       error: {
         code: 'AUTH_ERROR',
         message: 'Authentication service error',
+        timestamp: new Date().toISOString(),
       },
     });
   }
@@ -162,10 +210,12 @@ export const requireRole = (requiredRoles: string | string[]) => {
 
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
+      SecurityAuditLogger.logAuthorizationAttempt(req, false, 'unknown', req.path, req.method);
       return res.status(401).json({
         error: {
           code: 'AUTHENTICATION_REQUIRED',
           message: 'Authentication is required for this endpoint',
+          timestamp: new Date().toISOString(),
         },
       });
     }
@@ -173,6 +223,8 @@ export const requireRole = (requiredRoles: string | string[]) => {
     const hasRequiredRole = roles.some(role => req.user!.roles.includes(role));
 
     if (!hasRequiredRole) {
+      SecurityAuditLogger.logAuthorizationAttempt(req, false, req.user.id, req.path, req.method);
+
       logger.warn('Insufficient permissions', {
         requestId: req.requestId,
         userId: req.user.id,
@@ -184,10 +236,12 @@ export const requireRole = (requiredRoles: string | string[]) => {
         error: {
           code: 'INSUFFICIENT_PERMISSIONS',
           message: 'Insufficient permissions to access this resource',
+          timestamp: new Date().toISOString(),
         },
       });
     }
 
+    SecurityAuditLogger.logAuthorizationAttempt(req, true, req.user.id, req.path, req.method);
     next();
   };
 };

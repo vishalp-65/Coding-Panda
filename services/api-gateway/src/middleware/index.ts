@@ -1,6 +1,6 @@
 import express, { Express } from 'express';
 import { corsMiddleware } from './cors';
-import { securityMiddleware, additionalSecurityMiddleware } from './security';
+import { securityMiddleware, additionalSecurityMiddleware, enhancedSecurityMiddleware } from './security';
 import { loggingMiddleware } from './logging';
 import { rateLimitMiddleware } from './rate-limit';
 import { authMiddleware } from './auth';
@@ -15,6 +15,11 @@ export async function setupMiddleware(
     // Security headers (should be first)
     app.use(securityMiddleware);
     app.use(additionalSecurityMiddleware);
+
+    // Enhanced security middleware
+    enhancedSecurityMiddleware.forEach(middleware => {
+      app.use(middleware);
+    });
 
     // CORS
     app.use(corsMiddleware);

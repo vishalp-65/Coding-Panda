@@ -1,0 +1,3504 @@
+openapi: 3.0.3
+info:
+  title: AI-Powered Coding Platform API
+  description: |
+    Comprehensive API documentation for the AI-powered coding platform.
+    This platform provides code execution, problem management, user authentication,
+    AI analysis, contest management, analytics, and real-time features.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@codingplatform.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+  - url: https://api.codingplatform.com/api/v1
+    description: Production server
+
+# Security Schemes
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authenticated requests
+    
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for service-to-service communication
+    
+    OptionalAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Optional JWT token for enhanced features
+
+  # Common Parameters
+  parameters:
+    UserIdParam:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Unique identifier for the user
+    
+    PaginationLimit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items to return
+    
+    PaginationOffset:    
+  name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Number of items to skip
+    
+  SortParam:
+      name: sort
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+      description: Sort order
+
+  # Common Response Schemas
+  schemas:
+    # Base Response Types
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        message:
+          type: string
+      required:
+        - success
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+          required:
+            - code
+            - message
+      required:
+        - success
+        - error
+
+    PaginatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items: {}
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+            limit:
+              type: integer
+            offset:
+              type: integer
+            hasNext:
+              type: boolean
+            hasPrev:
+              type: boolean
+          required:
+            - total
+            - limit
+            - offset
+            - hasNext
+            - hasPrev
+      required:
+        - success
+        - data
+        - pagination
+
+    # Health Check Schema
+    HealthCheck:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            service:
+              type: string
+            status:
+              type: string
+              enum: [healthy, unhealthy, degraded]
+            version:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+            uptime:
+              type: string
+          required:
+            - service
+            - status
+            - version
+      required:
+        - success
+        - data
+
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        avatar:
+          type: string
+          format: uri
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [user, admin, moderator, contest_creator]
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+        isVerified:
+          type: boolean
+      required:
+        - id
+        - username
+        - email
+        - roles
+        - createdAt
+        - isActive
+        - isVerified
+
+    UserPreferences:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, auto]
+          default: auto
+        language:
+          type: string
+          default: en
+        notifications:
+          $ref: '#/components/schemas/NotificationPreferences'
+        privacy:
+          $ref: '#/components/schemas/PrivacySettings'
+      required:
+        - theme
+        - language
+
+    NotificationPreferences:
+      type: object
+      properties:
+        email:
+          type: boolean
+          default: true
+        push:
+          type: boolean
+          default: true
+        inApp:
+          type: boolean
+          default: true
+        contests:
+          type: boolean
+          default: true
+        achievements:
+          type: boolean
+          default: true
+        systemUpdates:
+          type: boolean
+          default: false
+      required:
+        - email
+        - push
+        - inApp
+
+    PrivacySettings:
+      type: object
+      properties:
+        profileVisibility:
+          type: string
+          enum: [public, private, friends]
+          default: public
+        showEmail:
+          type: boolean
+          default: false
+        showRealName:
+          type: boolean
+          default: false
+        allowAnalytics:
+          type: boolean
+          default: true
+      required:
+        - profileVisibility
+        - showEmail
+        - showRealName
+        - allowAnalytics
+
+    # Authentication Schemas
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+      required:
+        - email
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+          pattern: '^[a-zA-Z0-9_-]+$'
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        firstName:
+          type: string
+          maxLength: 50
+        lastName:
+          type: string
+          maxLength: 50
+        acceptTerms:
+          type: boolean
+          enum: [true]
+      required:
+        - username
+        - email
+        - password
+        - acceptTerms
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            tokens:
+              type: object
+              properties:
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
+                expiresIn:
+                  type: integer
+                  description: Token expiration time in seconds
+              required:
+                - accessToken
+                - refreshToken
+                - expiresIn
+          required:
+            - user
+            - tokens
+      required:
+        - success
+        - data
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+      required:
+        - refreshToken
+
+    # Problem Schemas
+    Problem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        constraints:
+          type: string
+        examples:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemExample'
+        testCases:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestCase'
+        timeLimit:
+          type: integer
+          description: Time limit in milliseconds
+        memoryLimit:
+          type: integer
+          description: Memory limit in MB
+        authorId:
+          type: string
+          format: uuid
+        statistics:
+          $ref: '#/components/schemas/ProblemStatistics'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+      required:
+        - id
+        - title
+        - description
+        - difficulty
+        - category
+        - examples
+        - testCases
+        - timeLimit
+        - memoryLimit
+        - authorId
+        - createdAt
+        - isActive
+
+    ProblemExample:
+      type: object
+      properties:
+        input:
+          type: string
+        output:
+          type: string
+        explanation:
+          type: string
+      required:
+        - input
+        - output
+
+    TestCase:
+      type: object
+      properties:
+        id:
+          type: string
+        input:
+          type: string
+        expectedOutput:
+          type: string
+        isHidden:
+          type: boolean
+          default: false
+        weight:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 1
+      required:
+        - id
+        - input
+        - expectedOutput
+
+    ProblemStatistics:
+      type: object
+      properties:
+        totalSubmissions:
+          type: integer
+          minimum: 0
+        acceptedSubmissions:
+          type: integer
+          minimum: 0
+        acceptanceRate:
+          type: number
+          minimum: 0
+          maximum: 1
+        averageRating:
+          type: number
+          minimum: 1
+          maximum: 5
+        totalRatings:
+          type: integer
+          minimum: 0
+      required:
+        - totalSubmissions
+        - acceptedSubmissions
+        - acceptanceRate
+
+    CreateProblemRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        constraints:
+          type: string
+        examples:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemExample'
+        testCases:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestCase'
+        timeLimit:
+          type: integer
+          minimum: 1000
+          maximum: 30000
+        memoryLimit:
+          type: integer
+          minimum: 64
+          maximum: 512
+      required:
+        - title
+        - description
+        - difficulty
+        - category
+        - examples
+        - testCases
+        - timeLimit
+        - memoryLimit
+
+    # Code Execution Schemas
+    ExecutionRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 50000
+        language:
+          type: string
+          enum: [python, javascript, java, cpp, go, rust]
+        testCases:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestCase'
+        timeLimit:
+          type: integer
+          minimum: 1000
+          maximum: 30000
+          default: 5000
+        memoryLimit:
+          type: integer
+          minimum: 64
+          maximum: 512
+          default: 128
+      required:
+        - code
+        - language
+        - testCases
+
+    ExecutionResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestCaseResult'
+        overallStatus:
+          type: string
+          enum: [accepted, wrong_answer, time_limit_exceeded, memory_limit_exceeded, runtime_error, compilation_error]
+        executionTime:
+          type: integer
+          description: Total execution time in milliseconds
+        memoryUsed:
+          type: integer
+          description: Memory used in MB
+        compilationOutput:
+          type: string
+        error:
+          type: string
+      required:
+        - success
+        - results
+        - overallStatus
+
+    TestCaseResult:
+      type: object
+      properties:
+        testCaseId:
+          type: string
+        status:
+          type: string
+          enum: [passed, failed, timeout, error]
+        actualOutput:
+          type: string
+        expectedOutput:
+          type: string
+        executionTime:
+          type: integer
+        memoryUsed:
+          type: integer
+        error:
+          type: string
+      required:
+        - testCaseId
+        - status
+
+    # Contest Schemas
+    Contest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          description: Duration in minutes
+        problems:
+          type: array
+          items:
+            type: string
+            format: uuid
+        participants:
+          type: array
+          items:
+            type: string
+            format: uuid
+        maxParticipants:
+          type: integer
+          minimum: 1
+        registrationDeadline:
+          type: string
+          format: date-time
+        isPublic:
+          type: boolean
+        creatorId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [upcoming, active, completed, cancelled]
+        rules:
+          type: string
+        prizes:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - startTime
+        - endTime
+        - duration
+        - problems
+        - creatorId
+        - status
+        - createdAt
+
+    CreateContestRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          minimum: 30
+          maximum: 1440
+        problems:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+        maxParticipants:
+          type: integer
+          minimum: 1
+        registrationDeadline:
+          type: string
+          format: date-time
+        isPublic:
+          type: boolean
+          default: true
+        rules:
+          type: string
+        prizes:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - startTime
+        - duration
+        - problems
+
+    ContestLeaderboard:
+      type: object
+      properties:
+        contestId:
+          type: string
+          format: uuid
+        rankings:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+        lastUpdated:
+          type: string
+          format: date-time
+      required:
+        - contestId
+        - rankings
+        - lastUpdated
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+        score:
+          type: integer
+          minimum: 0
+        solvedProblems:
+          type: integer
+          minimum: 0
+        totalTime:
+          type: integer
+          description: Total time in minutes
+        submissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContestSubmission'
+      required:
+        - rank
+        - userId
+        - username
+        - score
+        - solvedProblems
+        - totalTime
+
+    ContestSubmission:
+      type: object
+      properties:
+        problemId:
+          type: string
+          format: uuid
+        submissionTime:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [accepted, wrong_answer, time_limit_exceeded, memory_limit_exceeded, runtime_error, compilation_error]
+        score:
+          type: integer
+          minimum: 0
+        attempts:
+          type: integer
+          minimum: 1
+      required:
+        - problemId
+        - submissionTime
+        - status
+        - score
+        - attempts
+
+    # AI Analysis Schemas
+    AnalysisRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 50000
+        language:
+          type: string
+          enum: [python, javascript, java, cpp, go, rust, typescript, c, csharp]
+        analysisTypes:
+          type: array
+          items:
+            type: string
+            enum: [quality, security, performance, style, complexity, bugs]
+          default: [quality, security, performance]
+        context:
+          type: object
+          properties:
+            problemId:
+              type: string
+              format: uuid
+            userId:
+              type: string
+              format: uuid
+            sessionId:
+              type: string
+      required:
+        - code
+        - language
+
+    AnalysisResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        analysisId:
+          type: string
+          format: uuid
+        overallScore:
+          type: number
+          minimum: 0
+          maximum: 100
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeIssue'
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeSuggestion'
+        metrics:
+          $ref: '#/components/schemas/CodeMetrics'
+        executionTime:
+          type: integer
+          description: Analysis time in milliseconds
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - success
+        - analysisId
+        - overallScore
+        - issues
+        - suggestions
+        - timestamp
+
+    CodeIssue:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [error, warning, info, suggestion]
+        category:
+          type: string
+          enum: [quality, security, performance, style, complexity, bugs]
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        message:
+          type: string
+        description:
+          type: string
+        line:
+          type: integer
+          minimum: 1
+        column:
+          type: integer
+          minimum: 1
+        suggestion:
+          type: string
+        fixable:
+          type: boolean
+      required:
+        - id
+        - type
+        - category
+        - severity
+        - message
+        - line
+
+    CodeSuggestion:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        priority:
+          type: string
+          enum: [high, medium, low]
+        codeExample:
+          type: string
+        explanation:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - category
+        - priority
+
+    CodeMetrics:
+      type: object
+      properties:
+        linesOfCode:
+          type: integer
+          minimum: 0
+        cyclomaticComplexity:
+          type: integer
+          minimum: 1
+        maintainabilityIndex:
+          type: number
+          minimum: 0
+          maximum: 100
+        duplicatedLines:
+          type: integer
+          minimum: 0
+        testCoverage:
+          type: number
+          minimum: 0
+          maximum: 100
+        technicalDebt:
+          type: string
+          description: Estimated time to fix issues
+      required:
+        - linesOfCode
+        - cyclomaticComplexity
+        - maintainabilityIndex
+
+    # Notification Schemas
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [info, success, warning, error, achievement, contest, system]
+        title:
+          type: string
+          maxLength: 200
+        message:
+          type: string
+        data:
+          type: object
+        channels:
+          type: array
+          items:
+            type: string
+            enum: [email, push, in_app, sms]
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        isRead:
+          type: boolean
+          default: false
+        readAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        scheduledFor:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - type
+        - title
+        - message
+        - channels
+        - priority
+        - isRead
+        - createdAt
+
+    CreateNotificationRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [info, success, warning, error, achievement, contest, system]
+        title:
+          type: string
+          maxLength: 200
+        message:
+          type: string
+        data:
+          type: object
+        channels:
+          type: array
+          items:
+            type: string
+            enum: [email, push, in_app, sms]
+          default: [in_app]
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+          default: normal
+        scheduledFor:
+          type: string
+          format: date-time
+      required:
+        - userId
+        - type
+        - title
+        - message
+
+    # Analytics Schemas
+    AnalyticsEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+        properties:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+        userAgent:
+          type: string
+        ipAddress:
+          type: string
+          format: ipv4
+      required:
+        - eventType
+        - userId
+        - timestamp
+
+    TrackEventRequest:
+      type: object
+      properties:
+        eventType:
+          type: string
+          enum: [page_view, problem_attempt, problem_solved, contest_join, code_execution, hint_request]
+        properties:
+          type: object
+        sessionId:
+          type: string
+      required:
+        - eventType
+
+    AnalyticsDashboard:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        activeUsers:
+          type: integer
+        totalProblems:
+          type: integer
+        totalSubmissions:
+          type: integer
+        successRate:
+          type: number
+          minimum: 0
+          maximum: 1
+        popularLanguages:
+          type: array
+          items:
+            type: object
+            properties:
+              language:
+                type: string
+              count:
+                type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsEvent'
+        timeRange:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+      required:
+        - totalUsers
+        - activeUsers
+        - totalProblems
+        - totalSubmissions
+        - successRate
+        - generatedAt
+
+  # Common Response Headers
+  headers:
+    X-Request-ID:
+      description: Unique request identifier for tracking
+      schema:
+        type: string
+        format: uuid
+    
+    X-Rate-Limit-Remaining:
+      description: Number of requests remaining in the current window
+      schema:
+        type: integer
+    
+    X-Rate-Limit-Reset:
+      description: Time when the rate limit window resets
+      schema:
+        type: integer
+        format: int64
+
+# API Paths
+paths:  
+# Health Check Endpoints
+  /health:
+    get:
+      tags:
+        - Health
+      summary: API Gateway Health Check
+      description: Check the health status of the API Gateway
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/X-Request-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Authentication Endpoints
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account with email verification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              username: "johndoe"
+              email: "john@example.com"
+              password: "SecurePass123!"
+              firstName: "John"
+              lastName: "Doe"
+              acceptTerms: true
+      responses:
+        '201':
+          description: User registered successfully
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/X-Request-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Invalid email format"
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "USER_EXISTS"
+                  message: "User with this email already exists"
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return JWT tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "john@example.com"
+              password: "SecurePass123!"
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/X-Request-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "INVALID_CREDENTIALS"
+                  message: "Invalid email or password"
+        '423':
+          description: Account locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh-token:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get a new access token using refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate current session and tokens
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user info
+      description: Retrieve information about the authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify-email:
+    get:
+      tags:
+        - Authentication
+      summary: Verify email address
+      description: Verify user email using verification token
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Email verification token
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # User Management Endpoints
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get all users (Admin only)
+      description: Retrieve a paginated list of all users
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
+        - $ref: '#/components/parameters/SortParam'
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search users by username or email
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [user, admin, moderator, contest_creator]
+          description: Filter by user role
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Retrieve user information by user ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/profile:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      description: Retrieve the authenticated user's profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+
+    put:
+      tags:
+        - Users
+      summary: Update user profile
+      description: Update the authenticated user's profile information
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                  maxLength: 50
+                lastName:
+                  type: string
+                  maxLength: 50
+                avatar:
+                  type: string
+                  format: uri
+            example:
+              firstName: "John"
+              lastName: "Doe"
+              avatar: "https://example.com/avatar.jpg"
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+
+  /users/preferences:
+    put:
+      tags:
+        - Users
+      summary: Update user preferences
+      description: Update the authenticated user's preferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferences'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /users/check-email:
+    get:
+      tags:
+        - Users
+      summary: Check email availability
+      description: Check if an email address is available for registration
+      security: []
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+          description: Email address to check
+      responses:
+        '200':
+          description: Email availability checked
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          available:
+                            type: boolean
+                          email:
+                            type: string
+
+  /users/check-username:
+    get:
+      tags:
+        - Users
+      summary: Check username availability
+      description: Check if a username is available for registration
+      security: []
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Username to check
+      responses:
+        '200':
+          description: Username availability checked
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          available:
+                            type: boolean
+                          username:
+                            type: string
+
+  # Password Reset Endpoints
+  /password-reset/request:
+    post:
+      tags:
+        - Password Reset
+      summary: Request password reset
+      description: Send password reset email to user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /password-reset/reset:
+    post:
+      tags:
+        - Password Reset
+      summary: Reset password
+      description: Reset user password using reset token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+              required:
+                - token
+                - newPassword
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # Problem Management Endpoints
+  /problems:
+    get:
+      tags:
+        - Problems
+      summary: Search problems
+      description: Search and filter problems with pagination
+      security:
+        - OptionalAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search problems by title or description
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+            enum: [easy, medium, hard]
+          description: Filter by difficulty level
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+          description: Filter by tags
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [title, difficulty, createdAt, popularity]
+            default: createdAt
+          description: Sort problems by field
+        - $ref: '#/components/parameters/SortParam'
+      responses:
+        '200':
+          description: Problems retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Problem'
+
+    post:
+      tags:
+        - Problems
+      summary: Create a new problem
+      description: Create a new coding problem (Admin/Moderator only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProblemRequest'
+      responses:
+        '201':
+          description: Problem created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /problems/{problemId}:
+    get:
+      tags:
+        - Problems
+      summary: Get problem by ID
+      description: Retrieve detailed information about a specific problem
+      security:
+        - OptionalAuth: []
+      parameters:
+        - name: problemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Problem ID
+      responses:
+        '200':
+          description: Problem retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Problem'
+        '404':
+          description: Problem not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Problems
+      summary: Update pte an existing problem (Admin/Moderator only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: problemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProblemRequest'
+      responses:
+        '200':
+          description: Problem updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Problem'
+
+    delete:
+      tags:
+        - Problems
+      summary: Delete problem
+      description: Delete a problem (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: problemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Problem deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /problems/{problemId}/bookmark:
+    post:
+      tags:
+        - Problems
+      summary: Bookmark problem
+      description: Add problem to user's bookmarks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: problemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Problem bookmarked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+    delete:
+      tags:
+        - Problems
+      summary: Remove bookmark
+      description: Remove problem from user's bookmarks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: problemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Bookmark removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /problems/bookmarks:
+    get:
+      tags:
+        - Problems
+      summary: Get user bookmarks
+      description: Retrieve user's bookmarked problems
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
+      responses:
+        '200':
+          description: Bookmarks retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Problem'
+
+  /problems/{problemId}/rate:
+    post:
+      tags:
+        - Problems
+      summary: Rate problem
+      description: Submit a rating for a problem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: problemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                  maxLength: 500
+              required:
+                - rating
+      responses:
+        '200':
+          description: Rating submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /problems/tags/popular:
+    get:
+      tags:
+        - Problems
+      summary: Get popular tags
+      description: Retrieve most popular problem tags
+      security: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Popular tags retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            tag:
+                              type: string
+                            count:
+                              type: integer
+
+  # Code Execution Endpoints
+  /code-execution/execute:
+    post:
+      tags:
+        - Code Execution
+      summary: Execute code
+      description: Execute code with test cases and return results
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          problem
+      descrpplication/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionRequest'
+            example:
+              code: |
+                def solution(nums):
+                    return sum(nums)
+              language: "python"
+              testCases:
+                - id: "test1"
+                  input: "[1, 2, 3]"
+                  expectedOutput: "6"
+                - id: "test2"
+                  input: "[4, 5, 6]"
+                  expectedOutput: "15"
+              timeLimit: 5000
+              memoryLimit: 128
+      responses:
+        '200':
+          description: Code executed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ExecutionResult'
+        '400':
+          description: Invalid code or parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /code-execution/languages:
+    get:
+      tags:
+        - Code Execution
+      summary: Get supported languages
+      description: Retrieve list of supported programming languages
+      security: []
+      responses:
+        '200':
+          description: Supported languages retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          supported_languages:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                language:
+                                  type: string
+                                image:
+                                  type: string
+                                file_extension:
+                                  type: string
+                                needs_compilation:
+                                  type: boolean
+
+  /code-execution/metrics:
+    get:
+      tags:
+        - Code Execution
+      summary: Get execution metrics
+      description: Retrieve code execution service metrics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: hours
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 168
+            default: 24
+          description: Number of hours to get metrics for
+      responses:
+        '200':
+          description: Metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                          service:
+                            type: string
+                          uptime:
+                            type: string
+                          executions_total:
+                            type: integer
+                          executions_success:
+                            type: integer
+                          executions_failed:
+                            type: integer
+                          languages_supported:
+                            type: array
+                            items:
+                              type: string
+
+  /code-execution/health:
+    get:
+      tags:
+        - Code Execution
+      summary: Code execution service health
+      description: Check health of code execution service
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  # Contest Management Endpoints
+  /contests:
+    get:
+      tags:
+        - Contests
+      summary: Search contests
+      description: Search and filter contests with pagination
+      security:
+        - OptionalAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [upcoming, active, completed, cancelled]
+          description: Filter by contest status
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search contests by title
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [startTime, title, participants]
+            default: startTime
+        - $ref: '#/components/parameters/SortParam'
+      responses:
+        '200':
+          description: Contests retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Contest'
+
+    post:
+      tags:
+        - Contests
+      summary: Create contest
+      description: Create a new contest (Admin/Contest Creator only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContestRequest'
+      responses:
+        '201':
+          description: Contest created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Contest'
+
+  /contests/{contestId}:
+    get:
+      tags:
+        - Contests
+      summary: Get contest by ID
+      description: Retrieve detailed information about a specific contest
+      security:
+        - OptionalAuth: []
+      parameters:
+        - name: contestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Contest retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Contest'
+
+    put:
+      tags:
+        - Contests
+      summary: Update contest
+      description: Update contest details (Creator/Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContestRequest'
+      responses:
+        '200':
+          description: Contest updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Contest'
+
+    delete:
+      tags:
+        - Contests
+      summary: Delete contest
+      description: Delete a contest (Creator/Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Contest deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /contests/{contestId}/register:
+    post:
+      tags:
+        - Contests
+      summary: Register for contest
+      description: Register the authenticated user for a contest
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Registration not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /contests/{contestId}/leaderboard:
+    get:
+      tags:
+        - Contests
+      summary: Get contest leaderboard
+      description: Retrieve current leaderboard for a contest
+      security:
+        - OptionalAuth: []
+      parameters:
+        - name: contestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Leaderboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ContestLeaderboard'
+
+  /contests/{contestId}/submit:
+    post:
+      tags:
+        - Contests
+      summary: Submit solution to contest
+      description: Submit a solution for a contest problem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                problemId:
+                  type: string
+                  format: uuid
+                code:
+                  type: string
+                language:
+                  type: string
+                  enum: [python, javascript, java, cpp, go, rust]
+              required:
+                - problemId
+                - code
+                - language
+      responses:
+        '200':
+          description: Solution submitted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ExecutionResult'
+
+  # AI Analysis Endpoints
+  /ai-analysis/analyze:
+    post:
+      tags:
+        - AI Analysis
+      summary: Analyze code
+      description: Perform AI-powered code analysis for quality, security, and performance
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisRequest'
+            example:
+              code: |
+                def fibonacci(n):
+                    if n <= 1:
+                        return n
+                    return fibonacci(n-1) + fibonacci(n-2)
+              language: "python"
+              analysisTypes: ["quality", "performance", "complexity"]
+              context:
+                problemId: "123e4567-e89b-12d3-a456-426614174000"
+                userId: "987fcdeb-51a2-43d1-9f12-345678901234"
+      responses:
+        '200':
+          description: Code analysis completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AnalysisResult'
+        '400':
+          description: Invalid code or analysis request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ai-analysis/hints:
+    post:
+      tags:
+        - AI Analysis
+      summary: Generate hints
+      description: Generate progressive hints for a coding problem
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                problemId:
+                  type: string
+                  format: uuid
+                userCode:
+                  type: string
+                language:
+                  type: string
+                  enum: [python, javascript, java, cpp, go, rust]
+                hintLevel:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  default: 1
+              required:
+                - problemId
+                - userCode
+                - language
+      responses:
+        '200':
+          description: Hints generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            level:
+                              type: integer
+                            title:
+                              type: string
+                            content:
+                              type: string
+                            type:
+                              type: string
+                              enum: [conceptual, implementation, debugging]
+
+  /ai-analysis/explain:
+    post:
+      tags:
+        - AI Analysis
+      summary: Explain code
+      description: Generate detailed explanation of code functionality
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                language:
+                  type: string
+                  enum: [python, javascript, java, cpp, go, rust]
+                explanationLevel:
+                  type: string
+                  enum: [beginner, intermediate, advanced]
+                  default: intermediate
+              required:
+                - code
+                - language
+      responses:
+        '200':
+          description: Code explanation generated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          explanation:
+                            type: string
+                          keyPoints:
+                            type: array
+                            items:
+                              type: string
+                          complexity:
+                            type: object
+                            properties:
+                              time:
+                                type: string
+                              space:
+                                type: string
+                          suggestions:
+                            type: array
+                            items:
+                              type: string
+
+  /ai-analysis/languages:
+    get:
+      tags:
+        - AI Analysis
+      summary: Get supported languages
+      description: Retrieve list of programming languages supported for analysis
+      security: []
+      responses:
+        '200':
+          description: Supported languages retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          languages:
+                            type: array
+                            items:
+                              type: string
+                          count:
+                            type: integer
+
+  /ai-analysis/health:
+    get:
+      tags:
+        - AI Analysis
+      summary: AI analysis service health
+      description: Check health of AI analysis service
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  # Notification Endpoints
+  /notifications:
+    post:
+      tags:
+        - Notifications
+      summary: Create notification
+      description: Create a new notification for a user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationRequest'
+      responses:
+        '201':
+          description: Notification created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Notification'
+
+  /notifications/user/{userId}:
+    get:
+      tags:
+        - Notifications
+      summary: Get user notifications
+      description: Retrieve notifications for a specific user
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Return only unread notifications
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [info, success, warning, error, achievement, contest, system]
+          description: Filter by notification type
+      responses:
+        '200':
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+
+  /notifications/{notificationId}:
+    get:
+      tags:
+        - Notifications
+      summary: Get notification by ID
+      description: Retrieve a specific notification
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Notification'
+
+  /notifications/{notificationId}/read:
+    patch:
+      tags:
+        - Notifications
+      summary: Mark notification as read
+      description: Mark a specific notification as read
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /notifications/user/{userId}/read-all:
+    patch:
+      tags:
+        - Notifications
+      summary: Mark all notifications as read
+      description: Mark all notifications for a user as read
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /notifications/user/{userId}/unread-count:
+    get:
+      tags:
+        - Notifications
+      summary: Get unread notification count
+      description: Get the count of unread notifications for a user
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: Unread count retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          unreadCount:
+                            type: integer
+                          userId:
+                            type: string
+
+  /notifications/preferences/{userId}:
+    get:
+      tags:
+        - Notifications
+      summary: Get notification preferences
+      description: Retrieve notification preferences for a user
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NotificationPreferences'
+
+    put:
+      tags:
+        - Notifications
+      summary: Update notification preferences
+      description: Update notification preferences for a user
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreferences'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /notifications/health:
+    get:
+      tags:
+        - Notifications
+      summary: Notification service health
+      description: Check health of notification service
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  # Analytics Endpoints
+  /analytics/events:
+    post:
+      tags:
+        - Analytics
+      summary: Track event
+      description: Track a user analytics event
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackEventRequest'
+            example:
+              eventType: "problem_attempt"
+              properties:
+                problemId: "123e4567-e89b-12d3-a456-426614174000"
+                difficulty: "medium"
+                language: "python"
+              sessionId: "session_123"
+      responses:
+        '200':
+          description: Event tracked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+    get:
+      tags:
+        - Analytics
+      summary: Get recent events
+      description: Retrieve recent analytics events for the user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: eventType
+          in: query
+          schema:
+            type: string
+          description: Filter by event type
+        - name: hours
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 168
+            default: 24
+          description: Number of hours to look back
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AnalyticsEvent'
+
+  /analytics/dashboard:
+    get:
+      tags:
+        - Analytics
+      summary: Get analytics dashboard
+      description: Retrieve analytics dashboard data
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d, 90d]
+            default: 24h
+          description: Time range for analytics data
+      responses:
+        '200':
+          description: Dashboard data retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AnalyticsDashboard'
+
+  /analytics/behavior/analysis:
+    get:
+      tags:
+        - Analytics
+      summary: Get behavior analysis
+      description: Retrieve user behavior analysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: User ID for analysis (admin only)
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d]
+            default: 30d
+      responses:
+        '200':
+          description: Behavior analysis retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          patterns:
+                            type: array
+                            items:
+                              type: object
+                          insights:
+                            type: array
+                            items:
+                              type: string
+                          recommendations:
+                            type: array
+                            items:
+                              type: string
+
+  /analytics/health:
+    get:
+      tags:
+        - Analytics
+      summary: Analytics service health
+      description: Check health of analytics service
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  # Privacy and GDPR Endpoints
+  /privacy/consent:
+    post:
+      tags:
+        - Privacy
+      summary: Record user consent
+      description: Record user consent for data processing
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                consentType:
+                  type: string
+                  enum: [analytics, marketing, functional, necessary]
+                granted:
+                  type: boolean
+                version:
+                  type: string
+              required:
+                - consentType
+                - granted
+      responses:
+        '200':
+          description: Consent recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+    get:
+      tags:
+        - Privacy
+      summary: Get user consents
+      description: Retrieve user's consent history
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Consents retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            consentType:
+                              type: string
+                            granted:
+                              type: boolean
+                            timestamp:
+                              type: string
+                              format: date-time
+                            version:
+                              type: string
+
+  /privacy/export:
+    post:
+      tags:
+        - Privacy
+      summary: Request data export
+      description: Request export of user data (GDPR Article 20)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum: [json, csv, xml]
+                  default: json
+                includeAnalytics:
+                  type: boolean
+                  default: false
+      responses:
+        '202':
+          description: Export request accepted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          requestId:
+                            type: string
+                            format: uuid
+                          estimatedCompletion:
+                            type: string
+                            format: date-time
+
+    get:
+      tags:
+        - Privacy
+      summary: Get export requests
+      description: Retrieve user's data export requests
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Export requests retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            requestId:
+                              type: string
+                            status:
+                              type: string
+                              enum: [pending, processing, completed, failed]
+                            createdAt:
+                              type: string
+                              format: date-time
+                            completedAt:
+                              type: string
+                              format: date-time
+
+  /privacy/deletion:
+    post:
+      tags:
+        - Privacy
+      summary: Request data deletion
+      description: Request deletion of user data (GDPR Article 17)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  enum: [no_longer_needed, withdraw_consent, unlawful_processing, other]
+                confirmPassword:
+                  type: string
+              required:
+                - reason
+                - confirmPassword
+      responses:
+        '202':
+          description: Deletion request accepted
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          requestId:
+                            type: string
+                            format: uuid
+                          scheduledDeletion:
+                            type: string
+                            format: date-time
+
+  # Real-time Service Endpoints
+  /realtime/health:
+    get:
+      tags:
+        - Real-time
+      summary: Real-time service health
+      description: Check health of real-time service
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  # Interview Simulation Endpoints (AI Analysis Service)
+  /ai-analysis/interview/sessions:
+    post:
+      tags:
+        - Interview Simulation
+      summary: Create interview session
+      description: Create a new interview simulation session
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                interviewType:
+                  type: string
+                  enum: [technical, behavioral, system_design, mixed]
+                companyType:
+                  type: string
+                  enum: [faang, startup, enterprise, consulting]
+                targetRole:
+                  type: string
+                difficultyLevel:
+                  type: string
+                  enum: [junior, mid, senior, staff]
+                maxQuestions:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  default: 5
+                timeLimit:
+                  type: integer
+                  minimum: 30
+                  maximum: 180
+                  description: Time limit in minutes
+              required:
+                - userId
+                - interviewType
+                - companyType
+                - targetRole
+                - difficultyLevel
+      responses:
+        '201':
+          description: Interview session created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          sessionId:
+                            type: string
+                            format: uuid
+                          status:
+                            type: string
+                          createdAt:
+                            type: string
+                            format: date-time
+
+  /ai-analysis/interview/sessions/{sessionId}/start:
+    post:
+      tags:
+        - Interview Simulation
+      summary: Start interview session
+      description: Start an interview simulation session
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Interview session started
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          sessionId:
+                            type: string
+                          status:
+                            type: string
+                          firstQuestion:
+                            type: object
+
+  /ai-analysis/learning/assess-skills:
+    post:
+      tags:
+        - Learning System
+      summary: Assess user skills
+      description: Perform comprehensive skill assessment for a user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                language:
+                  type: string
+                  enum: [python, javascript, java, cpp, go, rust]
+                includeWeakAreas:
+                  type: boolean
+                  default: true
+                assessmentType:
+                  type: string
+                  enum: [quick, comprehensive, focused]
+                  default: comprehensive
+              required:
+                - userId
+                - language
+      responses:
+        '200':
+          description: Skill assessment completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          overallLevel:
+                            type: string
+                            enum: [beginner, intermediate, advanced, expert]
+                          skillAreas:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                area:
+                                  type: string
+                                level:
+                                  type: string
+                                confidence:
+                                  type: number
+                          weakAreas:
+                            type: array
+                            items:
+                              type: string
+                          recommendations:
+                            type: array
+                            items:
+                              type: string
+
+  /ai-analysis/learning/generate-learning-path:
+    post:
+      tags:
+        - Learning System
+      summary: Generate learning path
+      description: Generate personalized learning path for a user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                targetConcepts:
+                  type: array
+                  items:
+                    type: string
+                currentLevel:
+                  type: string
+                  enum: [beginner, intermediate, advanced]
+                timeCommitment:
+                  type: integer
+                  minimum: 1
+                  maximum: 40
+                  description: Hours per week
+                preferredDifficulty:
+                  type: string
+                  enum: [easy, medium, hard, mixed]
+              required:
+                - userId
+                - targetConcepts
+                - timeCommitment
+      responses:
+        '200':
+          description: Learning path generated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          pathId:
+                            type: string
+                          estimatedDuration:
+                            type: string
+                          milestones:
+                            type: array
+                            items:
+                              type: object
+                          resources:
+                            type: array
+                            items:
+                              type: object
+
+# Rate Limiting Information
+x-rate-limits:
+  - name: "General API"
+    limit: 1000
+    window: "1h"
+    description: "General API rate limit"
+  
+  - name: "Authentication"
+    limit: 10
+    window: "15m"
+    description: "Authentication endpoints rate limit"
+  
+  - name: "Code Execution"
+    limit: 100
+    window: "1h"
+    description: "Code execution rate limit"
+  
+  - name: "AI Analysis"
+    limit: 50
+    window: "1h"
+    description: "AI analysis rate limit"
+
+# Tags for grouping endpoints
+tags:
+  - name: Health
+    description: Health check endpoints for all services
+  
+  - name: Authentication
+    description: User authentication and authorization
+  
+  - name: Users
+    description: User management and profile operations
+  
+  - name: Password Reset
+    description: Password reset functionality
+  
+  - name: Problems
+    description: Coding problem management
+  
+  - name: Code Execution
+    description: Code execution and testing
+  
+  - name: Contests
+    description: Contest management and participation
+  
+  - name: AI Analysis
+    description: AI-powered code analysis and feedback
+  
+  - name: Notifications
+    description: Notification management and preferences
+  
+  - name: Analytics
+    description: User analytics and behavior tracking
+  
+  - name: Privacy
+    description: Privacy controls and GDPR compliance
+  
+  - name: Real-time
+    description: Real-time communication features
+  
+  - name: Interview Simulation
+    description: AI-powered interview simulation
+  
+  - name: Learning System
+    description: Personalized learning and skill assessmentiption: Upda

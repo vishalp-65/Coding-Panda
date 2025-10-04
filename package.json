@@ -9,6 +9,7 @@
     "apps/*"
   ],
   "scripts": {
+    "start": "node swagger-server.js",
     "dev": "docker-compose up -d && npm run dev:services",
     "dev:services": "concurrently \"npm run dev --workspace=services/api-gateway\" \"npm run dev --workspace=services/user-service\" \"npm run dev --workspace=services/problem-service\" \"npm run dev --workspace=services/realtime-service\"",
     "build": "npm run build --workspaces",
@@ -21,6 +22,8 @@
     "docker:logs": "docker-compose logs -f"
   },
   "devDependencies": {
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/yamljs": "^0.2.34",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "concurrently": "^8.2.0",
@@ -31,5 +34,10 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
   }
 }

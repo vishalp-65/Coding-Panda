@@ -12,6 +12,19 @@ import {
 const router = Router();
 const problemController = new ProblemController();
 
+// Health check
+router.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      service: 'Problem Service',
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+    },
+  });
+});
+
 // Problem CRUD operations
 router.post(
   '/',

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { logger } from '@ai-platform/common';
 
 const MONGODB_URI =
-  process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-platform';
+  process.env.MONGODB_URL || process.env.MONGODB_URI || 'mongodb://mongo:mongo@localhost:27017/ai_platform';
 
 export async function connectToDatabase(): Promise<void> {
   try {
@@ -10,6 +10,7 @@ export async function connectToDatabase(): Promise<void> {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
+      authSource: 'admin',
     });
 
     logger.info('Successfully connected to MongoDB');

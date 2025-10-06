@@ -14,19 +14,6 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/v1', problemRoutes);
 
-// Health check
-app.get('/api/v1/health', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      service: 'Problem Service',
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-    },
-  });
-});
-
 // Error handling
 app.use(errorHandler);
 

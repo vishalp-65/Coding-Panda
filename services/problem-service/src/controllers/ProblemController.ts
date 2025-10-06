@@ -25,364 +25,254 @@ export class ProblemController extends BaseController {
     this.problemService = new ProblemService();
   }
 
-  createProblem = asyncHandler(async (
-    req: ValidatedRequest,
-    res: Response
-  ): Promise<void> => {
-    const problemData = req.validatedBody || req.body;
+  /**
+   * Helper to get validated data from request
+   */
+  private getValidatedData(req: ValidatedRequest, source: 'body' | 'query') {
+    return source === 'body'
+      ? req.validatedBody || req.body
+      : req.validatedQuery || req.query;
+  }
 
-    ValidationUtils.validateRequired(problemData.title, 'Title');
-    ValidationUtils.validateRequired(problemData.description, 'Description');
-
-    try {
-      const problem = await this.problemService.createProblem(problemData);
-      ResponseHandler.success(res, problem, 'Problem created successfully', 201);
-    } catch (error) {
-      logger.error('Error in createProblem controller:', error);
-
-      if (error instanceof Error && error.message.includes('already exists')) {
-        return ResponseHandler.conflict(res, error.message);
-      }
-
-      throw error;
-    }
-  });
-
-  getProblem = asyncHandler(async (req: ValidatedRequest, res: Response): Promise<void> => {
-    const { id } = req.params;
+  /**
+   * Helper to ensure user is authenticated
+   */
+  private requireAuth(req: ValidatedRequest, res: Response): string | null {
     const userId = req.user?.id;
-
-    ValidationUtils.validateRequired(id, 'Problem ID');
-
-    let problem;
-
-    // Try to get by ID first (MongoDB ObjectId pattern), then by slug
-    if (ValidationUtils.isValidObjectId(id)) {
-      problem = await this.problemService.getProblemById(id);
-    } else {
-      problem = await this.problemService.getProblemBySlug(id);
+    if (!userId) {
+      ResponseHandler.unauthorized(res, 'Authentication required');
+      return null;
     }
+    return userId;
+  }
 
-    if (!problem) {
-      return ResponseHandler.notFound(res, 'Problem not found');
-    }
+  createProblem = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      const problemData = this.getValidatedData(req, 'body');
 
-    // Add user status if authenticated
-    let userStatus = null;
-    if (userId) {
-      // This would typically be done in the service layer
-      // userStatus = await this.problemService.getUserProblemStatus?.(userId, id) || null;
-    }
+      ValidationUtils.validateRequired(problemData.title, 'Title');
+      ValidationUtils.validateRequired(problemData.description, 'Description');
 
-    ResponseHandler.success(res, { ...problem, userStatus });
-  });
-
-  updateProblem = async (
-    req: ValidatedRequest,
-    res: Response
-  ): Promise<void> => {
-    try {
-      const { id } = req.params;
-      const updateData = req.validatedBody || req.body;
-
-      if (!id) {
-        this.sendErrorResponse(
+      try {
+        const problem = await this.problemService.createProblem(problemData);
+        ResponseHandler.success(
           res,
-          400,
-          'INVALID_REQUEST',
-          'Problem ID is required'
+          problem,
+          'Problem created successfully',
+          201
         );
-        return;
-      }
+      } catch (error) {
+        logger.error('Error in createProblem controller:', error);
 
-      const problem = await this.problemService.updateProblem(id, updateData);
+        if (
+          error instanceof Error &&
+          error.message.includes('already exists')
+        ) {
+          return ResponseHandler.conflict(res, error.message);
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  getProblem = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      ValidationUtils.validateRequired(id, 'Problem ID');
+
+      // Try to get by ID first (MongoDB ObjectId pattern), then by slug
+      const problem = ValidationUtils.isValidObjectId(id)
+        ? await this.problemService.getProblemById(id)
+        : await this.problemService.getProblemBySlug(id);
 
       if (!problem) {
-        this.sendErrorResponse(
-          res,
-          404,
-          'PROBLEM_NOT_FOUND',
-          'Problem not found'
-        );
-        return;
+        return ResponseHandler.notFound(res, 'Problem not found');
       }
 
-      this.sendSuccessResponse(res, problem, 'Problem updated successfully');
-    } catch (error) {
-      logger.error('Error in updateProblem controller:', error);
+      // Add user status if authenticated (placeholder for future implementation)
+      const userStatus = userId ? null : null;
 
-      if (error instanceof Error && error.message.includes('already exists')) {
-        this.sendErrorResponse(res, 409, 'PROBLEM_EXISTS', error.message);
-        return;
-      }
-
-      this.sendErrorResponse(
-        res,
-        500,
-        'INTERNAL_ERROR',
-        'Failed to update problem'
-      );
+      ResponseHandler.success(res, { ...problem, userStatus });
     }
-  };
+  );
 
-  deleteProblem = async (
-    req: ValidatedRequest,
-    res: Response
-  ): Promise<void> => {
-    try {
+  updateProblem = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      const { id } = req.params;
+      const updateData = this.getValidatedData(req, 'body');
+
+      ValidationUtils.validateRequired(id, 'Problem ID');
+
+      try {
+        const problem = await this.problemService.updateProblem(id, updateData);
+
+        if (!problem) {
+          return ResponseHandler.notFound(res, 'Problem not found');
+        }
+
+        ResponseHandler.success(res, problem, 'Problem updated successfully');
+      } catch (error) {
+        logger.error('Error in updateProblem controller:', error);
+
+        if (
+          error instanceof Error &&
+          error.message.includes('already exists')
+        ) {
+          return ResponseHandler.conflict(res, error.message);
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  deleteProblem = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
       const { id } = req.params;
 
-      if (!id) {
-        this.sendErrorResponse(
-          res,
-          400,
-          'INVALID_REQUEST',
-          'Problem ID is required'
-        );
-        return;
-      }
+      ValidationUtils.validateRequired(id, 'Problem ID');
 
       const deleted = await this.problemService.deleteProblem(id);
 
       if (!deleted) {
-        this.sendErrorResponse(
-          res,
-          404,
-          'PROBLEM_NOT_FOUND',
-          'Problem not found'
-        );
-        return;
-      }
-
-      this.sendSuccessResponse(res, undefined, 'Problem deleted successfully');
-    } catch (error) {
-      logger.error('Error in deleteProblem controller:', error);
-      this.sendErrorResponse(
-        res,
-        500,
-        'INTERNAL_ERROR',
-        'Failed to delete problem'
-      );
-    }
-  };
-
-  searchProblems = asyncHandler(async (
-    req: ValidatedRequest,
-    res: Response
-  ): Promise<void> => {
-    const userId = req.user?.id;
-    const queryParams = req.validatedQuery || req.query;
-
-    const { page, limit } = ValidationUtils.validatePagination(
-      queryParams.page as string,
-      queryParams.limit as string
-    );
-
-    const result = await this.problemService.searchProblems(
-      { ...queryParams, page, limit },
-      userId
-    );
-
-    ResponseHandler.success(res, result.data, undefined, 200, result.pagination);
-  });
-
-  getPopularTags = async (
-    req: ValidatedRequest,
-    res: Response
-  ): Promise<void> => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 20;
-
-      if (limit < 1 || limit > 100) {
-        this.sendErrorResponse(
-          res,
-          400,
-          'INVALID_LIMIT',
-          'Limit must be between 1 and 100'
-        );
-        return;
-      }
-
-      const tags = await this.problemService.getPopularTags(limit);
-      this.sendSuccessResponse(res, tags);
-    } catch (error) {
-      logger.error('Error in getPopularTags controller:', error);
-      this.sendErrorResponse(
-        res,
-        500,
-        'INTERNAL_ERROR',
-        'Failed to retrieve popular tags'
-      );
-    }
-  };
-
-  bookmarkProblem = asyncHandler(async (
-    req: ValidatedRequest,
-    res: Response
-  ): Promise<void> => {
-    const { id } = req.params;
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return ResponseHandler.unauthorized(res, 'Authentication required');
-    }
-
-    ValidationUtils.validateRequired(id, 'Problem ID');
-
-    try {
-      await this.problemService.bookmarkProblem(userId, id);
-      ResponseHandler.success(res, undefined, 'Problem bookmarked successfully');
-    } catch (error) {
-      logger.error('Error in bookmarkProblem controller:', error);
-
-      if (error instanceof Error && error.message.includes('not found')) {
         return ResponseHandler.notFound(res, 'Problem not found');
       }
 
-      throw error;
+      ResponseHandler.success(res, undefined, 'Problem deleted successfully');
     }
-  });
+  );
 
-  unbookmarkProblem = async (
-    req: ValidatedRequest,
-    res: Response
-  ): Promise<void> => {
-    try {
-      const { id } = req.params;
+  searchProblems = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
       const userId = req.user?.id;
+      const queryParams = this.getValidatedData(req, 'query');
 
-      if (!userId) {
-        this.sendErrorResponse(
+      const { page, limit } = ValidationUtils.validatePagination(
+        queryParams.page as string,
+        queryParams.limit as string
+      );
+
+      const result = await this.problemService.searchProblems(
+        { ...queryParams, page, limit },
+        userId
+      );
+
+      ResponseHandler.success(
+        res,
+        result.data,
+        undefined,
+        200,
+        result.pagination
+      );
+    }
+  );
+
+  getPopularTags = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      if (limit < 1 || limit > 100) {
+        return ResponseHandler.badRequest(
           res,
-          401,
-          'UNAUTHORIZED',
-          'Authentication required'
+          'Limit must be between 1 and 100'
         );
-        return;
       }
 
-      if (!id) {
-        this.sendErrorResponse(
+      const tags = await this.problemService.getPopularTags(limit);
+      ResponseHandler.success(res, tags);
+    }
+  );
+
+  bookmarkProblem = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      const { id } = req.params;
+      const userId = this.requireAuth(req, res);
+      if (!userId) return;
+
+      ValidationUtils.validateRequired(id, 'Problem ID');
+
+      try {
+        await this.problemService.bookmarkProblem(userId, id);
+        ResponseHandler.success(
           res,
-          400,
-          'INVALID_REQUEST',
-          'Problem ID is required'
+          undefined,
+          'Problem bookmarked successfully'
         );
-        return;
+      } catch (error) {
+        logger.error('Error in bookmarkProblem controller:', error);
+
+        if (error instanceof Error && error.message.includes('not found')) {
+          return ResponseHandler.notFound(res, 'Problem not found');
+        }
+
+        throw error;
       }
+    }
+  );
+
+  unbookmarkProblem = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      const { id } = req.params;
+      const userId = this.requireAuth(req, res);
+      if (!userId) return;
+
+      ValidationUtils.validateRequired(id, 'Problem ID');
 
       await this.problemService.unbookmarkProblem(userId, id);
-      this.sendSuccessResponse(
+      ResponseHandler.success(
         res,
         undefined,
         'Problem unbookmarked successfully'
       );
-    } catch (error) {
-      logger.error('Error in unbookmarkProblem controller:', error);
-      this.sendErrorResponse(
-        res,
-        500,
-        'INTERNAL_ERROR',
-        'Failed to unbookmark problem'
-      );
     }
-  };
+  );
 
-  rateProblem = async (req: ValidatedRequest, res: Response): Promise<void> => {
-    try {
+  rateProblem = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
       const { id } = req.params;
-      const userId = req.user?.id;
-      const { rating } = req.validatedBody || req.body;
+      const userId = this.requireAuth(req, res);
+      if (!userId) return;
 
-      if (!userId) {
-        this.sendErrorResponse(
-          res,
-          401,
-          'UNAUTHORIZED',
-          'Authentication required'
-        );
-        return;
+      const { rating } = this.getValidatedData(req, 'body');
+
+      ValidationUtils.validateRequired(id, 'Problem ID');
+      ValidationUtils.validateRequired(rating, 'Rating');
+
+      try {
+        await this.problemService.rateProblem(userId, id, rating);
+        ResponseHandler.success(res, undefined, 'Problem rated successfully');
+      } catch (error) {
+        logger.error('Error in rateProblem controller:', error);
+
+        if (
+          error instanceof Error &&
+          error.message.includes('Rating must be')
+        ) {
+          return ResponseHandler.badRequest(res, error.message);
+        }
+
+        if (error instanceof Error && error.message.includes('not found')) {
+          return ResponseHandler.notFound(res, 'Problem not found');
+        }
+
+        throw error;
       }
-
-      if (!id) {
-        this.sendErrorResponse(
-          res,
-          400,
-          'INVALID_REQUEST',
-          'Problem ID is required'
-        );
-        return;
-      }
-
-      if (rating === undefined || rating === null) {
-        this.sendErrorResponse(
-          res,
-          400,
-          'INVALID_REQUEST',
-          'Rating is required'
-        );
-        return;
-      }
-
-      await this.problemService.rateProblem(userId, id, rating);
-      this.sendSuccessResponse(res, undefined, 'Problem rated successfully');
-    } catch (error) {
-      logger.error('Error in rateProblem controller:', error);
-
-      if (error instanceof Error && error.message.includes('Rating must be')) {
-        this.sendErrorResponse(res, 400, 'INVALID_RATING', error.message);
-        return;
-      }
-
-      if (error instanceof Error && error.message.includes('not found')) {
-        this.sendErrorResponse(
-          res,
-          404,
-          'PROBLEM_NOT_FOUND',
-          'Problem not found'
-        );
-        return;
-      }
-
-      this.sendErrorResponse(
-        res,
-        500,
-        'INTERNAL_ERROR',
-        'Failed to rate problem'
-      );
     }
-  };
+  );
 
-  getUserBookmarks = async (
-    req: ValidatedRequest,
-    res: Response
-  ): Promise<void> => {
-    try {
-      const userId = req.user?.id;
+  getUserBookmarks = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      const userId = this.requireAuth(req, res);
+      if (!userId) return;
 
-      if (!userId) {
-        this.sendErrorResponse(
-          res,
-          401,
-          'UNAUTHORIZED',
-          'Authentication required'
-        );
-        return;
-      }
-
-      const queryParams = req.validatedQuery || req.query;
-      const page = parseInt(queryParams.page as string) || 1;
-      const limit = parseInt(queryParams.limit as string) || 10;
-
-      if (page < 1 || limit < 1 || limit > 100) {
-        this.sendErrorResponse(
-          res,
-          400,
-          'INVALID_PAGINATION',
-          'Invalid pagination parameters'
-        );
-        return;
-      }
+      const queryParams = this.getValidatedData(req, 'query');
+      const { page, limit } = ValidationUtils.validatePagination(
+        queryParams.page as string,
+        queryParams.limit as string
+      );
 
       const result = await this.problemService.getUserBookmarkedProblems(
         userId,
@@ -390,84 +280,55 @@ export class ProblemController extends BaseController {
         limit
       );
 
-      ResponseHandler.success(res, result.data, undefined, 200, result.pagination);
-    } catch (error) {
-      logger.error('Error in getUserBookmarks controller:', error);
-      this.sendErrorResponse(
+      ResponseHandler.success(
         res,
-        500,
-        'INTERNAL_ERROR',
-        'Failed to retrieve bookmarked problems'
+        result.data,
+        undefined,
+        200,
+        result.pagination
       );
     }
-  };
+  );
 
-  updateProblemStatistics = async (
-    req: ValidatedRequest,
-    res: Response
-  ): Promise<void> => {
-    try {
+  updateProblemStatistics = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
       const { id } = req.params;
       const { isAccepted } = req.body;
 
-      if (!id) {
-        this.sendErrorResponse(
-          res,
-          400,
-          'INVALID_REQUEST',
-          'Problem ID is required'
-        );
-        return;
-      }
+      ValidationUtils.validateRequired(id, 'Problem ID');
 
       if (typeof isAccepted !== 'boolean') {
-        this.sendErrorResponse(
+        return ResponseHandler.badRequest(
           res,
-          400,
-          'INVALID_REQUEST',
           'isAccepted must be a boolean value'
         );
-        return;
       }
 
-      await this.problemService.updateProblemStatistics(id, isAccepted);
-      this.sendSuccessResponse(
-        res,
-        undefined,
-        'Problem statistics updated successfully'
-      );
-    } catch (error) {
-      logger.error('Error in updateProblemStatistics controller:', error);
-
-      if (error instanceof Error && error.message.includes('not found')) {
-        this.sendErrorResponse(
+      try {
+        await this.problemService.updateProblemStatistics(id, isAccepted);
+        ResponseHandler.success(
           res,
-          404,
-          'PROBLEM_NOT_FOUND',
-          'Problem not found'
+          undefined,
+          'Problem statistics updated successfully'
         );
-        return;
+      } catch (error) {
+        logger.error('Error in updateProblemStatistics controller:', error);
+
+        if (error instanceof Error && error.message.includes('not found')) {
+          return ResponseHandler.notFound(res, 'Problem not found');
+        }
+
+        throw error;
       }
-
-      this.sendErrorResponse(
-        res,
-        500,
-        'INTERNAL_ERROR',
-        'Failed to update problem statistics'
-      );
     }
-  };
+  );
 
-  // Additional utility method for health check
-  healthCheck = async (req: ValidatedRequest, res: Response): Promise<void> => {
-    try {
-      this.sendSuccessResponse(res, {
+  healthCheck = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      ResponseHandler.success(res, {
         status: 'healthy',
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
-      logger.error('Error in healthCheck controller:', error);
-      this.sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Service unavailable');
     }
-  };
+  );
 }

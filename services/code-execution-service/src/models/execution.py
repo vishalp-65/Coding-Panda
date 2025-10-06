@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from enum import Enum
 from datetime import datetime
 
@@ -24,7 +24,7 @@ class Language(str, Enum):
 
 
 class TestCase(BaseModel):
-    input: str
+    input: str = ""
     expected_output: str
     is_hidden: bool = False
 
@@ -41,9 +41,9 @@ class TestResult(BaseModel):
 class ExecutionRequest(BaseModel):
     code: str = Field(..., min_length=1, max_length=50000)
     language: Language
-    test_cases: List[TestCase] = Field(..., min_length=1, max_length=100)
-    time_limit: int = Field(default=5, ge=1, le=30)  # seconds
-    memory_limit: int = Field(default=128, ge=32, le=512)  # MB
+    test_cases: List[TestCase] = Field(..., min_items=1, max_items=100)
+    time_limit: int = Field(default=5, ge=1, le=30)
+    memory_limit: int = Field(default=128, ge=32, le=512)
     problem_id: Optional[str] = None
     user_id: Optional[str] = None
 
@@ -64,7 +64,7 @@ class ExecutionResult(BaseModel):
 
 class ExecutionMetrics(BaseModel):
     request_id: str
-    user_id: Optional[str]
+    user_id: Optional[str] = None
     language: Language
     code_length: int
     execution_time: float
@@ -76,9 +76,9 @@ class ExecutionMetrics(BaseModel):
 
 
 class ResourceLimits(BaseModel):
-    cpu_limit: str = "0.5"  # CPU cores
-    memory_limit: str = "128m"  # Memory in MB
-    time_limit: int = 5  # seconds
+    cpu_limit: str = "0.5"
+    memory_limit: str = "128m"
+    time_limit: int = 5
     network_disabled: bool = True
     read_only_filesystem: bool = True
-    max_file_size: int = 1024 * 1024  # 1MB
+    max_file_size: int = 1024 * 1024

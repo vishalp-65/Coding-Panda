@@ -16,4 +16,4 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
 
 # Activate virtual environment and start the service
 Write-Host "Activating virtual environment and starting service..." -ForegroundColor Yellow
-& ".venv\Scripts\python.exe" -m uvicorn main:app --host 0.0.0.0 --port 3009 --reload
+& ".venv\Scripts\python.exe" -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload

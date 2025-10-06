@@ -9,6 +9,8 @@ from docker.errors import ImageNotFound, APIError
 from src.models.execution import Language, ResourceLimits, ExecutionStatus
 from src.config.settings import settings
 import logging
+from docker.types import Ulimit
+
 
 logger = logging.getLogger(__name__)
 
@@ -164,23 +166,26 @@ class DockerExecutionManager:
     ) -> Tuple[str, str, float, int, ExecutionStatus]:
         """Execute a single test case."""
         container = None
+        input_filename = None
         
         try:
-            # Write input file
-            input_file = os.path.join(temp_dir, f'input_{id(input_data)}.txt')
+            # Write input file in temp directory
+            input_filename = f'input_{id(input_data)}.txt'
+            input_file = os.path.join(temp_dir, input_filename)
             await asyncio.to_thread(self._write_input_file, input_file, input_data)
             
-            # Build run command
+            # Build run command with container path (not host path!)
             run_command = config['run_command']
             if input_data:
-                run_command = f"{run_command} < {input_file}"
+                # Use the container path, not the host path
+                run_command = f"{run_command} < /app/{input_filename}"
             
             # Create container
             container = await asyncio.to_thread(
                 self.client.containers.create,
                 image=config['image'],
                 command=['sh', '-c', run_command],
-                volumes={temp_dir: {'bind': '/app', 'mode': 'ro'}},  # Read-only for execution
+                volumes={temp_dir: {'bind': '/app', 'mode': 'rw'}},  # Changed to rw for input files
                 mem_limit=limits.memory_limit,
                 cpu_quota=int(float(limits.cpu_limit) * 100000),
                 cpu_period=100000,
@@ -191,13 +196,9 @@ class DockerExecutionManager:
                 working_dir='/app',
                 detach=True,
                 ulimits=[
-                    docker.types.Ulimit(name='nproc', soft=32, hard=32),
-                    docker.types.Ulimit(
-                        name='fsize',
-                        soft=limits.max_file_size,
-                        hard=limits.max_file_size
-                    )
-                ]
+                    Ulimit(name='nproc', soft=32, hard=32),
+                    Ulimit(name='fsize', soft=limits.max_file_size, hard=limits.max_file_size)
+                ],
             )
             
             # Execute with timing
@@ -245,9 +246,11 @@ class DockerExecutionManager:
                     logger.warning(f"Failed to remove test container: {e}")
             
             # Cleanup input file
-            if input_data:
+            if input_filename:
                 try:
-                    os.remove(input_file)
+                    input_file_path = os.path.join(temp_dir, input_filename)
+                    if os.path.exists(input_file_path):
+                        os.remove(input_file_path)
                 except Exception:
                     pass
     

@@ -41,7 +41,7 @@ class TestResult(BaseModel):
 class ExecutionRequest(BaseModel):
     code: str = Field(..., min_length=1, max_length=50000)
     language: Language
-    test_cases: List[TestCase] = Field(..., min_items=1, max_items=100)
+    test_cases: List[TestCase] = Field(..., min_items=1, max_items=100) # type: ignore
     time_limit: int = Field(default=5, ge=1, le=30)
     memory_limit: int = Field(default=128, ge=32, le=512)
     problem_id: Optional[str] = None

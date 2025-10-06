@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
+    "composite": true,
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"]
@@ -11,5 +12,9 @@
     "strict": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "exclude": ["node_modules", "dist", "tests"],
+  "references": [
+    { "path": "../../packages/common" },
+    { "path": "../../packages/types" }
+  ]
 }

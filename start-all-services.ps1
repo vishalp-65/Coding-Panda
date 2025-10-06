@@ -33,7 +33,7 @@ function Start-Service {
     }
     
     Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$Path'; $Command" -WindowStyle Normal
-    Start-Sleep -Seconds 3
+    Start-Sleep -Seconds 1
 }
 
 # Start infrastructure services first
@@ -42,7 +42,7 @@ docker-compose up -d postgres mongodb redis rabbitmq prometheus grafana mailhog
 
 # Wait for infrastructure to be ready
 Write-Host "Waiting for infrastructure services to be ready..." -ForegroundColor Cyan
-Start-Sleep -Seconds 15
+Start-Sleep -Seconds 3
 
 # Start application services in correct order
 Write-Host "Starting core services..." -ForegroundColor Cyan
@@ -53,21 +53,20 @@ Start-Service "Analytics Service" "services/analytics-service" "npm run dev" 300
 Start-Service "Notification Service" "services/notification-service" "npm run dev" 3007
 Start-Service "Realtime Service" "services/realtime-service" "npm run dev" 3008
 
-# Start Python services (using simplified startup scripts)
+# Start Python services
 Write-Host "Starting Python services..." -ForegroundColor Cyan
-Write-Host "Note: Using simplified startup scripts to avoid dependency issues" -ForegroundColor Yellow
-Start-Service "Code Execution Service" "services/code-execution-service" ".\venv\Scripts\activate; python simple_start.py" 3004
-Start-Service "AI Analysis Service" "services/ai-analysis-service" ".\venv\Scripts\activate; python simple_start.py" 8001
+Start-Service "Code Execution Service" "services/code-execution-service" ".\start.ps1" 3004
+Start-Service "AI Analysis Service" "services/ai-analysis-service" ".\start.ps1" 8001
 
 # Wait for services to initialize
 Write-Host "Waiting for services to initialize..." -ForegroundColor Cyan
-Start-Sleep -Seconds 10
+Start-Sleep -Seconds 3
 
 # Start API Gateway (depends on other services)
 Start-Service "API Gateway" "services/api-gateway" "npm run dev" 8080
 
 # Wait for API Gateway to be ready
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 2
 
 # Start frontend (depends on API Gateway)
 Start-Service "Frontend" "apps/frontend" "npm run dev" 3000

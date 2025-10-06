@@ -448,135 +448,136 @@ public:
 };`
         }
     },
-    {
-        title: 'Valid Parentheses',
-        slug: 'valid-parentheses',
-        description: `Given a string \`s\` containing just the characters \`'('\`, \`')'\`, \`'{'\`, \`'}'\`, \`'['\` and \`']'\`, determine if the input string is valid.
+    //     {
+    //         title: 'Valid Parentheses',
+    //         slug: 'valid-parentheses',
+    //         description: `Given a string \`s\` containing just the characters \`'('\`, \`')'\`, \`'{'\`, \`'}'\`, \`'['\` and \`']'\`, determine if the input string is valid.
 
-An input string is valid if:
-1. Open brackets must be closed by the same type of brackets.
-2. Open brackets must be closed in the correct order.
-3. Every close bracket has a corresponding open bracket of the same type.
+    // An input string is valid if:
+    // 1. Open brackets must be closed by the same type of brackets.
+    // 2. Open brackets must be closed in the correct order.
+    // 3. Every close bracket has a corresponding open bracket of the same type.
 
-## Example 1:
-\`\`\`
-Input: s = "()"
-Output: true
-\`\`\`
+    // ## Example 1:
+    // \`\`\`
+    // Input: s = "()"
+    // Output: true
+    // \`\`\`
 
-## Example 2:
-\`\`\`
-Input: s = "()[]{}"
-Output: true
-\`\`\`
+    // ## Example 2:
+    // \`\`\`
+    // Input: s = "()[]{}"
+    // Output: true
+    // \`\`\`
 
-## Example 3:
-\`\`\`
-Input: s = "(]"
-Output: false
-\`\`\`
+    // ## Example 3:
+    // \`\`\`
+    // Input: s = "(]"
+    // Output: false
+    // \`\`\`
 
-## Constraints:
-- \`1 <= s.length <= 10^4\`
-- \`s\` consists of parentheses only \`'()[]{}'`.`,
-    difficulty: 'easy',
-    tags: ['String', 'Stack'],
-    constraints: {
-      timeLimit: 1000,
-      memoryLimit: 256,
-      inputFormat: 'String s containing parentheses',
-      outputFormat: 'Boolean indicating if valid',
-      sampleInput: 's = "()"',
-      sampleOutput: 'true'
-    },
-    testCases: [
-      {
-        id: '1',
-        input: '()',
-        expectedOutput: 'true',
-        isHidden: false,
-        explanation: 'Valid parentheses pair'
-      },
-      {
-        id: '2',
-        input: '()[]{} ',
-        expectedOutput: 'true',
-        isHidden: false,
-        explanation: 'All brackets are properly matched'
-      },
-      {
-        id: '3',
-        input: '(]',
-        expectedOutput: 'false',
-        isHidden: false,
-        explanation: 'Mismatched bracket types'
-      }
-    ],
-    statistics: {
-      totalSubmissions: 900000,
-      acceptedSubmissions: 405000,
-      acceptanceRate: 45.0,
-      averageRating: 4.0,
-      ratingCount: 20000
-    },
-    initialCode: {
-      javascript: `/**
- * @param {string} s
- * @return {boolean}
- */
-var isValid = function (s) {
+    // ## Constraints:
+    // - \`1 <= s.length <= 10^4\`
+    // - \`s\` consists of parentheses only \`'()[]{}'``,
+    //     difficulty: 'easy',
+    //     tags: ['String', 'Stack'],
+    //     constraints: {
+    //       timeLimit: 1000,
+    //       memoryLimit: 256,
+    //       inputFormat: 'String s containing parentheses',
+    //       outputFormat: 'Boolean indicating if valid',
+    //       sampleInput: 's = "()"',
+    //       sampleOutput: 'true'
+    //     },
+    //     testCases: [
+    //       {
+    //         id: '1',
+    //         input: '()',
+    //         expectedOutput: 'true',
+    //         isHidden: false,
+    //         explanation: 'Valid parentheses pair'
+    //       },
+    //       {
+    //         id: '2',
+    //         input: '()[]{} ',
+    //         expectedOutput: 'true',
+    //         isHidden: false,
+    //         explanation: 'All brackets are properly matched'
+    //       },
+    //       {
+    //         id: '3',
+    //         input: '(]',
+    //         expectedOutput: 'false',
+    //         isHidden: false,
+    //         explanation: 'Mismatched bracket types'
+    //       }
+    //     ],
+    //     statistics: {
+    //       totalSubmissions: 900000,
+    //       acceptedSubmissions: 405000,
+    //       acceptanceRate: 45.0,
+    //       averageRating: 4.0,
+    //       ratingCount: 20000
+    //     },
+    //     initialCode: {
+    //       javascript: `
+    // /**
+    //  * @param {string} 
+    //  * @return {boolean}
+    //  */
+    // var isValid = function (s) {
 
-        };`,
-      python: `class Solution:
-    def isValid(self, s: str) -> bool:
-    `,
-      java: `class Solution {
-        public boolean isValid(String s) {
+    //         };`,
+    //       python: `class Solution:
+    //     def isValid(self, s: str) -> bool:
+    //     `,
+    //       java: `class Solution {
+    //         public boolean isValid(String s) {
 
-        }
-    }`,
-      cpp: `class Solution {
-        public:
-            bool isValid(string s) {
+    //         }
+    //     }`,
+    //       cpp: `class Solution {
+    //         public:
+    //             bool isValid(string s) {
 
-            }
-    }; `
-    }
-  }
+    //             }
+    //     }; `
+    //     }
+    //   }
 ];
 
 async function seedProblems() {
-  try {
-    // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-coding-platform';
-    await mongoose.connect(mongoUri);
-    console.log('Connected to MongoDB');
+    try {
+        // Connect to MongoDB
+        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-coding-platform';
+        await mongoose.connect(mongoUri);
+        console.log('Connected to MongoDB');
 
-    // Clear existing problems
-    await Problem.deleteMany({});
-    console.log('Cleared existing problems');
+        // Clear existing problems
+        await Problem.deleteMany({});
+        console.log('Cleared existing problems');
 
-    // Insert sample problems
-    const insertedProblems = await Problem.insertMany(sampleProblems);
-    console.log(`Inserted ${ insertedProblems.length } sample problems`);
+        // Insert sample problems
+        const insertedProblems = await Problem.insertMany(sampleProblems);
+        console.log(`Inserted ${insertedProblems.length} sample problems`);
 
-    // Display inserted problems
-    insertedProblems.forEach((problem, index) => {
-      console.log(`${ index + 1 }. ${ problem.title } (${ problem.difficulty }) - ${ problem.tags.join(', ') } `);
-    });
+        // Display inserted problems
+        insertedProblems.forEach((problem, index) => {
+            console.log(`${index + 1}. ${problem.title} (${problem.difficulty}) - ${problem.tags.join(', ')} `);
+        });
 
-    console.log('Database seeding completed successfully!');
-  } catch (error) {
-    console.error('Error seeding database:', error);
-  } finally {
-    await mongoose.disconnect();
-    console.log('Disconnected from MongoDB');
-  }
+        console.log('Database seeding completed successfully!');
+    } catch (error) {
+        console.error('Error seeding database:', error);
+    } finally {
+        await mongoose.disconnect();
+        console.log('Disconnected from MongoDB');
+    }
 }
 
 // Run the seeding function
 if (require.main === module) {
-  seedProblems();
+    seedProblems();
 }
 
 module.exports = { seedProblems, sampleProblems };

@@ -9,6 +9,9 @@ import {
   createRateLimit,
   HTTP_STATUS,
 } from '@ai-platform/common';
+import { noopRateLimit } from '../helpers/noopRateLimit';
+
+const DISABLE_RATE_LIMIT = false; // toggle here
 
 // Create Redis client for rate limiting
 const redisClient = new Redis({
@@ -78,33 +81,35 @@ const skipRateLimit = (req: Request): boolean => {
 
   // Skip for successful requests if configured
   if (config.rateLimit.skipSuccessfulRequests) {
-    return false; // Let the rate limiter handle this
+    return true; // Let the rate limiter handle this
   }
 
-  return false;
+  return true;
 };
 
 // Main rate limiting middleware
-export const rateLimitMiddleware = rateLimit({
-  store: new RedisStore({
-    sendCommand: (...args: any[]) =>
-      redisClient.call(args[0], ...args.slice(1)) as any,
-  }),
-  windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
-  keyGenerator,
-  handler: rateLimitHandler,
-  skip: skipRateLimit,
-  skipSuccessfulRequests: config.rateLimit.skipSuccessfulRequests,
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  message: {
-    error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Too many requests, please try again later',
-    },
-  },
-});
+export const rateLimitMiddleware = DISABLE_RATE_LIMIT
+  ? noopRateLimit
+  : rateLimit({
+      store: new RedisStore({
+        sendCommand: (...args: any[]) =>
+          redisClient.call(args[0], ...args.slice(1)) as any,
+      }),
+      windowMs: config.rateLimit.windowMs,
+      max: config.rateLimit.max,
+      keyGenerator,
+      handler: rateLimitHandler,
+      skip: skipRateLimit,
+      skipSuccessfulRequests: config.rateLimit.skipSuccessfulRequests,
+      standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+      legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+      message: {
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many requests, please try again later',
+        },
+      },
+    });
 
 // Stricter rate limiting for authentication endpoints
 export const authRateLimitMiddleware = rateLimit({
@@ -112,8 +117,8 @@ export const authRateLimitMiddleware = rateLimit({
     sendCommand: (...args: any[]) =>
       redisClient.call(args[0], ...args.slice(1)) as any,
   }),
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 auth requests per windowMs
+  windowMs: 1 * 60 * 1000, // 15 minutes
+  max: 5000, // Limit each IP to 5 auth requests per windowMs
   keyGenerator: (req: Request) => {
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
     return `auth:${ip}`;

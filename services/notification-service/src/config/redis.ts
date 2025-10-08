@@ -1,4 +1,4 @@
-import Redis from 'redis';
+import * as Redis from 'redis';
 import { NotificationData, NotificationAnalytics } from '../types';
 
 export class RedisManager {

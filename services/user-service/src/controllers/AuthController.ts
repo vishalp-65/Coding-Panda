@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthService, EmailVerificationService } from '../services';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { HTTP_STATUS } from '@ai-platform/common';
 
 export class AuthController {
   private authService: AuthService;
@@ -15,7 +16,7 @@ export class AuthController {
     try {
       const result = await this.authService.register(req.body);
 
-      res.status(201).json({
+      res.status(HTTP_STATUS.OK).json({
         success: true,
         data: result,
         message:
@@ -25,7 +26,7 @@ export class AuthController {
       const message =
         error instanceof Error ? error.message : 'Registration failed';
 
-      res.status(400).json({
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
         error: {
           code: 'REGISTRATION_FAILED',
           message,
@@ -42,7 +43,7 @@ export class AuthController {
     try {
       const result = await this.authService.getUserInfo(req.user!.id);
 
-      res.status(200).json({
+      res.status(HTTP_STATUS.OK).json({
         success: true,
         data: result,
       });
@@ -50,7 +51,7 @@ export class AuthController {
       const message =
         error instanceof Error ? error.message : 'Failed to retrieve user info';
 
-      res.status(400).json({
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
         error: {
           code: 'GET_USER_INFO_FAILED',
           message,
@@ -79,7 +80,7 @@ export class AuthController {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed';
 
-      res.status(401).json({
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
         error: {
           code: 'LOGIN_FAILED',
           message,
@@ -91,7 +92,12 @@ export class AuthController {
 
   refreshToken = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { refreshToken } = req.body;
+      let { refreshToken } = req.body;
+
+      // Remove "Barrier " prefix if present
+      if (refreshToken.startsWith('Barrier ')) {
+        refreshToken = refreshToken.replace(/^Barrier\s+/i, '');
+      }
       const result = await this.authService.refreshToken(refreshToken);
 
       res.json({
@@ -103,7 +109,7 @@ export class AuthController {
       const message =
         error instanceof Error ? error.message : 'Token refresh failed';
 
-      res.status(401).json({
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
         error: {
           code: 'TOKEN_REFRESH_FAILED',
           message,
@@ -129,7 +135,7 @@ export class AuthController {
         message: 'Logged out successfully',
       });
     } catch (error) {
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         error: {
           code: 'LOGOUT_FAILED',
           message: 'Logout failed',
@@ -151,7 +157,7 @@ export class AuthController {
         message: 'Logged out from all devices successfully',
       });
     } catch (error) {
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         error: {
           code: 'LOGOUT_ALL_FAILED',
           message: 'Logout from all devices failed',
@@ -174,7 +180,7 @@ export class AuthController {
       const message =
         error instanceof Error ? error.message : 'Email verification failed';
 
-      res.status(400).json({
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
         error: {
           code: 'EMAIL_VERIFICATION_FAILED',
           message,
@@ -202,7 +208,7 @@ export class AuthController {
           ? error.message
           : 'Failed to send verification email';
 
-      res.status(400).json({
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
         error: {
           code: 'VERIFICATION_EMAIL_FAILED',
           message,

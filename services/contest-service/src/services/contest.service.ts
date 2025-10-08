@@ -26,7 +26,7 @@ export class ContestService {
     private contestRepository: ContestRepository,
     private notificationService: NotificationService,
     private codeExecutionService: CodeExecutionService
-  ) {}
+  ) { }
 
   async createContest(
     contestData: CreateContestRequest,
@@ -90,7 +90,7 @@ export class ContestService {
 
       // Validate that contest can be updated (not active or ended)
       if (
-        [ContestStatus.ACTIVE, ContestStatus.ENDED].includes(
+        [ContestStatus.ONGOING, ContestStatus.ENDED].includes(
           existingContest.status
         )
       ) {
@@ -129,9 +129,9 @@ export class ContestService {
         throw new Error('Unauthorized to delete this contest');
       }
 
-      // Can only delete draft contests
-      if (contest.status !== ContestStatus.DRAFT) {
-        throw new Error('Can only delete draft contests');
+      // Can only delete upcoming contests
+      if (contest.status !== ContestStatus.UPCOMING) {
+        throw new Error('Can only delete upcoming contests');
       }
 
       const deleted = await this.contestRepository.deleteContest(id);
@@ -242,7 +242,7 @@ export class ContestService {
       }
 
       // Check if contest is active
-      if (contest.status !== ContestStatus.ACTIVE) {
+      if (contest.status !== ContestStatus.ONGOING) {
         throw new Error('Contest is not active');
       }
 
@@ -256,7 +256,7 @@ export class ContestService {
       }
 
       if (
-        participant.status !== ParticipantStatus.PARTICIPATING &&
+        participant.status !== ParticipantStatus.ACTIVE &&
         participant.status !== ParticipantStatus.REGISTERED
       ) {
         throw new Error('Cannot submit - participant status is invalid');
@@ -307,7 +307,7 @@ export class ContestService {
 
       // Try to get cached leaderboard first
       const cached = await this.getCachedLeaderboard(contestId);
-      if (cached && contest.status !== ContestStatus.ACTIVE) {
+      if (cached && contest.status !== ContestStatus.ONGOING) {
         return cached;
       }
 
@@ -346,7 +346,7 @@ export class ContestService {
       };
 
       // Cache leaderboard for non-active contests
-      if (contest.status !== ContestStatus.ACTIVE) {
+      if (contest.status !== ContestStatus.ONGOING) {
         await this.cacheLeaderboard(leaderboard);
       }
 

@@ -9,7 +9,7 @@ export function setupRoutes(app: Express): void {
   // app.get('/health', getHealth);
 
   // Metrics endpoint (no authentication required)
-  // app.get('/metrics', getMetrics);
+  app.get('/metrics', getMetrics);
 
   // Simple test endpoint (no authentication required)
   app.get('/test', (req, res) => {

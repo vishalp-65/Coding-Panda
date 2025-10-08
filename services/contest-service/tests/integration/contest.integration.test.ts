@@ -47,7 +47,7 @@ describe('Contest Integration Tests', () => {
 
       expect(response.body).toHaveProperty('id');
       expect(response.body.title).toBe(validContestData.title);
-      expect(response.body.status).toBe(ContestStatus.DRAFT);
+      expect(response.body.status).toBe(ContestStatus.UPCOMING);
     });
 
     it('should return 401 without authentication', async () => {

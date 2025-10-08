@@ -10,7 +10,7 @@ export class SchedulerService {
     private contestService: ContestService,
     private contestRepository: ContestRepository,
     private notificationService: NotificationService
-  ) {}
+  ) { }
 
   start(): void {
     // Update contest statuses every minute
@@ -124,7 +124,7 @@ export class SchedulerService {
 
       // Find contests that just started (within the last 5 minutes)
       const { contests } = await this.contestRepository.searchContests({
-        status: ContestStatus.ACTIVE,
+        status: ContestStatus.ONGOING,
         startDate: fiveMinutesAgo.toISOString(),
         endDate: now.toISOString(),
       });

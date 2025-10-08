@@ -1,0 +1,30 @@
+# ============================================
+# Python Optimized Dockerfile (Multi-stage)
+# ============================================
+FROM python:3.11-alpine AS python-executor
+
+# Install minimal runtime dependencies and optimize
+RUN apk add --no-cache \
+    libstdc++ \
+    && rm -rf /var/cache/apk/* \
+    && python -m compileall /usr/local/lib/python3.11 \
+    && find /usr/local/lib/python3.11 -name "*.pyc" -delete \
+    && find /usr/local/lib/python3.11 -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+
+WORKDIR /app
+
+# Create non-root user for security (use different UID to avoid conflict)
+RUN adduser -D -u 1001 coderunner \
+    && chown coderunner:coderunner /app
+
+# Set Python optimizations
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONHASHSEED=random \
+    PYTHONOPTIMIZE=2
+
+# Switch to non-root user
+USER coderunner
+
+# Default command to execute Python code
+CMD ["python3", "-u", "/app/solution.py"]

@@ -8,17 +8,20 @@ import { RecentActivity } from '@/components/RecentActivity';
 import { RecommendedProblems } from '@/components/RecommendedProblems';
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAppSelector(state => state.auth);
-  const { stats, recentActivity, recommendedProblems, isLoading } =
+  const { user, isLoading: authLoading } = useAppSelector(state => state.auth);
+  const { recentActivity, recommendedProblems, isLoading: dashboardLoading } =
     useDashboardData();
 
-  if (isLoading) {
+  if (authLoading || dashboardLoading || !user) {
     return <DashboardSkeleton />;
   }
 
+  // Use stats from user object
+  const stats = user.stats;
+
   return (
     <div className="space-y-6">
-      <WelcomeBanner username={user?.username} />
+      <WelcomeBanner username={user.username} />
       <StatsGrid stats={stats} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

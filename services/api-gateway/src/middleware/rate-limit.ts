@@ -3,7 +3,12 @@ import RedisStore from 'rate-limit-redis';
 import Redis from 'ioredis';
 import { Request, Response } from 'express';
 import { config } from '../config';
-import { logger, SecurityAuditLogger, createRateLimit } from '@ai-platform/common';
+import {
+  logger,
+  SecurityAuditLogger,
+  createRateLimit,
+  HTTP_STATUS,
+} from '@ai-platform/common';
 
 // Create Redis client for rate limiting
 const redisClient = new Redis({
@@ -38,17 +43,13 @@ const rateLimitHandler = (req: Request, res: Response) => {
   const ip = req.ip || req.connection.remoteAddress;
 
   // Log security event for rate limit violation
-  SecurityAuditLogger.logSecurityEvent(
-    'RATE_LIMIT_EXCEEDED',
-    'MEDIUM',
-    {
-      userId,
-      ip,
-      method: req.method,
-      url: req.url,
-      userAgent: req.get('User-Agent'),
-    }
-  );
+  SecurityAuditLogger.logSecurityEvent('RATE_LIMIT_EXCEEDED', 'MEDIUM', {
+    userId,
+    ip,
+    method: req.method,
+    url: req.url,
+    userAgent: req.get('User-Agent'),
+  });
 
   logger.warn('Rate limit exceeded', {
     requestId: req.requestId || 'unknown',
@@ -58,7 +59,7 @@ const rateLimitHandler = (req: Request, res: Response) => {
     url: req.url,
   });
 
-  res.status(429).json({
+  res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
     error: {
       code: 'RATE_LIMIT_EXCEEDED',
       message: 'Too many requests, please try again later',
@@ -142,18 +143,14 @@ export const adminRateLimitMiddleware = rateLimit({
     return `admin:${userId}:${ip}`;
   },
   handler: (req: Request, res: Response) => {
-    SecurityAuditLogger.logSecurityEvent(
-      'ADMIN_RATE_LIMIT_EXCEEDED',
-      'HIGH',
-      {
-        userId: (req as any).user?.id,
-        ip: req.ip,
-        method: req.method,
-        url: req.url,
-      }
-    );
+    SecurityAuditLogger.logSecurityEvent('ADMIN_RATE_LIMIT_EXCEEDED', 'HIGH', {
+      userId: (req as any).user?.id,
+      ip: req.ip,
+      method: req.method,
+      url: req.url,
+    });
 
-    res.status(429).json({
+    res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
       error: {
         code: 'ADMIN_RATE_LIMIT_EXCEEDED',
         message: 'Too many admin requests, please try again later',
@@ -200,7 +197,11 @@ export const searchRateLimitMiddleware = rateLimit({
 });
 
 // Progressive rate limiting based on user behavior
-export const adaptiveRateLimitMiddleware = (req: Request, res: Response, next: any) => {
+export const adaptiveRateLimitMiddleware = (
+  req: Request,
+  res: Response,
+  next: any
+) => {
   const userId = (req as any).user?.id;
   const ip = req.ip || req.connection.remoteAddress || 'unknown';
 
@@ -215,11 +216,15 @@ export const adaptiveRateLimitMiddleware = (req: Request, res: Response, next: a
   const isSuspicious = suspiciousPatterns.some(pattern => pattern);
 
   if (isSuspicious) {
-    SecurityAuditLogger.logSuspiciousActivity(req, 'SUSPICIOUS_REQUEST_PATTERN', {
-      patterns: suspiciousPatterns,
-      userId,
-      ip,
-    });
+    SecurityAuditLogger.logSuspiciousActivity(
+      req,
+      'SUSPICIOUS_REQUEST_PATTERN',
+      {
+        patterns: suspiciousPatterns,
+        userId,
+        ip,
+      }
+    );
 
     // Apply stricter rate limiting for suspicious requests
     const strictLimit = rateLimit({
@@ -227,7 +232,7 @@ export const adaptiveRateLimitMiddleware = (req: Request, res: Response, next: a
       max: 1, // Only 1 request per minute for suspicious activity
       keyGenerator: () => `suspicious:${ip}`,
       handler: (req: Request, res: Response) => {
-        res.status(429).json({
+        res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
           error: {
             code: 'SUSPICIOUS_ACTIVITY_RATE_LIMIT',
             message: 'Request blocked due to suspicious activity',

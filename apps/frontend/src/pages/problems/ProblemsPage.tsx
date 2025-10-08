@@ -1,60 +1,62 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Search, Filter, BookmarkIcon, CheckCircle, Clock } from 'lucide-react'
-import { useAppDispatch, useAppSelector } from '@/hooks/redux'
-import { fetchProblems, setSearchCriteria } from '@/store/slices/problemsSlice'
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, Filter, BookmarkIcon, CheckCircle, Clock } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
+import { fetchProblems, setSearchCriteria } from '@/store/slices/problemsSlice';
 
 const ProblemsPage = () => {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
   const { problems, searchCriteria, totalCount, isLoading } = useAppSelector(
-    (state) => state.problems
-  )
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>([])
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [showFilters, setShowFilters] = useState(false)
+    state => state.problems
+  );
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchProblems(searchCriteria))
-  }, [dispatch, searchCriteria])
+    dispatch(fetchProblems(searchCriteria));
+  }, [dispatch, searchCriteria]);
 
   const handleSearch = () => {
-    dispatch(setSearchCriteria({
-      ...searchCriteria,
-      query: searchQuery,
-      difficulty: selectedDifficulty,
-      tags: selectedTags,
-      page: 1,
-    }))
-  }
+    dispatch(
+      setSearchCriteria({
+        ...searchCriteria,
+        query: searchQuery,
+        difficulty: selectedDifficulty,
+        tags: selectedTags,
+        page: 1,
+      })
+    );
+  };
 
   const handlePageChange = (page: number) => {
-    dispatch(setSearchCriteria({ ...searchCriteria, page }))
-  }
+    dispatch(setSearchCriteria({ ...searchCriteria, page }));
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'easy':
-        return 'text-green-600 bg-green-100'
+        return 'text-green-600 bg-green-100';
       case 'medium':
-        return 'text-yellow-600 bg-yellow-100'
+        return 'text-yellow-600 bg-yellow-100';
       case 'hard':
-        return 'text-red-600 bg-red-100'
+        return 'text-red-600 bg-red-100';
       default:
-        return 'text-gray-600 bg-gray-100'
+        return 'text-gray-600 bg-gray-100';
     }
-  }
+  };
 
   const getStatusIcon = (status?: string | null) => {
     switch (status) {
       case 'solved':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'attempted':
-        return <Clock className="h-4 w-4 text-yellow-600" />
+        return <Clock className="h-4 w-4 text-yellow-600" />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   // Mock data for demonstration
   const mockProblems = [
@@ -85,9 +87,9 @@ const ProblemsPage = () => {
       statistics: { acceptanceRate: 33.8 },
       status: null,
     },
-  ]
+  ];
 
-  const displayProblems = problems.length > 0 ? problems : mockProblems
+  const displayProblems = problems.length > 0 ? problems : mockProblems;
 
   return (
     <div className="space-y-6">
@@ -109,15 +111,15 @@ const ProblemsPage = () => {
       {/* Search and Filters */}
       <div className="card">
         <div className="card-content">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 mt-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search problems..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && handleSearch()}
                 className="input pl-10"
               />
             </div>
@@ -141,23 +143,28 @@ const ProblemsPage = () => {
                     Difficulty
                   </label>
                   <div className="space-y-2">
-                    {['easy', 'medium', 'hard'].map((difficulty) => (
+                    {['easy', 'medium', 'hard'].map(difficulty => (
                       <label key={difficulty} className="flex items-center">
                         <input
                           type="checkbox"
                           checked={selectedDifficulty.includes(difficulty)}
-                          onChange={(e) => {
+                          onChange={e => {
                             if (e.target.checked) {
-                              setSelectedDifficulty([...selectedDifficulty, difficulty])
+                              setSelectedDifficulty([
+                                ...selectedDifficulty,
+                                difficulty,
+                              ]);
                             } else {
                               setSelectedDifficulty(
-                                selectedDifficulty.filter((d) => d !== difficulty)
-                              )
+                                selectedDifficulty.filter(d => d !== difficulty)
+                              );
                             }
                           }}
                           className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                         />
-                        <span className="ml-2 text-sm capitalize">{difficulty}</span>
+                        <span className="ml-2 text-sm capitalize">
+                          {difficulty}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -168,14 +175,16 @@ const ProblemsPage = () => {
                     Status
                   </label>
                   <div className="space-y-2">
-                    {['solved', 'attempted', 'unsolved'].map((status) => (
+                    {['solved', 'attempted', 'unsolved'].map(status => (
                       <label key={status} className="flex items-center">
                         <input
                           type="radio"
                           name="status"
                           className="border-gray-300 text-primary-600 focus:ring-primary-500"
                         />
-                        <span className="ml-2 text-sm capitalize">{status}</span>
+                        <span className="ml-2 text-sm capitalize">
+                          {status}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -186,14 +195,22 @@ const ProblemsPage = () => {
                     Tags
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {['Array', 'String', 'Hash Table', 'Dynamic Programming', 'Math'].map((tag) => (
+                    {[
+                      'Array',
+                      'String',
+                      'Hash Table',
+                      'Dynamic Programming',
+                      'Math',
+                    ].map(tag => (
                       <button
                         key={tag}
                         onClick={() => {
                           if (selectedTags.includes(tag)) {
-                            setSelectedTags(selectedTags.filter((t) => t !== tag))
+                            setSelectedTags(
+                              selectedTags.filter(t => t !== tag)
+                            );
                           } else {
-                            setSelectedTags([...selectedTags, tag])
+                            setSelectedTags([...selectedTags, tag]);
                           }
                         }}
                         className={`px-3 py-1 text-xs rounded-full border ${
@@ -244,7 +261,7 @@ const ProblemsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {displayProblems.map((problem) => (
+                  {displayProblems.map(problem => (
                     <tr key={problem.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center justify-center w-6">
@@ -260,7 +277,7 @@ const ProblemsPage = () => {
                             {problem.title}
                           </Link>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {problem.tags.map((tag) => (
+                            {problem.tags.map(tag => (
                               <span
                                 key={tag}
                                 className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
@@ -308,7 +325,8 @@ const ProblemsPage = () => {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-500">
-          Showing 1 to {displayProblems.length} of {totalCount || displayProblems.length} problems
+          Showing 1 to {displayProblems.length} of{' '}
+          {totalCount || displayProblems.length} problems
         </div>
         <div className="flex items-center space-x-2">
           <button
@@ -330,7 +348,7 @@ const ProblemsPage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ProblemsPage
+export default ProblemsPage;

@@ -35,6 +35,31 @@ export class AuthController {
     }
   };
 
+  getUserInfo = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const result = await this.authService.getUserInfo(req.user!.id);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to retrieve user info';
+
+      res.status(400).json({
+        error: {
+          code: 'GET_USER_INFO_FAILED',
+          message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  };
+
   login = async (req: Request, res: Response): Promise<void> => {
     try {
       const userAgent = req.headers['user-agent'];

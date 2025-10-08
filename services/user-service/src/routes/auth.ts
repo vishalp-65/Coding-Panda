@@ -19,6 +19,7 @@ router.post(
   validateRefreshToken,
   authController.refreshToken
 );
+router.get('/me', authenticate, authController.getUserInfo);
 router.get(
   '/verify-email',
   validateEmailVerification,

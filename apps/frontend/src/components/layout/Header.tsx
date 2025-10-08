@@ -10,6 +10,7 @@ const Header = () => {
   const { user } = useAppSelector(state => state.auth);
   const { notifications } = useAppSelector(state => state.ui);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false); // ✅ FIX
 
   const handleLogout = async () => {
     try {
@@ -45,7 +46,7 @@ const Header = () => {
         <div className="flex items-center space-x-4">
           {/* Notifications */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 rounded-md hover:bg-gray-100"
             >
@@ -60,14 +61,23 @@ const Header = () => {
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
                 <div className="px-4 py-2 border-b border-gray-200">
-                  <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+                  <h3 className="text-sm font-medium text-gray-900">
+                    Notifications
+                  </h3>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
                   {notifications.length > 0 ? (
                     notifications.map((notification, index) => (
-                      <div key={index} className="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
-                        <p className="text-sm text-gray-900">{notification.title}</p>
-                        <p className="text-xs text-gray-500 mt-1">{notification.message}</p>
+                      <div
+                        key={index}
+                        className="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                      >
+                        <p className="text-sm text-gray-900">
+                          {notification.title}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {notification.message}
+                        </p>
                       </div>
                     ))
                   ) : (

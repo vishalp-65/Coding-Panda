@@ -1,10 +1,13 @@
 export interface DashboardStats {
+  totalSubmissions: number;
+  acceptedSubmissions: number;
+  acceptanceRate: string;
   problemsSolved: number;
-  totalProblems: number;
   contestsParticipated: number;
-  currentStreak: number;
-  weeklyGoal: number;
-  weeklyProgress: number;
+  ranking: number;
+  streak: number;
+  longestStreak: number;
+  skillRatings: Record<string, number>;
 }
 
 export interface Activity {

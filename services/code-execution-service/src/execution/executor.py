@@ -1,6 +1,6 @@
 import time
 import uuid
-from typing import List, Tuple
+from typing import List
 from src.models.execution import (
     ExecutionRequest, ExecutionResult, ExecutionStatus, 
     TestResult, ResourceLimits, ExecutionMetrics
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class CodeExecutor:
-    """Main code execution orchestrator."""
+    """Optimized code execution orchestrator with batch processing."""
     
     def __init__(self):
         self.docker_manager = DockerExecutionManager()
@@ -22,7 +22,7 @@ class CodeExecutor:
         self.metrics_collector = MetricsCollector()
     
     async def execute(self, request: ExecutionRequest) -> ExecutionResult:
-        """Executes code with test cases and returns comprehensive results."""
+        """Executes code with test cases using optimized batch processing."""
         request_id = str(uuid.uuid4())
         start_time = time.time()
         
@@ -46,24 +46,72 @@ class CodeExecutor:
                 cpu_limit="0.5"
             )
             
-            # Handle compilation if needed
-            compilation_output = None
-            if self._needs_compilation(request.language):
-                compile_result = await self._compile_code(
-                    sanitized_code, request.language, limits
-                )
-                if compile_result:
-                    return compile_result
-                compilation_output = "Compilation successful"
+            # Validate test cases upfront
+            test_inputs = []
+            validation_errors = []
             
-            # Execute test cases
-            test_results = await self._execute_test_cases(
-                sanitized_code, request, limits
+            for i, test_case in enumerate(request.test_cases):
+                test_violations = self.security_validator.validate_input_output(
+                    test_case.input, test_case.expected_output
+                )
+                if test_violations:
+                    validation_errors.append((i, test_violations))
+                else:
+                    test_inputs.append(test_case.input)
+            
+            # Execute all test cases in batch (compile once, run in parallel)
+            execution_results = await self.docker_manager.execute_code_batch(
+                sanitized_code,
+                request.language,
+                test_inputs,
+                limits
             )
             
-            # Calculate final results
+            # Check if compilation failed
+            if (execution_results and 
+                execution_results[0][4] == ExecutionStatus.COMPILE_ERROR):
+                return ExecutionResult(
+                    status=ExecutionStatus.COMPILE_ERROR,
+                    output=execution_results[0][0],
+                    error=execution_results[0][1] or "Compilation failed",
+                    execution_time=execution_results[0][2],
+                    memory_used=execution_results[0][3],
+                    test_results=[],
+                    total_tests=len(request.test_cases),
+                    passed_tests=0,
+                    compilation_output=execution_results[0][1]
+                )
+            
+            # Build test results
+            test_results = []
+            exec_result_idx = 0
+            
+            for i, test_case in enumerate(request.test_cases):
+                # Check if this test had validation errors
+                validation_error = next(
+                    (err for idx, err in validation_errors if idx == i),
+                    None
+                )
+                
+                if validation_error:
+                    test_results.append(self._create_validation_error_result(
+                        test_case, validation_error[1]
+                    ))
+                else:
+                    # Get execution result
+                    stdout, stderr, exec_time, memory_used, status = \
+                        execution_results[exec_result_idx]
+                    exec_result_idx += 1
+                    
+                    test_result = self._create_test_result(
+                        test_case, stdout, stderr, exec_time, memory_used, status
+                    )
+                    test_results.append(test_result)
+            
+            # Create final result
             result = self._create_execution_result(
-                test_results, compilation_output
+                test_results,
+                "Compilation successful" if self._needs_compilation(request.language) else None
             )
             
             # Collect metrics
@@ -114,73 +162,6 @@ class CodeExecutor:
             passed_tests=0
         )
     
-    async def _compile_code(
-        self, 
-        code: str, 
-        language, 
-        limits: ResourceLimits
-    ) -> ExecutionResult | None:
-        """Compiles code for compiled languages. Returns error result if failed."""
-        stdout, stderr, exec_time, memory, status = \
-            await self.docker_manager.execute_code(code, language, "", limits)
-        
-        if status != ExecutionStatus.SUCCESS:
-            return ExecutionResult(
-                status=ExecutionStatus.COMPILE_ERROR,
-                output=stdout,
-                error=stderr or "Compilation failed",
-                execution_time=exec_time,
-                memory_used=memory,
-                test_results=[],
-                total_tests=0,
-                passed_tests=0,
-                compilation_output=stderr
-            )
-        
-        return None
-    
-    async def _execute_test_cases(
-        self,
-        sanitized_code: str,
-        request: ExecutionRequest,
-        limits: ResourceLimits
-    ) -> List[TestResult]:
-        """Executes all test cases and returns results."""
-        test_results = []
-        
-        for i, test_case in enumerate(request.test_cases):
-            try:
-                # Validate test case
-                test_violations = self.security_validator.validate_input_output(
-                    test_case.input, test_case.expected_output
-                )
-                if test_violations:
-                    test_results.append(self._create_validation_error_result(
-                        test_case, test_violations
-                    ))
-                    continue
-                
-                # Execute test case
-                stdout, stderr, exec_time, memory_used, status = \
-                    await self.docker_manager.execute_code(
-                        sanitized_code,
-                        request.language,
-                        test_case.input,
-                        limits
-                    )
-                
-                # Create test result
-                test_result = self._create_test_result(
-                    test_case, stdout, stderr, exec_time, memory_used, status
-                )
-                test_results.append(test_result)
-                
-            except Exception as e:
-                logger.error(f"Error executing test case {i}: {e}", exc_info=True)
-                test_results.append(self._create_test_execution_error(test_case, e))
-        
-        return test_results
-    
     def _create_validation_error_result(
         self, 
         test_case, 
@@ -228,17 +209,6 @@ class CodeExecutor:
             execution_time=exec_time,
             memory_used=memory_used,
             error_message=stderr if stderr else None
-        )
-    
-    def _create_test_execution_error(self, test_case, error: Exception) -> TestResult:
-        """Creates a test result for execution errors."""
-        return TestResult(
-            passed=False,
-            actual_output="",
-            expected_output=test_case.expected_output,
-            execution_time=0,
-            memory_used=0,
-            error_message=f"Internal error: {str(error)}"
         )
     
     def _create_execution_result(

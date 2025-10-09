@@ -1,0 +1,19 @@
+# ============================================
+# Java Builder Image (for compilation)
+# ============================================
+FROM eclipse-temurin:17-jdk-alpine AS java-builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache bash
+
+# Create non-root user for security
+RUN adduser -D -u 1000 coderunner \
+    && chown coderunner:coderunner /app
+
+# Switch to non-root user
+USER coderunner
+
+# Default command for compilation
+CMD ["javac", "-d", "/app", "/app/Solution.java"]

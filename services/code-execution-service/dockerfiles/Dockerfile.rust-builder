@@ -1,0 +1,21 @@
+# ============================================
+# Rust Builder Image (for compilation)
+# ============================================
+FROM rust:1.75-alpine AS rust-builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache \
+    musl-dev \
+    pkgconfig
+
+# Create non-root user for security
+RUN adduser -D -u 1000 coderunner \
+    && chown coderunner:coderunner /app
+
+# Switch to non-root user
+USER coderunner
+
+# Default command for compilation
+CMD ["rustc", "--edition", "2021", "-C", "opt-level=2", "-o", "/app/solution", "/app/solution.rs"]

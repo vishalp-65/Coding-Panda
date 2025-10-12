@@ -1,24 +1,45 @@
-FROM python:3.11-slim
+# ============================================
+# Optimized Code Execution Service Dockerfile
+# ============================================
+FROM python:3.11-alpine
 
-# Install Docker CLI and system dependencies
-RUN apt-get update && apt-get install -y \
-    docker.io \
+# Install Docker CLI and runtime dependencies
+RUN apk add --no-cache \
+    docker-cli \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    tini \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    && rm -rf /var/cache/apk/* \
+    && rm -rf /tmp/* /var/tmp/*
 
 WORKDIR /app
 
-# Copy requirements and install Python dependencies
+# Copy and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip cache purge
 
 # Copy application code
-COPY . .
+COPY src/ ./src/
+COPY *.py ./
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+# Set Python optimizations
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONOPTIMIZE=2 \
+    PYTHONHASHSEED=random
 
-EXPOSE 8000
+# Note: Running as root for Docker socket access in development
+# In production, use proper Docker socket permissions
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 3004
+
+# Health check with faster timeout
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3004/api/v1/health || exit 1
+
+# Use tini for proper signal handling
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "3004", "--workers", "1"]

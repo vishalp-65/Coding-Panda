@@ -2,36 +2,64 @@ version: '3.8'
 
 services:
   code-execution-service:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - '8000:8000'
+      - '3004:3004'
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /tmp:/tmp:rw
     environment:
       - DEBUG=true
       - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+      - PYTHONOPTIMIZE=2
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8000/api/v1/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:3004/api/v1/health']
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
+      start_period: 15s
+    networks:
+      - code-execution-network
 
   redis:
     image: redis:7-alpine
     ports:
-      - '6379:6379'
+      - '6380:6379'
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.5
+    command: redis-server --maxmemory 96mb --maxmemory-policy allkeys-lru --save 60 1000
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
+      start_period: 10s
+    networks:
+      - code-execution-network
 
 volumes:
   redis_data:
+    driver: local
+
+networks:
+  code-execution-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -8,6 +8,7 @@ import asyncio
 import uvicorn
 from src.api.routes import router
 from src.config.settings import settings
+from contextlib import asynccontextmanager
 
 # Configure logging
 logging.basicConfig(
@@ -16,13 +17,29 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Pre-pull images
+    from src.execution.docker_manager import DockerExecutionManager
+    
+    executor = DockerExecutionManager()
+    await executor.pull_images()
+    await executor.warmup()  # Warm up with test runs
+    
+    yield
+    
+    # Shutdown: Cleanup
+    await executor.cleanup_old_containers()
+
+
 # Create FastAPI app
 app = FastAPI(
     title=settings.app_name,
     description="Secure code execution service for AI-powered coding platform",
     version="1.0.0",
     docs_url="/docs" if settings.debug else None,
-    redoc_url="/redoc" if settings.debug else None
+    redoc_url="/redoc" if settings.debug else None,
+    lifespan=lifespan
 )
 
 # Security middleware
@@ -144,7 +161,7 @@ async def shutdown_event():
         # Cleanup resources
         from src.api.routes import get_executor
         executor = get_executor()
-        executor.docker_manager.cleanup_old_containers()
+        await executor.docker_manager.cleanup_old_containers()
         
         logger.info("Service shutdown completed")
         

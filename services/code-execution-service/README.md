@@ -50,7 +50,7 @@ cp .env.example .env
 docker-compose up -d
 ```
 
-4. The service will be available at `http://localhost:8000`
+4. The service will be available at `http://localhost:3004`
 
 ### Development Setup
 
@@ -69,7 +69,7 @@ docker run -d -p 6379:6379 redis:7-alpine
 3. Run the service:
 
 ```bash
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn src.main:app --reload --host 0.0.0.0 --port 3004
 ```
 
 ## API Endpoints

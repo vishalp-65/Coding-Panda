@@ -2,11 +2,11 @@ import { Router } from 'express';
 import { ProblemController } from '../controllers/ProblemController';
 import { validateRequest, validateQuery } from '@ai-platform/common';
 import {
-  createProblemSchema,
-  updateProblemSchema,
-  searchProblemsSchema,
-  ratingSchema,
+  createProblemWithCodeSpecSchema,
   paginationSchema,
+  ratingSchema,
+  searchProblemsSchema,
+  updateProblemSchema,
 } from '../validation/problemValidation';
 
 const router = Router();
@@ -28,8 +28,8 @@ router.get('/health', (req, res) => {
 // Problem CRUD operations
 router.post(
   '/',
-  validateRequest(createProblemSchema),
-  problemController.createProblem
+  validateRequest(createProblemWithCodeSpecSchema),
+  problemController.createCodingProblem
 );
 
 router.get(
@@ -47,6 +47,8 @@ router.get(
 );
 
 router.get('/:id', problemController.getProblem);
+
+router.get('/:id/template', problemController.getProblemCodeTemplate);
 
 router.put(
   '/:id',
@@ -69,5 +71,11 @@ router.post(
 
 // Statistics update (typically called by other services)
 router.post('/:id/statistics', problemController.updateProblemStatistics);
+
+// Admin operations
+router.post(
+  '/admin/assign-numbers',
+  problemController.assignNumbersToExistingProblems
+);
 
 export { router as problemRoutes };

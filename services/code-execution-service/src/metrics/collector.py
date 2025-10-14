@@ -1,153 +1,351 @@
-from typing import Dict, Any, List
-from datetime import datetime, timedelta
-from src.models.execution import ExecutionMetrics
+import asyncio
 import logging
+from typing import Dict, List, Optional
+from datetime import datetime, timedelta
+from src.models.execution import ExecutionMetrics, ExecutionStatus, Language
+import json
 
 logger = logging.getLogger(__name__)
 
 
 class MetricsCollector:
-    """Collects and stores execution metrics."""
+    """
+    Collects and aggregates execution metrics for monitoring and analytics.
+    """
     
     def __init__(self):
-        # In-memory storage for metrics (in production, use Redis or database)
-        self.metrics: List[ExecutionMetrics] = []
-        self.max_metrics = 10000  # Keep last 10k metrics
+        self.metrics_buffer: List[ExecutionMetrics] = []
+        self.buffer_lock = asyncio.Lock()
+        self.max_buffer_size = 1000
+        
+        # In-memory aggregations for quick access
+        self.hourly_stats: Dict[str, Dict] = {}
+        self.daily_stats: Dict[str, Dict] = {}
+        
+        # Start background tasks
+        asyncio.create_task(self._flush_metrics_periodically())
+        asyncio.create_task(self._cleanup_old_stats())
     
     async def collect_execution_metrics(self, metrics: ExecutionMetrics):
-        """Store execution metrics."""
+        """
+        Collect execution metrics.
+        
+        Args:
+            metrics: ExecutionMetrics object
+        """
         try:
-            self.metrics.append(metrics)
-            
-            # Trim old metrics if exceeding max
-            if len(self.metrics) > self.max_metrics:
-                self.metrics = self.metrics[-self.max_metrics:]
-            
-            logger.debug(f"Collected metrics for request: {metrics.request_id}")
-            
+            async with self.buffer_lock:
+                self.metrics_buffer.append(metrics)
+                
+                # Update real-time aggregations
+                await self._update_aggregations(metrics)
+                
+                # Flush if buffer is full
+                if len(self.metrics_buffer) >= self.max_buffer_size:
+                    await self._flush_metrics()
+                    
         except Exception as e:
             logger.error(f"Failed to collect metrics: {e}")
     
-    async def get_metrics_summary(self, hours: int = 24) -> Dict[str, Any]:
-        """Get metrics summary for the last N hours."""
+    async def _update_aggregations(self, metrics: ExecutionMetrics):
+        """Update in-memory aggregations."""
         try:
-            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
-            recent_metrics = [
-                m for m in self.metrics 
-                if m.timestamp >= cutoff_time
-            ]
+            # Get hour and day keys
+            hour_key = metrics.timestamp.strftime('%Y-%m-%d-%H')
+            day_key = metrics.timestamp.strftime('%Y-%m-%d')
             
-            if not recent_metrics:
-                return self._empty_metrics_summary()
+            # Update hourly stats
+            if hour_key not in self.hourly_stats:
+                self.hourly_stats[hour_key] = self._create_empty_stats()
             
-            # Calculate summary statistics
-            total_executions = len(recent_metrics)
-            successful = sum(1 for m in recent_metrics if m.status.value == "success")
-            failed = total_executions - successful
+            self._update_stats(self.hourly_stats[hour_key], metrics)
             
-            # Language breakdown
-            language_stats = {}
-            for m in recent_metrics:
-                lang = m.language.value
-                if lang not in language_stats:
-                    language_stats[lang] = {"count": 0, "success": 0}
-                language_stats[lang]["count"] += 1
-                if m.status.value == "success":
-                    language_stats[lang]["success"] += 1
+            # Update daily stats
+            if day_key not in self.daily_stats:
+                self.daily_stats[day_key] = self._create_empty_stats()
             
-            # Average metrics
-            avg_execution_time = sum(m.execution_time for m in recent_metrics) / total_executions
-            avg_memory = sum(m.memory_used for m in recent_metrics) / total_executions
-            avg_test_count = sum(m.test_count for m in recent_metrics) / total_executions
-            
-            return {
-                "status": "healthy",
-                "service": "Code Execution Service",
-                "time_window_hours": hours,
-                "total_executions": total_executions,
-                "successful_executions": successful,
-                "failed_executions": failed,
-                "success_rate": round(successful / total_executions * 100, 2),
-                "average_execution_time": round(avg_execution_time, 3),
-                "average_memory_used": round(avg_memory, 2),
-                "average_test_count": round(avg_test_count, 2),
-                "language_statistics": language_stats,
-                "timestamp": datetime.utcnow().isoformat()
-            }
+            self._update_stats(self.daily_stats[day_key], metrics)
             
         except Exception as e:
-            logger.error(f"Failed to get metrics summary: {e}")
-            return self._empty_metrics_summary()
+            logger.error(f"Failed to update aggregations: {e}")
     
-    async def get_user_metrics(self, user_id: str, hours: int = 24) -> Dict[str, Any]:
-        """Get metrics for a specific user."""
+    def _create_empty_stats(self) -> Dict:
+        """Create empty stats structure."""
+        return {
+            'total_executions': 0,
+            'successful_executions': 0,
+            'failed_executions': 0,
+            'avg_execution_time': 0.0,
+            'avg_memory_used': 0,
+            'avg_code_length': 0,
+            'language_breakdown': {lang.value: 0 for lang in Language},
+            'status_breakdown': {status.value: 0 for status in ExecutionStatus},
+            'total_execution_time': 0.0,
+            'total_memory_used': 0,
+            'total_code_length': 0,
+            'test_pass_rate': 0.0,
+            'total_tests': 0,
+            'total_passed_tests': 0,
+        }
+    
+    def _update_stats(self, stats: Dict, metrics: ExecutionMetrics):
+        """Update stats with new metrics."""
+        stats['total_executions'] += 1
+        
+        if metrics.status == ExecutionStatus.SUCCESS:
+            stats['successful_executions'] += 1
+        else:
+            stats['failed_executions'] += 1
+        
+        # Update totals
+        stats['total_execution_time'] += metrics.execution_time
+        stats['total_memory_used'] += metrics.memory_used
+        stats['total_code_length'] += metrics.code_length
+        stats['total_tests'] += metrics.test_count
+        stats['total_passed_tests'] += metrics.passed_tests
+        
+        # Update breakdowns
+        stats['language_breakdown'][metrics.language.value] += 1
+        stats['status_breakdown'][metrics.status.value] += 1
+        
+        # Recalculate averages
+        total = stats['total_executions']
+        stats['avg_execution_time'] = stats['total_execution_time'] / total
+        stats['avg_memory_used'] = stats['total_memory_used'] / total
+        stats['avg_code_length'] = stats['total_code_length'] / total
+        
+        # Calculate test pass rate
+        if stats['total_tests'] > 0:
+            stats['test_pass_rate'] = stats['total_passed_tests'] / stats['total_tests']
+    
+    async def _flush_metrics(self):
+        """Flush metrics buffer to persistent storage."""
         try:
-            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
-            user_metrics = [
-                m for m in self.metrics 
-                if m.user_id == user_id and m.timestamp >= cutoff_time
-            ]
+            if not self.metrics_buffer:
+                return
             
-            if not user_metrics:
+            # In a real implementation, this would write to a database
+            # For now, we'll just log the metrics
+            logger.info(f"Flushing {len(self.metrics_buffer)} metrics to storage")
+            
+            # Here you would typically:
+            # 1. Write to database (MongoDB, PostgreSQL, etc.)
+            # 2. Send to monitoring system (Prometheus, DataDog, etc.)
+            # 3. Write to log aggregation system (ELK stack, etc.)
+            
+            # Example: Write to JSON file (for demonstration)
+            await self._write_metrics_to_file(self.metrics_buffer)
+            
+            # Clear buffer
+            self.metrics_buffer.clear()
+            
+        except Exception as e:
+            logger.error(f"Failed to flush metrics: {e}")
+    
+    async def _write_metrics_to_file(self, metrics: List[ExecutionMetrics]):
+        """Write metrics to file (example implementation)."""
+        try:
+            # Convert to JSON-serializable format
+            metrics_data = []
+            for metric in metrics:
+                metrics_data.append({
+                    'request_id': metric.request_id,
+                    'user_id': metric.user_id,
+                    'language': metric.language.value,
+                    'code_length': metric.code_length,
+                    'execution_time': metric.execution_time,
+                    'memory_used': metric.memory_used,
+                    'status': metric.status.value,
+                    'test_count': metric.test_count,
+                    'passed_tests': metric.passed_tests,
+                    'timestamp': metric.timestamp.isoformat(),
+                })
+            
+            # In a real implementation, you'd write to a proper storage system
+            logger.debug(f"Would write {len(metrics_data)} metrics to storage")
+            
+        except Exception as e:
+            logger.error(f"Failed to write metrics to file: {e}")
+    
+    async def _flush_metrics_periodically(self):
+        """Periodically flush metrics buffer."""
+        while True:
+            try:
+                await asyncio.sleep(60)  # Flush every minute
+                async with self.buffer_lock:
+                    if self.metrics_buffer:
+                        await self._flush_metrics()
+            except Exception as e:
+                logger.error(f"Error in periodic metrics flush: {e}")
+    
+    async def _cleanup_old_stats(self):
+        """Clean up old in-memory stats to prevent memory leaks."""
+        while True:
+            try:
+                await asyncio.sleep(3600)  # Clean up every hour
+                
+                now = datetime.utcnow()
+                cutoff_hour = now - timedelta(hours=24)
+                cutoff_day = now - timedelta(days=30)
+                
+                # Clean up hourly stats older than 24 hours
+                hour_keys_to_remove = []
+                for hour_key in self.hourly_stats:
+                    try:
+                        hour_time = datetime.strptime(hour_key, '%Y-%m-%d-%H')
+                        if hour_time < cutoff_hour:
+                            hour_keys_to_remove.append(hour_key)
+                    except ValueError:
+                        continue
+                
+                for key in hour_keys_to_remove:
+                    del self.hourly_stats[key]
+                
+                # Clean up daily stats older than 30 days
+                day_keys_to_remove = []
+                for day_key in self.daily_stats:
+                    try:
+                        day_time = datetime.strptime(day_key, '%Y-%m-%d')
+                        if day_time < cutoff_day:
+                            day_keys_to_remove.append(day_key)
+                    except ValueError:
+                        continue
+                
+                for key in day_keys_to_remove:
+                    del self.daily_stats[key]
+                
+                logger.info(f"Cleaned up {len(hour_keys_to_remove)} hourly and {len(day_keys_to_remove)} daily stats")
+                
+            except Exception as e:
+                logger.error(f"Error in stats cleanup: {e}")
+    
+    async def get_hourly_stats(self, hours_back: int = 24) -> Dict[str, Dict]:
+        """
+        Get hourly statistics for the last N hours.
+        
+        Args:
+            hours_back: Number of hours to look back
+            
+        Returns:
+            Dictionary of hourly stats
+        """
+        try:
+            now = datetime.utcnow()
+            result = {}
+            
+            for i in range(hours_back):
+                hour_time = now - timedelta(hours=i)
+                hour_key = hour_time.strftime('%Y-%m-%d-%H')
+                
+                if hour_key in self.hourly_stats:
+                    result[hour_key] = self.hourly_stats[hour_key].copy()
+                else:
+                    result[hour_key] = self._create_empty_stats()
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to get hourly stats: {e}")
+            return {}
+    
+    async def get_daily_stats(self, days_back: int = 7) -> Dict[str, Dict]:
+        """
+        Get daily statistics for the last N days.
+        
+        Args:
+            days_back: Number of days to look back
+            
+        Returns:
+            Dictionary of daily stats
+        """
+        try:
+            now = datetime.utcnow()
+            result = {}
+            
+            for i in range(days_back):
+                day_time = now - timedelta(days=i)
+                day_key = day_time.strftime('%Y-%m-%d')
+                
+                if day_key in self.daily_stats:
+                    result[day_key] = self.daily_stats[day_key].copy()
+                else:
+                    result[day_key] = self._create_empty_stats()
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to get daily stats: {e}")
+            return {}
+    
+    async def get_language_performance(self) -> Dict[str, Dict]:
+        """Get performance metrics by programming language."""
+        try:
+            result = {}
+            
+            # Aggregate from daily stats
+            for day_stats in self.daily_stats.values():
+                for lang, count in day_stats['language_breakdown'].items():
+                    if count > 0:
+                        if lang not in result:
+                            result[lang] = {
+                                'total_executions': 0,
+                                'avg_execution_time': 0.0,
+                                'avg_memory_used': 0,
+                                'success_rate': 0.0,
+                            }
+                        
+                        # This is a simplified aggregation
+                        # In a real system, you'd want more sophisticated calculations
+                        result[lang]['total_executions'] += count
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to get language performance: {e}")
+            return {}
+    
+    async def get_system_health(self) -> Dict:
+        """Get system health metrics."""
+        try:
+            # Get recent stats (last hour)
+            recent_stats = await self.get_hourly_stats(1)
+            
+            if not recent_stats:
                 return {
-                    "user_id": user_id,
-                    "total_executions": 0,
-                    "message": "No executions found for this user"
+                    'status': 'unknown',
+                    'total_executions': 0,
+                    'success_rate': 0.0,
+                    'avg_execution_time': 0.0,
                 }
             
-            total = len(user_metrics)
-            successful = sum(1 for m in user_metrics if m.status.value == "success")
+            # Get the most recent hour's stats
+            latest_hour = max(recent_stats.keys())
+            stats = recent_stats[latest_hour]
             
-            # Language breakdown
-            languages_used = {}
-            for m in user_metrics:
-                lang = m.language.value
-                languages_used[lang] = languages_used.get(lang, 0) + 1
+            # Calculate success rate
+            total = stats['total_executions']
+            success_rate = stats['successful_executions'] / total if total > 0 else 0.0
+            
+            # Determine health status
+            if success_rate >= 0.95 and stats['avg_execution_time'] < 10.0:
+                status = 'healthy'
+            elif success_rate >= 0.8 and stats['avg_execution_time'] < 20.0:
+                status = 'degraded'
+            else:
+                status = 'unhealthy'
             
             return {
-                "user_id": user_id,
-                "time_window_hours": hours,
-                "total_executions": total,
-                "successful_executions": successful,
-                "failed_executions": total - successful,
-                "success_rate": round(successful / total * 100, 2),
-                "languages_used": languages_used,
-                "average_execution_time": round(
-                    sum(m.execution_time for m in user_metrics) / total, 3
-                ),
-                "total_tests_run": sum(m.test_count for m in user_metrics),
-                "timestamp": datetime.utcnow().isoformat()
+                'status': status,
+                'total_executions': total,
+                'success_rate': success_rate,
+                'avg_execution_time': stats['avg_execution_time'],
+                'avg_memory_used': stats['avg_memory_used'],
+                'buffer_size': len(self.metrics_buffer),
             }
             
         except Exception as e:
-            logger.error(f"Failed to get user metrics: {e}")
-            raise
-    
-    async def cleanup_old_metrics(self, days: int = 7):
-        """Remove metrics older than specified days."""
-        try:
-            cutoff_time = datetime.utcnow() - timedelta(days=days)
-            original_count = len(self.metrics)
-            
-            self.metrics = [
-                m for m in self.metrics 
-                if m.timestamp >= cutoff_time
-            ]
-            
-            removed_count = original_count - len(self.metrics)
-            logger.info(f"Cleaned up {removed_count} old metrics")
-            
-        except Exception as e:
-            logger.error(f"Failed to cleanup old metrics: {e}")
-    
-    def _empty_metrics_summary(self) -> Dict[str, Any]:
-        """Returns empty metrics summary."""
-        return {
-            "status": "healthy",
-            "service": "Code Execution Service",
-            "total_executions": 0,
-            "successful_executions": 0,
-            "failed_executions": 0,
-            "success_rate": 0.0,
-            "message": "No metrics available"
-        }
+            logger.error(f"Failed to get system health: {e}")
+            return {
+                'status': 'error',
+                'error': str(e),
+            }

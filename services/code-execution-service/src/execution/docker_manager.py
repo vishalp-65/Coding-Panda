@@ -10,7 +10,6 @@ from src.models.execution import Language, ResourceLimits, ExecutionStatus
 from src.config.settings import settings
 import logging
 from docker.types import Ulimit, Mount
-from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +25,10 @@ class DockerExecutionManager:
             
             # Container pool for reuse (warm containers)
             self._container_pool: dict = {}
-            self._pool_lock = asyncio.Lock()
+            self._pool_lock = None  # Will be initialized when event loop is available
             
             # Image cache status
             self._images_ready = False
-            
-            # Pre-pull images on startup
-            asyncio.create_task(self._ensure_images_available())
             
         except Exception as e:
             logger.error(f"Failed to initialize Docker client: {e}")
@@ -40,17 +36,31 @@ class DockerExecutionManager:
     
     async def _ensure_images_available(self):
         """Ensure all required images are pulled and cached."""
+        available_images = []
+        failed_images = []
+        
         for lang, config in settings.language_configs.items():
             image = config['image']
             try:
                 self.client.images.get(image)
                 logger.info(f"Image already available: {image}")
+                available_images.append(image)
             except ImageNotFound:
-                logger.info(f"Pulling image: {image}")
-                await asyncio.to_thread(self.client.images.pull, image)
+                try:
+                    logger.info(f"Pulling image: {image}")
+                    await asyncio.to_thread(self.client.images.pull, image)
+                    available_images.append(image)
+                    logger.info(f"Successfully pulled image: {image}")
+                except Exception as e:
+                    logger.warning(f"Failed to pull image {image}: {e}")
+                    failed_images.append((image, str(e)))
         
         self._images_ready = True
-        logger.info("All Docker images ready")
+        logger.info(f"Docker images ready: {len(available_images)} available, {len(failed_images)} failed")
+        
+        if failed_images:
+            logger.warning(f"Some images failed to pull: {[img for img, _ in failed_images]}")
+            # Continue anyway - we can still work with available images
     
     async def execute_code_batch(
         self,
@@ -62,12 +72,20 @@ class DockerExecutionManager:
         """
         Optimized batch execution with single compilation and parallel test runs.
         """
+        # Initialize async components if not done
+        if self._pool_lock is None:
+            self._pool_lock = asyncio.Lock()
+        
+        # Ensure images are available
+        if not self._images_ready:
+            await self._ensure_images_available()
+        
         temp_dir = None
         
         try:
-            # Create temporary directory with secure permissions in /tmp
+            # Create temporary directory with secure permissions
             temp_dir = await asyncio.to_thread(
-                tempfile.mkdtemp, prefix="code_exec_", dir="/tmp"
+                tempfile.mkdtemp, prefix="code_exec_"
             )
             os.chmod(temp_dir, 0o777)  # Allow container access for all users
             
@@ -76,7 +94,6 @@ class DockerExecutionManager:
             # Prepare code file
             file_path = await self._prepare_code_file(code, language, temp_dir)
             logger.info(f"Created code file: {file_path}, exists: {os.path.exists(file_path)}")
-            logger.info(f"Temp dir contents: {os.listdir(temp_dir)}")
             
             # Single compilation step for compiled languages
             if config.get('compile_command'):
@@ -99,11 +116,8 @@ class DockerExecutionManager:
             max_concurrent = min(5, len(test_inputs))  # Limit concurrent executions
             semaphore = asyncio.Semaphore(max_concurrent)
             
-            logger.info(f"About to execute {len(test_inputs)} test inputs: {test_inputs}")
-            
             async def execute_with_semaphore(test_input: str):
                 async with semaphore:
-                    logger.info(f"Starting execution with input: '{test_input}'")
                     # Extract class name for Java
                     class_name = None
                     if language == Language.JAVA:
@@ -114,9 +128,7 @@ class DockerExecutionManager:
                     )
             
             tasks = [execute_with_semaphore(inp) for inp in test_inputs]
-            logger.info(f"Created {len(tasks)} tasks")
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            logger.info(f"Got {len(results)} results")
             
             # Process results and handle exceptions
             processed_results = []
@@ -186,7 +198,7 @@ class DockerExecutionManager:
                 network_disabled=True,
                 security_opt=['no-new-privileges:true'],
                 cap_drop=['ALL'],
-                user=self._get_container_user(language),  # Use correct coderunner user
+                user=self._get_container_user(language),
                 working_dir='/app',
                 detach=True,
                 tmpfs=tmpfs,
@@ -234,24 +246,17 @@ class DockerExecutionManager:
         class_name: str = None
     ) -> Tuple[str, str, float, int, ExecutionStatus]:
         """Execute single test with optimized I/O handling."""
-        logger.info(f"_execute_single_test called with input: '{input_data}', language: {language}")
         container = None
         
         try:
-            logger.info(f"Input data received: '{input_data}', length: {len(input_data)}")
-            
             # Prepare input file if input data is provided
             if input_data.strip():
-                # Create unique input file for this test case to avoid conflicts
                 import uuid
                 unique_id = str(uuid.uuid4())[:8]
                 input_file = await self._prepare_input_file(input_data, temp_dir, unique_id)
-                logger.info(f"Created input file: {input_file}, exists: {os.path.exists(input_file)}")
-                logger.info(f"Temp dir contents after input: {os.listdir(temp_dir)}")
                 has_input = True
                 input_filename = f"input_{unique_id}.txt"
             else:
-                logger.info("No input data provided or empty input")
                 has_input = False
                 input_filename = None
             
@@ -262,7 +267,7 @@ class DockerExecutionManager:
                 self.client.containers.create,
                 image=config['image'],
                 command=self._get_run_command(language, run_command, has_input, input_filename, class_name),
-                volumes={temp_dir: {'bind': '/app', 'mode': 'rw'}},  # Read-write mount for execution
+                volumes={temp_dir: {'bind': '/app', 'mode': 'rw'}},
                 mem_limit=limits.memory_limit,
                 memswap_limit=limits.memory_limit,
                 cpu_quota=int(float(limits.cpu_limit) * 100000),
@@ -270,15 +275,14 @@ class DockerExecutionManager:
                 network_disabled=True,
                 security_opt=['no-new-privileges:true'],
                 cap_drop=['ALL'],
-                user=self._get_container_user(language),  # Use correct coderunner user
+                user=self._get_container_user(language),
                 working_dir='/app',
                 detach=True,
-                stdin_open=False,  # No need for stdin with file redirection
+                stdin_open=False,
                 tty=False,
                 tmpfs={'/tmp': 'size=50m,mode=1777'},
                 pids_limit=self._get_pids_limit(language),
                 ulimits=self._get_ulimits(language),
-                # Disable OOM killer to get proper memory exceeded status
                 oom_kill_disable=False,
             )
             
@@ -324,8 +328,6 @@ class DockerExecutionManager:
             except asyncio.TimeoutError:
                 return "", "Time limit exceeded", limits.time_limit, 0, \
                        ExecutionStatus.TIME_LIMIT_EXCEEDED
-            
-
                 
         except Exception as e:
             logger.error(f"Test execution error: {e}", exc_info=True)
@@ -413,7 +415,6 @@ class DockerExecutionManager:
     
     def _get_container_user(self, language: Language) -> str:
         """Get the correct user ID for the container based on language."""
-        # User IDs based on the Dockerfiles
         if language == Language.PYTHON or language == Language.JAVASCRIPT:
             return '1001:1001'  # coderunner UID 1001
         elif language == Language.JAVA or language == Language.CPP or language == Language.RUST or language == Language.GO:
@@ -423,7 +424,6 @@ class DockerExecutionManager:
     
     def _get_compile_command(self, language: Language, compile_command: str) -> list:
         """Get the correct compile command for the container."""
-        # All images now have shell available
         return ['sh', '-c', compile_command]
     
     def _get_run_command(self, language: Language, run_command: str, has_input: bool = False, input_filename: str = None, class_name: str = None) -> list:
@@ -441,7 +441,6 @@ class DockerExecutionManager:
             else:
                 return ['sh', '-c', f'cp /app/solution ~/solution && chmod +x ~/solution && ~/solution']
         else:
-            # All other images have shell available
             if has_input:
                 return ['sh', '-c', f'{run_command} < {input_file}']
             else:
@@ -458,13 +457,13 @@ class DockerExecutionManager:
         """Get appropriate ulimits based on language."""
         if language in [Language.JAVA, Language.CPP, Language.GO, Language.RUST]:
             return [
-                Ulimit(name='nproc', soft=128, hard=128),  # More processes for compiled languages
+                Ulimit(name='nproc', soft=128, hard=128),
                 Ulimit(name='fsize', soft=10485760, hard=10485760),  # 10MB
-                Ulimit(name='nofile', soft=128, hard=128),  # More file descriptors
+                Ulimit(name='nofile', soft=128, hard=128),
             ]
         else:
             return [
-                Ulimit(name='nproc', soft=64, hard=64),  # Moderate limits for interpreted languages
+                Ulimit(name='nproc', soft=64, hard=64),
                 Ulimit(name='fsize', soft=10485760, hard=10485760),  # 10MB
                 Ulimit(name='nofile', soft=64, hard=64),
             ]
@@ -473,13 +472,8 @@ class DockerExecutionManager:
         """Set execute permissions on compiled binaries."""
         if language in [Language.CPP, Language.GO, Language.RUST]:
             binary_path = os.path.join(temp_dir, "solution")
-            logger.info(f"Checking binary at {binary_path}, exists: {os.path.exists(binary_path)}")
             if os.path.exists(binary_path):
                 os.chmod(binary_path, 0o777)  # Full permissions for all users
-                logger.info(f"Set execute permissions on {binary_path}")
-            else:
-                logger.warning(f"Binary not found at {binary_path}")
-        # Java .class files don't need execute permissions
     
     def _extract_java_class_name(self, code: str) -> str:
         """Extract the public class name from Java code."""
@@ -542,25 +536,50 @@ class DockerExecutionManager:
         """Warm up the execution environment."""
         logger.info("Warming up Docker execution environment")
         
-        # Ensure images are available
-        await self._ensure_images_available()
-        
-        # Run a simple test for each language to warm up
-        warmup_codes = {
-            Language.PYTHON: "print('warmup')",
-            Language.JAVASCRIPT: "console.log('warmup');",
-            Language.JAVA: "public class Solution { public static void main(String[] args) { System.out.println(\"warmup\"); } }",
-        }
-        
-        limits = ResourceLimits(
-            memory_limit="64m",
-            time_limit=5,
-            cpu_limit="0.5"
-        )
-        
-        for lang, code in warmup_codes.items():
-            try:
-                await self.execute_code_batch(code, lang, [""], limits)
-                logger.info(f"Warmed up {lang.value}")
-            except Exception as e:
-                logger.warning(f"Warmup failed for {lang.value}: {e}")
+        try:
+            # Initialize async components
+            if self._pool_lock is None:
+                self._pool_lock = asyncio.Lock()
+            
+            # Ensure images are available (non-blocking)
+            await self._ensure_images_available()
+            
+            # Only warm up languages that have available images
+            available_languages = []
+            for lang, config in settings.language_configs.items():
+                try:
+                    self.client.images.get(config['image'])
+                    available_languages.append(Language(lang))
+                except:
+                    logger.debug(f"Skipping warmup for {lang} - image not available")
+            
+            if not available_languages:
+                logger.warning("No Docker images available for warmup")
+                return
+            
+            # Run a simple test for available languages
+            warmup_codes = {
+                Language.PYTHON: "print('warmup')",
+                Language.JAVASCRIPT: "console.log('warmup');",
+                Language.JAVA: "public class Solution { public static void main(String[] args) { System.out.println(\"warmup\"); } }",
+            }
+            
+            limits = ResourceLimits(
+                memory_limit="64m",
+                time_limit=5,
+                cpu_limit="0.5"
+            )
+            
+            for lang in available_languages:
+                if lang in warmup_codes:
+                    try:
+                        await self.execute_code_batch(warmup_codes[lang], lang, [""], limits)
+                        logger.info(f"Warmed up {lang.value}")
+                    except Exception as e:
+                        logger.warning(f"Warmup failed for {lang.value}: {e}")
+            
+            logger.info("Docker warmup completed")
+            
+        except Exception as e:
+            logger.error(f"Docker warmup failed: {e}")
+            # Don't raise the exception - let the service start anyway

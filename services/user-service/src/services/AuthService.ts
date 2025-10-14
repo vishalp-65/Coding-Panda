@@ -84,6 +84,9 @@ export class AuthService {
    */
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
     const payload = this.verifyRefreshToken(refreshToken);
+    if (!payload) {
+      throw new Error('Invalid refresh token');
+    }
 
     await this.validateSession(payload.sessionId, refreshToken);
 

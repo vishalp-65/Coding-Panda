@@ -42,10 +42,11 @@ class ExecutionRequest(BaseModel):
     code: str = Field(..., min_length=1, max_length=50000)
     language: Language
     test_cases: List[TestCase] = Field(..., min_items=1, max_items=100) # type: ignore
-    time_limit: int = Field(default=5, ge=1, le=30)
+    time_limit: int = Field(default=5, ge=1, le=60)
     memory_limit: int = Field(default=128, ge=32, le=512)
     problem_id: Optional[str] = None
     user_id: Optional[str] = None
+    hidden_code: Optional[str] = None  # Hidden infrastructure code template
 
 
 class ExecutionResult(BaseModel):

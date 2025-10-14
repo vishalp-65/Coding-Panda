@@ -1,333 +1,423 @@
 import re
-from typing import List, Set, Dict
-from src.models.execution import Language, ExecutionRequest
-from src.config.settings import settings
+import logging
+from typing import List, Optional
+from src.models.execution import Language
+
+logger = logging.getLogger(__name__)
 
 
 class SecurityValidator:
-    """Enhanced security validator with comprehensive protection."""
-    
-    # Compiled regex patterns for better performance
-    BLOCKED_PATTERNS: Dict[Language, List[re.Pattern]] = {}
-    
-    # Extended blocked patterns with more comprehensive coverage
-    _PATTERN_DEFINITIONS = {
-        Language.PYTHON: [
-            # Module imports
-            r'import\s+(os|sys|subprocess|socket|urllib|requests|shutil|pickle|ctypes|multiprocessing|threading)',
-            r'from\s+(os|sys|subprocess|socket|urllib|requests|shutil|pickle|ctypes|multiprocessing|threading)',
-            r'__import__\s*\(',
-            # Dangerous functions
-            r'eval\s*\(',
-            r'exec\s*\(',
-            r'compile\s*\(',
-            r'globals\s*\(',
-            r'locals\s*\(',
-            r'vars\s*\(',
-            r'dir\s*\(',
-            r'__builtins__',
-            # File operations
-            r'\bopen\s*\(',
-            r'\bfile\s*\(',
-            r'raw_input\s*\(',
-            # r'input\s*\(',  # Allow input() for reading test data
-            # Code execution
-            r'execfile\s*\(',
-            r'reload\s*\(',
-            # Unsafe deserialization
-            r'marshal\.',
-            r'shelve\.',
-            # Network and system
-            r'webbrowser\.',
-            r'ftplib\.',
-            r'telnetlib\.',
-        ],
-        Language.JAVASCRIPT: [
-            # Dangerous requires
-            # r'require\s*\(\s*[\'"]fs[\'"]',
-            r'require\s*\(\s*[\'"]child_process[\'"]',
-            r'require\s*\(\s*[\'"]net[\'"]',
-            r'require\s*\(\s*[\'"]http[\'"]',
-            r'require\s*\(\s*[\'"]https[\'"]',
-            r'require\s*\(\s*[\'"]dgram[\'"]',
-            r'require\s*\(\s*[\'"]cluster[\'"]',
-            r'require\s*\(\s*[\'"]worker_threads[\'"]',
-            # Code execution
-            r'\beval\s*\(',
-            r'Function\s*\(',
-            r'setTimeout\s*\(',
-            r'setInterval\s*\(',
-            r'setImmediate\s*\(',
-            # Process manipulation
-            r'process\.exit',
-            r'process\.kill',
-            r'process\.env',
-        ],
-        Language.JAVA: [
-            # Dangerous imports
-            r'import\s+java\.io\.',
-            r'import\s+java\.net\.',
-            r'import\s+java\.nio\.file\.',
-            r'import\s+javax\.script\.',
-            # Runtime and process
-            r'Runtime\.getRuntime\s*\(',
-            r'ProcessBuilder',
-            r'System\.exit\s*\(',
-            r'System\.getenv\s*\(',
-            # Reflection
-            r'Class\.forName',
-            r'\.getClass\s*\(',
-            r'\.getDeclaredField',
-            r'\.setAccessible',
-            # Native code
-            r'System\.load',
-            r'System\.loadLibrary',
-            # Security manager
-            r'SecurityManager',
-            r'AccessController',
-        ],
-        Language.CPP: [
-            # System headers
-            r'#include\s*<cstdlib>',
-            r'#include\s*<unistd\.h>',
-            r'#include\s*<sys/.*>',
-            r'#include\s*<fstream>',
-            # Dangerous functions
-            r'\bsystem\s*\(',
-            r'\bexec[lv]?[pe]?\s*\(',
-            r'\bpopen\s*\(',
-            r'\bfork\s*\(',
-            r'\bvfork\s*\(',
-            r'\bgetenv\s*\(',
-            r'\bsetenv\s*\(',
-            # File operations
-            r'\bfopen\s*\(',
-            r'\bfreopen\s*\(',
-            r'\bremove\s*\(',
-            r'\brename\s*\(',
-        ],
-        Language.GO: [
-            # Dangerous imports
-            r'import\s+"os/exec"',
-            r'import\s+"net"',
-            r'import\s+"syscall"',
-            r'import\s+"os"',
-            r'import\s+"io/ioutil"',
-            # Execution
-            r'exec\.Command',
-            r'os\.Exit\s*\(',
-            r'syscall\.',
-            # File operations
-            r'os\.Open',
-            r'os\.Create',
-            r'ioutil\.ReadFile',
-            r'ioutil\.WriteFile',
-        ],
-        Language.RUST: [
-            # Dangerous uses
-            r'use\s+std::process',
-            r'use\s+std::net',
-            r'use\s+std::fs',
-            r'use\s+std::os',
-            # Command execution
-            r'Command::new',
-            r'process::exit\s*\(',
-            # File operations
-            r'File::open',
-            r'File::create',
-            r'fs::read',
-            r'fs::write',
-            # Unsafe code
-            r'\bunsafe\s+',
-        ]
-    }
-    
-    SUSPICIOUS_KEYWORDS = {
-        'password', 'secret', 'token', 'api_key', 'credential',
-        'admin', 'root', 'sudo', 'chmod', 'chown', 'rm -rf',
-        'drop table', 'delete from', 'truncate', 'shutdown'
-    }
-    
-    # Additional security patterns
-    SHELL_INJECTION_PATTERNS = [
-        # r'[;&|`$]',  # Shell metacharacters
-        r'\$\(',     # Command substitution
-        r'>\s*/dev/', # Device access
-    ]
+    """
+    Security validator for code execution to prevent malicious code execution.
+    Implements multiple layers of security checks.
+    """
     
     def __init__(self):
-        """Initialize with compiled regex patterns for performance."""
-        for language, patterns in self._PATTERN_DEFINITIONS.items():
-            self.BLOCKED_PATTERNS[language] = [
-                re.compile(pattern, re.IGNORECASE) 
-                for pattern in patterns
+        # Dangerous patterns that should be blocked
+        self.dangerous_patterns = {
+            'common': [
+                r'import\s+os',
+                r'import\s+sys',
+                r'import\s+subprocess',
+                r'import\s+socket',
+                r'import\s+urllib',
+                r'import\s+requests',
+                r'import\s+http',
+                r'__import__',
+                r'eval\s*\(',
+                r'exec\s*\(',
+                r'compile\s*\(',
+                r'open\s*\(',
+                r'file\s*\(',
+                r'input\s*\(',
+                r'raw_input\s*\(',
+            ],
+            'python': [
+                r'import\s+pickle',
+                r'import\s+marshal',
+                r'import\s+ctypes',
+                r'import\s+multiprocessing',
+                r'import\s+threading',
+                r'import\s+asyncio',
+                r'globals\s*\(',
+                r'locals\s*\(',
+                r'vars\s*\(',
+                r'dir\s*\(',
+                r'getattr\s*\(',
+                r'setattr\s*\(',
+                r'hasattr\s*\(',
+                r'delattr\s*\(',
+            ],
+            'javascript': [
+                r'require\s*\(',
+                r'process\.',
+                r'global\.',
+                r'Buffer\.',
+                r'setTimeout',
+                r'setInterval',
+                r'XMLHttpRequest',
+                r'fetch\s*\(',
+                r'import\s+',
+                r'export\s+',
+            ],
+            'java': [
+                r'Runtime\.getRuntime',
+                r'ProcessBuilder',
+                r'System\.exit',
+                r'System\.getProperty',
+                r'System\.setProperty',
+                r'Class\.forName',
+                r'Thread\.',
+                r'Reflection',
+                r'java\.io\.File',
+                r'java\.net\.',
+                r'java\.lang\.reflect',
+            ],
+            'cpp': [
+                r'#include\s*<fstream>',
+                r'#include\s*<iostream>',
+                r'system\s*\(',
+                r'popen\s*\(',
+                r'fork\s*\(',
+                r'exec\s*\(',
+                r'pthread_',
+                r'std::thread',
+                r'std::async',
+            ],
+            'go': [
+                r'import\s+"os"',
+                r'import\s+"os/exec"',
+                r'import\s+"net"',
+                r'import\s+"net/http"',
+                r'import\s+"syscall"',
+                r'import\s+"unsafe"',
+                r'os\.',
+                r'exec\.',
+                r'syscall\.',
+            ],
+            'rust': [
+                r'use\s+std::process',
+                r'use\s+std::fs',
+                r'use\s+std::net',
+                r'use\s+std::thread',
+                r'use\s+std::sync',
+                r'unsafe\s*{',
+                r'std::process::',
+                r'std::fs::',
+                r'std::net::',
             ]
+        }
         
-        self._shell_patterns = [
-            re.compile(pattern) for pattern in self.SHELL_INJECTION_PATTERNS
-        ]
+        # Maximum code length limits
+        self.max_code_length = {
+            'python': 10000,
+            'javascript': 10000,
+            'java': 15000,
+            'cpp': 15000,
+            'go': 12000,
+            'rust': 15000,
+        }
     
-    def validate_code(self, request: ExecutionRequest) -> List[str]:
-        """Validates code for security violations with enhanced checks."""
+    def validate_code(self, request) -> List[str]:
+        """
+        Validate user code for security violations.
+        
+        Args:
+            request: ExecutionRequest object
+            
+        Returns:
+            List of security violations (empty if valid)
+        """
         violations = []
         
-        # Basic validation
-        if len(request.code) > settings.max_code_length:
-            violations.append(
-                f"Code exceeds maximum length of {settings.max_code_length} characters"
+        try:
+            # Check code length
+            max_length = self.max_code_length.get(request.language.value, 10000)
+            if len(request.code) > max_length:
+                violations.append(f"Code exceeds maximum length of {max_length} characters")
+            
+            # Check for dangerous patterns
+            code_violations = self._check_dangerous_patterns(
+                request.code, request.language
             )
-            return violations  # Exit early if too large
-        
-        if not request.code.strip():
-            violations.append("Code cannot be empty")
-            return violations
-        
-        # Check for blocked patterns
-        violations.extend(self._check_blocked_patterns(request))
-        
-        # Check for suspicious keywords
-        violations.extend(self._check_suspicious_keywords(request.code))
-        
-        # Check for shell injection attempts
-        violations.extend(self._check_shell_injection(request.code))
-        
-        # Check for obfuscation attempts
-        violations.extend(self._check_obfuscation(request.code))
-        
-        # Validate test cases
-        if len(request.test_cases) > settings.max_test_cases:
-            violations.append(
-                f"Too many test cases: {len(request.test_cases)} > {settings.max_test_cases}"
+            violations.extend(code_violations)
+            
+            # Language-specific validations
+            lang_violations = self._validate_language_specific(
+                request.code, request.language
             )
-        
-        # Validate resource limits
-        violations.extend(self._validate_resource_limits(request))
-        
-        return violations
-    
-    def _check_blocked_patterns(self, request: ExecutionRequest) -> List[str]:
-        """Check code for blocked patterns using compiled regex."""
-        violations = []
-        
-        if request.language not in self.BLOCKED_PATTERNS:
-            return violations
-        
-        code = request.code
-        for pattern in self.BLOCKED_PATTERNS[request.language]:
-            match = pattern.search(code)
-            if match:
-                violations.append(
-                    f"Blocked operation detected: {match.group()[:50]}"
+            violations.extend(lang_violations)
+            
+            # Check test cases
+            for i, test_case in enumerate(request.test_cases):
+                tc_violations = self.validate_input_output(
+                    test_case.input, test_case.expected_output
                 )
+                if tc_violations:
+                    violations.extend([f"Test case {i+1}: {v}" for v in tc_violations])
+            
+        except Exception as e:
+            logger.error(f"Error during security validation: {e}")
+            violations.append("Security validation failed")
         
         return violations
     
-    def _check_suspicious_keywords(self, code: str) -> List[str]:
-        """Check for suspicious keywords efficiently."""
+    def _check_dangerous_patterns(self, code: str, language: Language) -> List[str]:
+        """Check for dangerous code patterns."""
         violations = []
-        code_lower = code.lower()
         
-        found_keywords = [
-            keyword for keyword in self.SUSPICIOUS_KEYWORDS 
-            if keyword in code_lower
+        # Check common dangerous patterns
+        for pattern in self.dangerous_patterns['common']:
+            if re.search(pattern, code, re.IGNORECASE):
+                violations.append(f"Dangerous pattern detected: {pattern}")
+        
+        # Check language-specific patterns
+        lang_patterns = self.dangerous_patterns.get(language.value, [])
+        for pattern in lang_patterns:
+            if re.search(pattern, code, re.IGNORECASE):
+                violations.append(f"Dangerous {language.value} pattern: {pattern}")
+        
+        return violations
+    
+    def _validate_language_specific(self, code: str, language: Language) -> List[str]:
+        """Perform language-specific security validations."""
+        violations = []
+        
+        if language == Language.PYTHON:
+            violations.extend(self._validate_python_specific(code))
+        elif language == Language.JAVASCRIPT:
+            violations.extend(self._validate_javascript_specific(code))
+        elif language == Language.JAVA:
+            violations.extend(self._validate_java_specific(code))
+        elif language == Language.CPP:
+            violations.extend(self._validate_cpp_specific(code))
+        elif language == Language.GO:
+            violations.extend(self._validate_go_specific(code))
+        elif language == Language.RUST:
+            violations.extend(self._validate_rust_specific(code))
+        
+        return violations
+    
+    def _validate_python_specific(self, code: str) -> List[str]:
+        """Python-specific security validations."""
+        violations = []
+        
+        # Check for dangerous built-ins
+        dangerous_builtins = [
+            '__builtins__', '__globals__', '__locals__',
+            'breakpoint', 'memoryview', 'bytearray'
         ]
         
-        if found_keywords:
-            violations.append(
-                f"Suspicious keywords detected: {', '.join(found_keywords[:3])}"
-            )
+        for builtin in dangerous_builtins:
+            if builtin in code:
+                violations.append(f"Dangerous Python builtin: {builtin}")
+        
+        # Check for magic methods that could be dangerous
+        if re.search(r'__\w+__', code):
+            violations.append("Magic methods not allowed")
         
         return violations
     
-    def _check_shell_injection(self, code: str) -> List[str]:
-        """Check for shell injection attempts."""
+    def _validate_javascript_specific(self, code: str) -> List[str]:
+        """JavaScript-specific security validations."""
         violations = []
         
-        for pattern in self._shell_patterns:
-            if pattern.search(code):
-                violations.append("Potential shell injection pattern detected")
-                break
+        # Check for dangerous global objects
+        dangerous_globals = ['window', 'document', 'location', 'navigator']
+        for global_obj in dangerous_globals:
+            if global_obj in code:
+                violations.append(f"Dangerous JavaScript global: {global_obj}")
         
         return violations
     
-    def _check_obfuscation(self, code: str) -> List[str]:
-        """Check for code obfuscation attempts."""
+    def _validate_java_specific(self, code: str) -> List[str]:
+        """Java-specific security validations."""
         violations = []
         
-        # Check for excessive use of escape sequences
-        escape_count = code.count('\\x') + code.count('\\u')
-        if escape_count > 10:
-            violations.append("Excessive escape sequences detected (possible obfuscation)")
+        # Check for dangerous Java classes
+        dangerous_classes = [
+            'Runtime', 'ProcessBuilder', 'ClassLoader',
+            'SecurityManager', 'System'
+        ]
         
-        # Check for excessive base64-like strings
-        if re.search(r'[A-Za-z0-9+/]{100,}', code):
-            violations.append("Long base64-like string detected (possible obfuscation)")
-        
-        # Check for extreme line length (potential minified malicious code)
-        lines = code.split('\n')
-        if any(len(line) > 500 for line in lines):
-            violations.append("Extremely long code line detected")
+        for cls in dangerous_classes:
+            if cls in code:
+                violations.append(f"Dangerous Java class: {cls}")
         
         return violations
     
-    def _validate_resource_limits(self, request: ExecutionRequest) -> List[str]:
-        """Validate resource limit constraints."""
+    def _validate_cpp_specific(self, code: str) -> List[str]:
+        """C++-specific security validations."""
         violations = []
         
-        if request.time_limit > 30:
-            violations.append("Time limit exceeds maximum of 30 seconds")
+        # Check for dangerous C++ features
+        if 'asm' in code or '__asm__' in code:
+            violations.append("Inline assembly not allowed")
         
-        if request.memory_limit > 512:
-            violations.append("Memory limit exceeds maximum of 512MB")
+        return violations
+    
+    def _validate_go_specific(self, code: str) -> List[str]:
+        """Go-specific security validations."""
+        violations = []
         
-        if request.memory_limit < 32:
-            violations.append("Memory limit below minimum of 32MB")
+        # Check for CGO usage
+        if 'import "C"' in code or '//export' in code:
+            violations.append("CGO not allowed")
+        
+        return violations
+    
+    def _validate_rust_specific(self, code: str) -> List[str]:
+        """Rust-specific security validations."""
+        violations = []
+        
+        # Unsafe blocks are already checked in patterns
+        # Additional Rust-specific checks can be added here
+        
+        return violations
+    
+    def validate_input_output(self, input_data: str, expected_output: str) -> List[str]:
+        """
+        Validate test case input and output for security issues.
+        
+        Args:
+            input_data: Test case input
+            expected_output: Expected output
+            
+        Returns:
+            List of violations
+        """
+        violations = []
+        
+        # Check input length
+        if len(input_data) > 10000:
+            violations.append("Input data too large")
+        
+        # Check output length
+        if len(expected_output) > 10000:
+            violations.append("Expected output too large")
+        
+        # Check for suspicious patterns in input/output
+        suspicious_patterns = [
+            r'<script',
+            r'javascript:',
+            r'data:',
+            r'file://',
+            r'http://',
+            r'https://',
+        ]
+        
+        for pattern in suspicious_patterns:
+            if re.search(pattern, input_data, re.IGNORECASE):
+                violations.append(f"Suspicious pattern in input: {pattern}")
+            if re.search(pattern, expected_output, re.IGNORECASE):
+                violations.append(f"Suspicious pattern in output: {pattern}")
         
         return violations
     
     def sanitize_code(self, code: str, language: Language) -> str:
-        """Sanitizes code by removing comments and normalizing whitespace."""
-        # Remove comments based on language
-        if language == Language.PYTHON:
-            # Remove single-line comments
-            code = re.sub(r'#.*$', '', code, flags=re.MULTILINE)
-            # Remove multi-line strings used as comments (basic)
-            code = re.sub(r'""".*?"""', '', code, flags=re.DOTALL)
-            code = re.sub(r"'''.*?'''", '', code, flags=re.DOTALL)
+        """
+        Sanitize code by removing or replacing dangerous elements.
         
-        elif language in [Language.JAVASCRIPT, Language.CPP, Language.JAVA, 
-                          Language.GO, Language.RUST]:
-            # Remove single-line comments
-            code = re.sub(r'//.*$', '', code, flags=re.MULTILINE)
-            # Remove multi-line comments
-            code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
-        
-        # Normalize whitespace
-        code = re.sub(r'\n\s*\n+', '\n\n', code)
-        code = re.sub(r'[ \t]+', ' ', code)
-        
-        return code.strip()
+        Args:
+            code: Code to sanitize
+            language: Programming language
+            
+        Returns:
+            Sanitized code
+        """
+        try:
+            # Remove comments that might contain dangerous instructions
+            if language == Language.PYTHON:
+                code = re.sub(r'#.*$', '', code, flags=re.MULTILINE)
+            elif language in [Language.JAVASCRIPT, Language.JAVA, Language.CPP, Language.GO, Language.RUST]:
+                code = re.sub(r'//.*$', '', code, flags=re.MULTILINE)
+                code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
+            
+            # Remove excessive whitespace
+            code = re.sub(r'\n\s*\n\s*\n', '\n\n', code)
+            
+            # Limit line length
+            lines = code.split('\n')
+            sanitized_lines = []
+            for line in lines:
+                if len(line) > 500:
+                    sanitized_lines.append(line[:500] + '  # Line truncated')
+                else:
+                    sanitized_lines.append(line)
+            
+            return '\n'.join(sanitized_lines)
+            
+        except Exception as e:
+            logger.error(f"Error sanitizing code: {e}")
+            return code
     
-    def validate_input_output(self, input_data: str, output_data: str) -> List[str]:
-        """Validates test case input and output."""
+    def is_safe_for_execution(self, code: str, language: Language) -> tuple[bool, List[str]]:
+        """
+        Final safety check before code execution.
+        
+        Args:
+            code: Code to check
+            language: Programming language
+            
+        Returns:
+            Tuple of (is_safe, violations)
+        """
         violations = []
         
-        # Check size limits
-        if len(input_data) > 10000:
-            violations.append("Input data exceeds 10KB limit")
+        # Basic checks
+        if not code or not code.strip():
+            violations.append("Empty code")
+            return False, violations
         
-        if len(output_data) > 10000:
-            violations.append("Expected output exceeds 10KB limit")
+        # Check for infinite loops (basic heuristic)
+        if self._has_potential_infinite_loop(code, language):
+            violations.append("Potential infinite loop detected")
         
-        # Validate UTF-8 encoding
+        # Check for excessive recursion patterns
+        if self._has_excessive_recursion(code, language):
+            violations.append("Excessive recursion detected")
+        
+        return len(violations) == 0, violations
+    
+    def _has_potential_infinite_loop(self, code: str, language: Language) -> bool:
+        """Detect potential infinite loops (basic heuristic)."""
         try:
-            input_data.encode('utf-8')
-            output_data.encode('utf-8')
-        except UnicodeEncodeError:
-            violations.append("Invalid characters in test data")
-        
-        # Check for null bytes
-        if '\x00' in input_data or '\x00' in output_data:
-            violations.append("Null bytes not allowed in test data")
-        
-        return violations
+            # Look for while True or for loops without clear termination
+            if language == Language.PYTHON:
+                if re.search(r'while\s+True\s*:', code):
+                    return True
+                if re.search(r'while\s+1\s*:', code):
+                    return True
+            elif language == Language.JAVASCRIPT:
+                if re.search(r'while\s*\(\s*true\s*\)', code):
+                    return True
+                if re.search(r'for\s*\(\s*;\s*;\s*\)', code):
+                    return True
+            elif language == Language.JAVA:
+                if re.search(r'while\s*\(\s*true\s*\)', code):
+                    return True
+            elif language == Language.CPP:
+                if re.search(r'while\s*\(\s*true\s*\)', code):
+                    return True
+                if re.search(r'while\s*\(\s*1\s*\)', code):
+                    return True
+            
+            return False
+        except Exception:
+            return False
+    
+    def _has_excessive_recursion(self, code: str, language: Language) -> bool:
+        """Detect excessive recursion patterns."""
+        try:
+            # Count function definitions and recursive calls
+            if language == Language.PYTHON:
+                functions = re.findall(r'def\s+(\w+)', code)
+                for func in functions:
+                    # Count recursive calls
+                    recursive_calls = len(re.findall(rf'{func}\s*\(', code))
+                    if recursive_calls > 10:  # Arbitrary threshold
+                        return True
+            
+            return False
+        except Exception:
+            return False

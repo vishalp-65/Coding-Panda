@@ -4,7 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "composite": true,
-    "ignoreDeprecations": "6.0"
+    "skipLibCheck": true
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "**/*.test.ts"],

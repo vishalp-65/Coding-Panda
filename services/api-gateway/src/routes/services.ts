@@ -21,11 +21,11 @@ const serviceConfig = {
     auth: 'optional', // Problem browsing is public, submission requires auth
     pathRewrite: { '^/api/problems': '/api/v1' },
   },
-  '/execute': {
+  '/execution': {
     target: config.services.executionService.url,
     timeout: config.services.executionService.timeout,
     auth: 'required', // Code execution requires authentication
-    pathRewrite: { '^/api/execute': '/api/v1' },
+    pathRewrite: { '^/api/execution': '/api/v1/execution' },
   },
   '/ai': {
     target: config.services.aiService.url,

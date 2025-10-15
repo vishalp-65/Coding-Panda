@@ -42,21 +42,21 @@ docker-compose up -d postgres mongodb redis rabbitmq prometheus grafana mailhog
 
 # Wait for infrastructure to be ready
 Write-Host "Waiting for infrastructure services to be ready..." -ForegroundColor Cyan
-Start-Sleep -Seconds 3
+Start-Sleep -Seconds 2
 
 # Start application services in correct order
 Write-Host "Starting core services..." -ForegroundColor Cyan
 Start-Service "User Service" "services/user-service" "npm run dev" 3006
 Start-Service "Problem Service" "services/problem-service" "npm run dev" 3002
-Start-Service "Contest Service" "services/contest-service" "npm run dev" 3003
-Start-Service "Analytics Service" "services/analytics-service" "npm run dev" 3005
-Start-Service "Notification Service" "services/notification-service" "npm run dev" 3007
-Start-Service "Realtime Service" "services/realtime-service" "npm run dev" 3008
+# Start-Service "Contest Service" "services/contest-service" "npm run dev" 3003
+# Start-Service "Analytics Service" "services/analytics-service" "npm run dev" 3005
+# Start-Service "Notification Service" "services/notification-service" "npm run dev" 3007
+# Start-Service "Realtime Service" "services/realtime-service" "npm run dev" 3008
 
 # Start Python services
 Write-Host "Starting Python services..." -ForegroundColor Cyan
-Start-Service "Code Execution Service" "services/code-execution-service" ".\build-and-run.ps1 -Run" 8000
-Start-Service "AI Analysis Service" "services/ai-analysis-service" ".\start.ps1" 8001
+Start-Service "Code Execution Service" "services/code-execution-service" ".\build-and-run.ps1 -All" 8000
+# Start-Service "AI Analysis Service" "services/ai-analysis-service" ".\start.ps1" 8001
 
 # Wait for services to initialize
 Write-Host "Waiting for services to initialize..." -ForegroundColor Cyan

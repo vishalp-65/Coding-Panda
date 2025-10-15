@@ -6,7 +6,7 @@ import { setOnlineStatus } from '@/store/slices/uiSlice';
 import socketService from '@/services/socket';
 
 // Layout components
-import Layout from '@/components/layout/Layout';
+import ModernLayout from '@/components/layout/ModernLayout';
 import AuthLayout from '@/components/layout/AuthLayout';
 
 // Page components
@@ -15,9 +15,9 @@ import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
-import DashboardPage from '@/pages/DashboardPage';
-import ProblemsPage from '@/pages/problems/ProblemsPage';
-import ProblemDetailPage from '@/pages/problems/ProblemDetailPage';
+import ModernDashboardPage from '@/pages/ModernDashboardPage';
+import ModernProblemsPage from '@/pages/problems/ModernProblemsPage';
+import ModernProblemDetailPage from '@/pages/problems/ModernProblemDetailPage';
 import ProfilePage from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
 import ContestsPage from '@/pages/ContestsPage';
@@ -106,14 +106,14 @@ function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <Layout />
+            <ModernLayout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="problems" element={<ProblemsPage />} />
-        <Route path="problems/:id" element={<ProblemDetailPage />} />
+        <Route index element={<Navigate to="/problems" replace />} />
+        <Route path="dashboard" element={<ModernDashboardPage />} />
+        <Route path="problems" element={<ModernProblemsPage />} />
+        <Route path="problems/:id" element={<ModernProblemDetailPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="contests" element={<ContestsPage />} />

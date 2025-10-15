@@ -10,6 +10,7 @@ export interface User {
     firstName?: string;
     avatar?: string;
     lastName?: string;
+    bio?: string;
     skillLevel: 'beginner' | 'intermediate' | 'advanced';
     programmingLanguages: string[];
   };
@@ -17,6 +18,7 @@ export interface User {
     theme: 'light' | 'dark' | 'system';
     language: string;
     timezone: string;
+    notifications: boolean;
     privacySettings: {
       showEmail: boolean;
       showLocation: boolean;

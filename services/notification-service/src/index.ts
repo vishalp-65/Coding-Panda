@@ -17,7 +17,7 @@ import { createAlertsRoutes } from './routes/alerts';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3007;
 
 // Constants
 const CLEANUP_CRON = '0 2 * * *'; // Daily at 2 AM
@@ -46,16 +46,19 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/alert', createAlertsRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/alerts', createAlertsRoutes);
 
-// Root endpoint
-app.get('/health', (req, res) => {
+// Health check endpoint
+app.get('/api/v1/health', (req, res) => {
     res.json({
-        service: 'AI Platform Notification Service',
-        version: '1.0.0',
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
+        success: true,
+        data: {
+            service: 'Notification Service',
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            version: '1.0.0',
+        },
     });
 });
 

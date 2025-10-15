@@ -12,11 +12,19 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/problems', problemRoutes);
+app.use('/api/v1', problemRoutes);
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', service: 'problem-service' });
+app.get('/api/v1/health', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      service: 'Problem Service',
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+    },
+  });
 });
 
 // Error handling

@@ -43,17 +43,20 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/api/v1/health', (req, res) => {
     res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        service: 'analytics-service',
-        version: '1.0.0',
+        success: true,
+        data: {
+            service: 'Analytics Service',
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            version: '1.0.0',
+        },
     });
 });
 
 // API routes
-app.use('/api/analytics', analyticsRoutes);
+app.use('/api/v1', analyticsRoutes);
 
 // Error handling middleware
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

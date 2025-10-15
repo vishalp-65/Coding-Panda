@@ -28,11 +28,15 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/api/v1/health', (req, res) => {
   res.json({
-    status: 'healthy',
-    service: 'realtime-service',
-    timestamp: new Date().toISOString(),
+    success: true,
+    data: {
+      service: 'Realtime Service',
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+    },
   });
 });
 
@@ -62,7 +66,7 @@ async function startServer() {
     socketHandlers.setupHandlers();
 
     // Start server
-    const port = process.env.PORT || 3007;
+    const port = process.env.PORT || 3008;
     server.listen(port, () => {
       console.log(`Real-time service running on port ${port}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);

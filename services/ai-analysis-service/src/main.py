@@ -65,6 +65,7 @@ app_config = AppConfig(
 app = create_base_app(app_config, lifespan)
 
 # Include routers
+app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["analysis"])
 app.include_router(learning.router, prefix="/api/v1/learning", tags=["learning"])
 app.include_router(interview.router, prefix="/api/v1/interview", tags=["interview"])
@@ -73,23 +74,24 @@ app.include_router(interview.router, prefix="/api/v1/interview", tags=["intervie
 @app.get("/metrics")
 async def metrics():
     """Service metrics endpoint"""
-    from ..utils.response_handler import ResponseHandler
-    
-    return ResponseHandler.success({
-        "service": "AI Analysis Service",
-        "status": "healthy",
-        "uptime": "running",
-        "requests_processed": 0,
-        "cache_hits": 0,
-        "cache_misses": 0,
-        "ai_provider": settings.AI_MODEL_PROVIDER,
-        "ai_model": settings.AI_MODEL_NAME
-    })
+    return {
+        "success": True,
+        "data": {
+            "service": "AI Analysis Service",
+            "status": "healthy",
+            "uptime": "running",
+            "requests_processed": 0,
+            "cache_hits": 0,
+            "cache_misses": 0,
+            "ai_provider": settings.AI_MODEL_PROVIDER,
+            "ai_model": settings.AI_MODEL_NAME
+        }
+    }
 
 
 if __name__ == "__main__":
     uvicorn.run(
-        "main:app",
+        "src.main:app",
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,

@@ -6,6 +6,7 @@ import {
   Editorial,
   ProblemStatistics,
   ProblemConstraints,
+  InitialCode,
 } from '@ai-platform/types';
 
 export interface ProblemDocument extends Omit<Problem, 'id'>, Document {
@@ -74,6 +75,16 @@ const ProblemStatisticsSchema = new Schema<ProblemStatistics>(
   { _id: false }
 );
 
+const InitialCodeSchema = new Schema<InitialCode>(
+  {
+    javascript: { type: String },
+    python: { type: String },
+    java: { type: String },
+    cpp: { type: String },
+  },
+  { _id: false }
+);
+
 const ProblemSchema = new Schema<ProblemDocument>(
   {
     title: {
@@ -112,6 +123,7 @@ const ProblemSchema = new Schema<ProblemDocument>(
     },
     testCases: [TestCaseSchema],
     editorial: EditorialSchema,
+    initialCode: InitialCodeSchema,
     statistics: {
       type: ProblemStatisticsSchema,
       default: () => ({
@@ -127,7 +139,7 @@ const ProblemSchema = new Schema<ProblemDocument>(
   {
     timestamps: true,
     toJSON: {
-      transform: (doc, ret) => {
+      transform: (_doc, ret) => {
         ret.id = ret._id.toString();
         delete ret._id;
         delete ret.__v;

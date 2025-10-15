@@ -19,36 +19,56 @@ const serviceConfig = {
     target: config.services.problemService.url,
     timeout: config.services.problemService.timeout,
     auth: 'optional', // Problem browsing is public, submission requires auth
-    pathRewrite: { '^/api/problems': '' },
+    pathRewrite: { '^/api/problems': '/api/v1' },
   },
   '/execute': {
     target: config.services.executionService.url,
     timeout: config.services.executionService.timeout,
     auth: 'required', // Code execution requires authentication
-    pathRewrite: { '^/api/execute': '' },
+    pathRewrite: { '^/api/execute': '/api/v1' },
   },
   '/ai': {
     target: config.services.aiService.url,
     timeout: config.services.aiService.timeout,
     auth: 'required', // AI services require authentication
-    pathRewrite: { '^/api/ai': '' },
+    pathRewrite: { '^/api/ai': '/api/v1' },
   },
   '/contests': {
     target: config.services.contestService.url,
     timeout: config.services.contestService.timeout,
     auth: 'optional', // Contest viewing is public, participation requires auth
-    pathRewrite: { '^/api/v1': '' },
+    pathRewrite: { '^/api/contests': '/api/v1' },
+  },
+  '/analytics': {
+    target: config.services.analyticsService.url,
+    timeout: config.services.analyticsService.timeout,
+    auth: 'required', // Analytics requires authentication
+    pathRewrite: { '^/api/analytics': '/api/v1' },
+  },
+  '/notifications': {
+    target: config.services.notificationService.url,
+    timeout: config.services.notificationService.timeout,
+    auth: 'required', // Notifications require authentication
+    pathRewrite: { '^/api/notifications': '/api/v1' },
+  },
+  '/realtime': {
+    target: config.services.realtimeService.url,
+    timeout: config.services.realtimeService.timeout,
+    auth: 'required', // Realtime services require authentication
+    pathRewrite: { '^/api/realtime': '/api/v1' },
   },
 };
 
 // Public routes that bypass authentication entirely
 const publicRoutes = [
-  '/users/health',
-  '/problems/health',
-  '/contests/health',
   '/users/api/v1/health',
   '/problems/api/v1/health',
   '/contests/api/v1/health',
+  '/execute/api/v1/health',
+  '/ai/api/v1/health',
+  '/analytics/api/v1/health',
+  '/notifications/api/v1/health',
+  '/realtime/api/v1/health',
 ];
 
 // Create proxy middleware for each service

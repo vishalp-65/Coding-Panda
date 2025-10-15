@@ -6,7 +6,17 @@ import { authRateLimitMiddleware } from '../middleware/rate-limit';
 
 export function setupRoutes(app: Express): void {
   // Health check endpoint (no authentication required)
-  // app.get('/health', getHealth);
+  app.get('/api/v1/health', (req, res) => {
+    res.json({
+      success: true,
+      data: {
+        service: 'API Gateway',
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+      },
+    });
+  });
 
   // Metrics endpoint (no authentication required)
   app.get('/metrics', getMetrics);

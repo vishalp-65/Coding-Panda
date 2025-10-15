@@ -1,0 +1,105 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migration
+  namespace: ai-coding-platform
+  labels:
+    app: db-migration
+spec:
+  template:
+    metadata:
+      labels:
+        app: db-migration
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migration
+        image: ai-coding-platform/migration-runner:latest
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(POSTGRES_PASSWORD)@postgres-service:5432/$(POSTGRES_DB)"
+        - name: MONGODB_URL
+          value: "mongodb://admin:$(MONGODB_PASSWORD)@mongodb-service:27017/$(MONGODB_DB)"
+        envFrom:
+        - configMapRef:
+            name: database-config
+        - secretRef:
+            name: app-secrets
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Starting database migrations..."
+          
+          # PostgreSQL migrations
+          echo "Running PostgreSQL migrations..."
+          npm run migrate:postgres
+          
+          # MongoDB migrations
+          echo "Running MongoDB migrations..."
+          npm run migrate:mongodb
+          
+          echo "Migrations completed successfully"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      imagePullSecrets:
+      - name: registry-secret
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-rollback
+  namespace: ai-coding-platform
+  labels:
+    app: db-rollback
+spec:
+  template:
+    metadata:
+      labels:
+        app: db-rollback
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: rollback
+        image: ai-coding-platform/migration-runner:latest
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(POSTGRES_PASSWORD)@postgres-service:5432/$(POSTGRES_DB)"
+        - name: MONGODB_URL
+          value: "mongodb://admin:$(MONGODB_PASSWORD)@mongodb-service:27017/$(MONGODB_DB)"
+        - name: ROLLBACK_VERSION
+          value: "REPLACE_WITH_VERSION"
+        envFrom:
+        - configMapRef:
+            name: database-config
+        - secretRef:
+            name: app-secrets
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Starting database rollback to version $ROLLBACK_VERSION..."
+          
+          # PostgreSQL rollback
+          echo "Rolling back PostgreSQL to version $ROLLBACK_VERSION..."
+          npm run rollback:postgres -- --to=$ROLLBACK_VERSION
+          
+          # MongoDB rollback
+          echo "Rolling back MongoDB to version $ROLLBACK_VERSION..."
+          npm run rollback:mongodb -- --to=$ROLLBACK_VERSION
+          
+          echo "Rollback completed successfully"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      imagePullSecrets:
+      - name: registry-secret

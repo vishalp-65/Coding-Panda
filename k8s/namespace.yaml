@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-coding-platform
+  labels:
+    name: ai-coding-platform
+    environment: production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-coding-platform-staging
+  labels:
+    name: ai-coding-platform-staging
+    environment: staging

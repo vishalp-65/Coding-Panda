@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: ai-coding-platform
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  API_VERSION: "v1"
+  CORS_ORIGIN: "https://coding-platform.com"
+  RATE_LIMIT_WINDOW: "900000"
+  RATE_LIMIT_MAX: "100"
+  JWT_EXPIRES_IN: "24h"
+  REFRESH_TOKEN_EXPIRES_IN: "7d"
+  CODE_EXECUTION_TIMEOUT: "30"
+  CODE_EXECUTION_MEMORY_LIMIT: "512"
+  CONTEST_SUBMISSION_LIMIT: "50"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: database-config
+  namespace: ai-coding-platform
+data:
+  POSTGRES_DB: "ai_coding_platform"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  MONGODB_HOST: "mongodb-service"
+  MONGODB_PORT: "27017"
+  MONGODB_DB: "problems"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"

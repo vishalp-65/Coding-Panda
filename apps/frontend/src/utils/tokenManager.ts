@@ -33,11 +33,16 @@ export class TokenManager {
       return true;
     }
 
-    const tokenAge = Date.now() - parseInt(timestamp);
-    const expirationTime = parseInt(expiresIn) * 1000; // Convert to milliseconds
+    try {
+      const tokenAge = Date.now() - parseInt(timestamp);
+      const expirationTime = parseInt(expiresIn) * 1000; // Convert to milliseconds
 
-    // Consider token expired if it's 90% of the way to expiration
-    return tokenAge >= expirationTime * 0.9;
+      // Consider token expired if it's 90% of the way to expiration
+      return tokenAge >= expirationTime * 0.9;
+    } catch (error) {
+      // If there's any error parsing the timestamps, consider token expired
+      return true;
+    }
   }
 
   static clearTokens() {
@@ -55,5 +60,41 @@ export class TokenManager {
   static hasRefreshToken(): boolean {
     const refreshToken = this.getRefreshToken();
     return refreshToken !== null;
+  }
+
+  static isRefreshTokenExpired(): boolean {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      return true;
+    }
+
+    try {
+      // Decode JWT payload to check expiration
+      const payload = JSON.parse(atob(refreshToken.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+
+      return payload.exp < currentTime;
+    } catch (error) {
+      // If we can't decode the token, consider it expired
+      return true;
+    }
+  }
+
+  static getTokenTimeRemaining(): number {
+    const timestamp = localStorage.getItem(this.TOKEN_TIMESTAMP_KEY);
+    const expiresIn = localStorage.getItem(this.EXPIRES_IN_KEY);
+
+    if (!timestamp || !expiresIn) {
+      return 0;
+    }
+
+    try {
+      const tokenAge = Date.now() - parseInt(timestamp);
+      const expirationTime = parseInt(expiresIn) * 1000;
+
+      return Math.max(0, expirationTime - tokenAge);
+    } catch (error) {
+      return 0;
+    }
   }
 }

@@ -7,7 +7,9 @@ const ModernLayout = () => {
         <div className="min-h-screen bg-gray-900 text-white">
             <ModernHeader />
             <main className="pt-14 h-screen">
-                <Outlet />
+                <div className="transition-all duration-300 ease-in-out">
+                    <Outlet />
+                </div>
             </main>
         </div>
     );

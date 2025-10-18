@@ -25,6 +25,7 @@ import ContestsPage from '@/pages/ContestsPage';
 // Route guards
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import PublicRoute from '@/components/auth/PublicRoute';
+import { AuthErrorHandler } from '@/components/auth/AuthErrorHandler';
 
 function App() {
   const dispatch = useAppDispatch();
@@ -58,73 +59,76 @@ function App() {
   }, [dispatch]);
 
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <AuthLayout>
-              <LoginPage />
-            </AuthLayout>
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <PublicRoute>
-            <AuthLayout>
-              <RegisterPage />
-            </AuthLayout>
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/forgot-password"
-        element={
-          <PublicRoute>
-            <AuthLayout>
-              <ForgotPasswordPage />
-            </AuthLayout>
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/reset-password"
-        element={
-          <PublicRoute>
-            <AuthLayout>
-              <ResetPasswordPage />
-            </AuthLayout>
-          </PublicRoute>
-        }
-      />
+    <>
+      <AuthErrorHandler />
+      <Routes>
+        {/* Public routes */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <AuthLayout>
+                <LoginPage />
+              </AuthLayout>
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <AuthLayout>
+                <RegisterPage />
+              </AuthLayout>
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <AuthLayout>
+                <ForgotPasswordPage />
+              </AuthLayout>
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <PublicRoute>
+              <AuthLayout>
+                <ResetPasswordPage />
+              </AuthLayout>
+            </PublicRoute>
+          }
+        />
 
-      {/* Protected routes */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <ModernLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/problems" replace />} />
-        <Route path="dashboard" element={<ModernDashboardPage />} />
-        <Route path="problems" element={<ModernProblemsPage />} />
-        <Route path="problems/:id" element={<ModernProblemDetailPage />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="contests" element={<ContestsPage />} />
-      </Route>
+        {/* Protected routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <ModernLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/problems" replace />} />
+          <Route path="dashboard" element={<ModernDashboardPage />} />
+          <Route path="problems" element={<ModernProblemsPage />} />
+          <Route path="problems/:number" element={<ModernProblemDetailPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="contests" element={<ContestsPage />} />
+        </Route>
 
-      {/* Public home page */}
-      <Route path="/home" element={<HomePage />} />
+        {/* Public home page */}
+        <Route path="/home" element={<HomePage />} />
 
-      {/* Catch all route */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Catch all route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 

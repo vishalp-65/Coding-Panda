@@ -19,6 +19,19 @@ const mockData = {
     currentStreak: 5,
     weeklyGoal: 10,
     weeklyProgress: 7,
+    totalSubmissions: 300,
+    acceptedSubmissions: 120,
+    acceptanceRate: '40',
+    ranking: 512,
+    accuracy: 85,
+    xp: 1200,
+    streak: 100,
+    longestStreak: 100,
+    skillRatings: {
+      'Data Structures': 100,
+      Algorithms: 100,
+      'System Design': 100,
+    },
   },
   recentActivity: [
     {
@@ -83,11 +96,18 @@ export const useDashboardData = (): UseDashboardDataReturn => {
         setError(null);
 
         // Fetch data from APIs
-        const [statsResponse, activityResponse, problemsResponse] = await Promise.allSettled([
-          dashboardApi.getDashboardStats(),
-          dashboardApi.getRecentActivity(),
-          problemsApi.getRecommendedProblems(),
-        ]);
+        const [statsResponse, activityResponse, problemsResponse] =
+          await Promise.allSettled([
+            dashboardApi.getDashboardStats(),
+            dashboardApi.getRecentActivity(),
+            problemsApi.getRecommendedProblems(),
+          ]);
+
+        console.log('Response is ', {
+          statsResponse,
+          activityResponse,
+          problemsResponse,
+        });
 
         const newData = { ...mockData };
 

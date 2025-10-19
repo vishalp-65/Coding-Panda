@@ -1,7 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Dict, Any, List
 from pydantic import Field
-import os
 
 
 class Settings(BaseSettings):
@@ -18,15 +17,9 @@ class Settings(BaseSettings):
     # Security settings
     max_code_length: int = 50000
     max_test_cases: int = 100
-    allowed_file_extensions: List[str] = Field(default_factory=lambda: [".py", ".js", ".java", ".cpp", ".go", ".rs"])
-    blocked_imports: Dict[str, list] = Field(default_factory=lambda: {
-        "python": ["os", "sys", "subprocess", "socket", "urllib", "requests"],
-        "javascript": ["fs", "child_process", "net", "http", "https"],
-        "java": ["java.io", "java.net", "java.lang.Runtime"],
-        "cpp": ["system", "exec", "popen"],
-        "go": ["os/exec", "net", "syscall"],
-        "rust": ["std::process", "std::net", "std::fs"]
-    })
+    allowed_file_extensions: List[str] = Field(
+        default_factory=lambda: [".py", ".js", ".java", ".cpp", ".go", ".rs"]
+    )
     
     # Redis settings
     redis_host: str = "localhost"
@@ -38,7 +31,7 @@ class Settings(BaseSettings):
     metrics_enabled: bool = True
     log_level: str = "INFO"
     
-    # Language-specific settings
+    # Language-specific configurations
     language_configs: Dict[str, Dict[str, Any]] = Field(default_factory=lambda: {
         "python": {
             "image": "python:3.11-alpine",
@@ -47,7 +40,7 @@ class Settings(BaseSettings):
             "file_extension": ".py"
         },
         "javascript": {
-            "image": "node:18-alpine",
+            "image": "node:18.20.2-alpine3.18",
             "compile_command": None,
             "run_command": "node /app/solution.js",
             "file_extension": ".js"
@@ -55,24 +48,24 @@ class Settings(BaseSettings):
         "java": {
             "image": "openjdk:17-alpine",
             "compile_command": "javac -d /app /app/Solution.java",
-            "run_command": "java -cp /app Solution",
+            "run_command": "java -Xmx64m -Xms32m -XX:+UseSerialGC -XX:MaxRAMPercentage=50 -XX:+UnlockExperimentalVMOptions -XX:+UseContainerSupport -cp /app Solution",
             "file_extension": ".java",
             "class_name": "Solution"
         },
         "cpp": {
-            "image": "gcc:11-alpine",
+            "image": "gcc:12.2",
             "compile_command": "g++ -o /app/solution /app/solution.cpp -std=c++17",
             "run_command": "/app/solution",
             "file_extension": ".cpp"
         },
         "go": {
-            "image": "golang:1.21-alpine",
+            "image": "golang:1.21.3-alpine",
             "compile_command": "go build -o /app/solution /app/solution.go",
             "run_command": "/app/solution",
             "file_extension": ".go"
         },
         "rust": {
-            "image": "rust:1.75-alpine",
+            "image": "rust:1.75-alpine3.18",
             "compile_command": "rustc -o /app/solution /app/solution.rs",
             "run_command": "/app/solution",
             "file_extension": ".rs"

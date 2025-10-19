@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.9"
 
 services:
   # Database Services - Using PostgreSQL 13 for better compatibility
@@ -14,13 +14,13 @@ services:
       # Trust local connections for easier development
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql
       - ./scripts/init-contest-db.sql:/docker-entrypoint-initdb.d/02-init-contest-db.sql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d ai_platform']
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai_platform"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -48,12 +48,12 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mongo
       MONGO_INITDB_DATABASE: ai_platform
     ports:
-      - '27017:27017'
+      - "27017:27017"
     volumes:
       - mongodb_data:/data/db
       - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
     healthcheck:
-      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -63,12 +63,12 @@ services:
     image: redis:7-alpine
     container_name: ai-platform-redis
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -82,12 +82,12 @@ services:
       RABBITMQ_DEFAULT_USER: rabbitmq
       RABBITMQ_DEFAULT_PASS: rabbitmq
     ports:
-      - '5672:5672'
-      - '15672:15672' # Management UI
+      - "5672:5672"
+      - "15672:15672" # Management UI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -98,22 +98,22 @@ services:
     image: prom/prometheus:latest
     container_name: ai-platform-prometheus
     ports:
-      - '9090:9090'
+      - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
     restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
     container_name: ai-platform-grafana
     ports:
-      - '3001:3000'
+      - "3001:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
@@ -127,8 +127,8 @@ services:
     image: mailhog/mailhog:latest
     container_name: ai-platform-mailhog
     ports:
-      - '1025:1025' # SMTP
-      - '8025:8025' # Web UI
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
     restart: unless-stopped
 
   # Code Execution Environment
@@ -146,7 +146,7 @@ services:
     build: ./services/api-gateway
     container_name: ai-platform-api-gateway
     ports:
-      - '8080:8080'
+      - "8080:8080"
     environment:
       - NODE_ENV=development
       - PORT=8080
@@ -171,7 +171,7 @@ services:
     build: ./services/user-service
     container_name: ai-platform-user-service
     ports:
-      - '3006:3006'
+      - "3006:3006"
     environment:
       - NODE_ENV=development
       - PORT=3006
@@ -189,7 +189,7 @@ services:
     build: ./services/problem-service
     container_name: ai-platform-problem-service
     ports:
-      - '3002:3002'
+      - "3002:3002"
     environment:
       - NODE_ENV=development
       - PORT=3002
@@ -204,7 +204,7 @@ services:
     build: ./services/contest-service
     container_name: ai-platform-contest-service
     ports:
-      - '3003:3003'
+      - "3003:3003"
     environment:
       - NODE_ENV=development
       - PORT=3003
@@ -221,7 +221,7 @@ services:
     build: ./services/code-execution-service
     container_name: ai-platform-code-execution-service
     ports:
-      - '3004:3004'
+      - "3004:3004"
     environment:
       - PORT=3004
       - REDIS_URL=redis://redis:6379
@@ -238,7 +238,7 @@ services:
     build: ./services/analytics-service
     container_name: ai-platform-analytics-service
     ports:
-      - '3005:3005'
+      - "3005:3005"
     environment:
       - NODE_ENV=development
       - PORT=3005
@@ -255,7 +255,7 @@ services:
     build: ./services/notification-service
     container_name: ai-platform-notification-service
     ports:
-      - '3007:3007'
+      - "3007:3007"
     environment:
       - NODE_ENV=development
       - PORT=3007
@@ -273,7 +273,7 @@ services:
     build: ./services/realtime-service
     container_name: ai-platform-realtime-service
     ports:
-      - '3008:3008'
+      - "3008:3008"
     environment:
       - NODE_ENV=development
       - PORT=3008
@@ -289,7 +289,7 @@ services:
     build: ./services/ai-analysis-service
     container_name: ai-platform-ai-analysis-service
     ports:
-      - '8001:8001'
+      - "8001:8001"
     environment:
       - PORT=8001
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/ai_platform
@@ -307,7 +307,7 @@ services:
     build: ./apps/frontend
     container_name: ai-platform-frontend
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       - VITE_API_BASE_URL=http://localhost:8080/api
       - VITE_SOCKET_URL=http://localhost:3008

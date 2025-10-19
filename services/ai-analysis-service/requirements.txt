@@ -30,9 +30,9 @@ safety==2.3.5
 
 # Language parsers
 tree-sitter==0.20.4
-tree-sitter-python==0.20.4
-tree-sitter-javascript==0.20.3
-tree-sitter-java==0.20.2
+tree-sitter-python==0.23.6
+tree-sitter-javascript==0.21.4
+tree-sitter-java==0.21.0
 tree-sitter-cpp==0.20.0
 tree-sitter-go==0.20.0
 tree-sitter-rust==0.20.4

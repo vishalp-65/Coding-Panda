@@ -14,10 +14,24 @@ function Setup-PythonService {
     if (Test-Path $ServicePath) {
         Push-Location $ServicePath
         
-        # Remove existing virtual environment if it exists
+        # Remove existing virtual environment if it exists and is not in use
         if (Test-Path ".venv") {
-            Write-Host "Removing existing virtual environment..." -ForegroundColor Gray
-            Remove-Item -Recurse -Force ".venv"
+            Write-Host "Checking existing virtual environment..." -ForegroundColor Gray
+            try {
+                Remove-Item -Recurse -Force ".venv" -ErrorAction Stop
+                Write-Host "Removed existing virtual environment" -ForegroundColor Gray
+            }
+            catch {
+                Write-Host "Cannot remove existing virtual environment (may be in use). Trying to update instead..." -ForegroundColor Yellow
+                if (Test-Path ".venv\Scripts\python.exe") {
+                    Write-Host "Virtual environment exists and appears functional. Updating dependencies..." -ForegroundColor Gray
+                    & ".venv\Scripts\python.exe" -m pip install --upgrade pip
+                    & ".venv\Scripts\python.exe" -m pip install -r requirements.txt
+                    Write-Host "$ServiceName dependencies updated!" -ForegroundColor Green
+                    Pop-Location
+                    return
+                }
+            }
         }
         
         # Create new virtual environment

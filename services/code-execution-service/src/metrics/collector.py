@@ -1,223 +1,153 @@
-import redis.asyncio as redis
-import json
-import time
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List
+from datetime import datetime, timedelta
 from src.models.execution import ExecutionMetrics
-from src.config.settings import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class MetricsCollector:
-    """Collects and stores execution metrics for monitoring and analytics."""
+    """Collects and stores execution metrics."""
     
     def __init__(self):
-        try:
-            self.redis_client = redis.Redis(
-                host=settings.redis_host,
-                port=settings.redis_port,
-                db=settings.redis_db,
-                password=settings.redis_password if settings.redis_password else None,
-                decode_responses=True
-            )
-            logger.info("Redis client initialized successfully")
-        except Exception as e:
-            logger.warning(f"Failed to initialize Redis client: {e}")
-            self.redis_client = None
-    
-    async def test_connection(self):
-        """Test Redis connection asynchronously."""
-        if self.redis_client:
-            try:
-                await self.redis_client.ping()
-                return True
-            except Exception as e:
-                logger.error(f"Redis connection test failed: {e}")
-                return False
-        return False
+        # In-memory storage for metrics (in production, use Redis or database)
+        self.metrics: List[ExecutionMetrics] = []
+        self.max_metrics = 10000  # Keep last 10k metrics
     
     async def collect_execution_metrics(self, metrics: ExecutionMetrics):
-        """Store execution metrics in Redis."""
-        if not self.redis_client or not settings.metrics_enabled:
-            return
-        
+        """Store execution metrics."""
         try:
-            # Store individual execution record
-            key = f"execution_metrics:{metrics.request_id}"
-            data = metrics.model_dump_json()
-            await self.redis_client.setex(key, 86400, data)  # 24 hours TTL
+            self.metrics.append(metrics)
             
-            # Update aggregated metrics
-            await self._update_aggregated_metrics(metrics)
+            # Trim old metrics if exceeding max
+            if len(self.metrics) > self.max_metrics:
+                self.metrics = self.metrics[-self.max_metrics:]
+            
+            logger.debug(f"Collected metrics for request: {metrics.request_id}")
             
         except Exception as e:
-            logger.error(f"Failed to collect execution metrics: {e}")
-    
-    async def _update_aggregated_metrics(self, metrics: ExecutionMetrics):
-        """Update aggregated metrics for dashboards."""
-        if not self.redis_client:
-            return
-            
-        try:
-            current_hour = int(time.time() // 3600)
-            
-            # Language usage statistics
-            lang_key = f"metrics:language:{metrics.language}:{current_hour}"
-            await self.redis_client.incr(lang_key)
-            await self.redis_client.expire(lang_key, 86400 * 7)  # 7 days
-            
-            # Status statistics
-            status_key = f"metrics:status:{metrics.status}:{current_hour}"
-            await self.redis_client.incr(status_key)
-            await self.redis_client.expire(status_key, 86400 * 7)
-            
-            # Execution time histogram
-            time_bucket = self._get_time_bucket(metrics.execution_time)
-            time_key = f"metrics:execution_time:{time_bucket}:{current_hour}"
-            await self.redis_client.incr(time_key)
-            await self.redis_client.expire(time_key, 86400 * 7)
-            
-            # Memory usage histogram
-            memory_bucket = self._get_memory_bucket(metrics.memory_used)
-            memory_key = f"metrics:memory:{memory_bucket}:{current_hour}"
-            await self.redis_client.incr(memory_key)
-            await self.redis_client.expire(memory_key, 86400 * 7)
-            
-            # User activity (if user_id provided)
-            if metrics.user_id:
-                user_key = f"metrics:user:{metrics.user_id}:{current_hour}"
-                await self.redis_client.incr(user_key)
-                await self.redis_client.expire(user_key, 86400 * 30)  # 30 days
-            
-        except Exception as e:
-            logger.error(f"Failed to update aggregated metrics: {e}")
-    
-    def _get_time_bucket(self, execution_time: float) -> str:
-        """Get time bucket for histogram."""
-        if execution_time < 0.1:
-            return "0-100ms"
-        elif execution_time < 0.5:
-            return "100-500ms"
-        elif execution_time < 1.0:
-            return "500ms-1s"
-        elif execution_time < 2.0:
-            return "1-2s"
-        elif execution_time < 5.0:
-            return "2-5s"
-        else:
-            return "5s+"
-    
-    def _get_memory_bucket(self, memory_used: int) -> str:
-        """Get memory bucket for histogram."""
-        if memory_used < 16:
-            return "0-16MB"
-        elif memory_used < 32:
-            return "16-32MB"
-        elif memory_used < 64:
-            return "32-64MB"
-        elif memory_used < 128:
-            return "64-128MB"
-        else:
-            return "128MB+"
+            logger.error(f"Failed to collect metrics: {e}")
     
     async def get_metrics_summary(self, hours: int = 24) -> Dict[str, Any]:
-        """Get aggregated metrics summary."""
-        if not self.redis_client:
-            return {}
-        
+        """Get metrics summary for the last N hours."""
         try:
-            current_hour = int(time.time() // 3600)
-            summary = {
-                "languages": {},
-                "statuses": {},
-                "execution_times": {},
-                "memory_usage": {},
-                "total_executions": 0
+            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+            recent_metrics = [
+                m for m in self.metrics 
+                if m.timestamp >= cutoff_time
+            ]
+            
+            if not recent_metrics:
+                return self._empty_metrics_summary()
+            
+            # Calculate summary statistics
+            total_executions = len(recent_metrics)
+            successful = sum(1 for m in recent_metrics if m.status.value == "success")
+            failed = total_executions - successful
+            
+            # Language breakdown
+            language_stats = {}
+            for m in recent_metrics:
+                lang = m.language.value
+                if lang not in language_stats:
+                    language_stats[lang] = {"count": 0, "success": 0}
+                language_stats[lang]["count"] += 1
+                if m.status.value == "success":
+                    language_stats[lang]["success"] += 1
+            
+            # Average metrics
+            avg_execution_time = sum(m.execution_time for m in recent_metrics) / total_executions
+            avg_memory = sum(m.memory_used for m in recent_metrics) / total_executions
+            avg_test_count = sum(m.test_count for m in recent_metrics) / total_executions
+            
+            return {
+                "status": "healthy",
+                "service": "Code Execution Service",
+                "time_window_hours": hours,
+                "total_executions": total_executions,
+                "successful_executions": successful,
+                "failed_executions": failed,
+                "success_rate": round(successful / total_executions * 100, 2),
+                "average_execution_time": round(avg_execution_time, 3),
+                "average_memory_used": round(avg_memory, 2),
+                "average_test_count": round(avg_test_count, 2),
+                "language_statistics": language_stats,
+                "timestamp": datetime.utcnow().isoformat()
             }
-            
-            # Collect data for the specified time range
-            for hour_offset in range(hours):
-                hour = current_hour - hour_offset
-                
-                # Language metrics
-                for lang in ["python", "javascript", "java", "cpp", "go", "rust"]:
-                    key = f"metrics:language:{lang}:{hour}"
-                    count = await self.redis_client.get(key)
-                    if count is not None:
-                        count_int = int(count)
-                        summary["languages"][lang] = summary["languages"].get(lang, 0) + count_int
-                        summary["total_executions"] += count_int
-                
-                # Status metrics
-                for status in ["success", "runtime_error", "compile_error", "time_limit_exceeded", "memory_limit_exceeded"]:
-                    key = f"metrics:status:{status}:{hour}"
-                    count = await self.redis_client.get(key)
-                    if count is not None:
-                        summary["statuses"][status] = summary["statuses"].get(status, 0) + int(count)
-                
-                # Time buckets
-                for bucket in ["0-100ms", "100-500ms", "500ms-1s", "1-2s", "2-5s", "5s+"]:
-                    key = f"metrics:execution_time:{bucket}:{hour}"
-                    count = await self.redis_client.get(key)
-                    if count is not None:
-                        summary["execution_times"][bucket] = summary["execution_times"].get(bucket, 0) + int(count)
-                
-                # Memory buckets
-                for bucket in ["0-16MB", "16-32MB", "32-64MB", "64-128MB", "128MB+"]:
-                    key = f"metrics:memory:{bucket}:{hour}"
-                    count = await self.redis_client.get(key)
-                    if count is not None:
-                        summary["memory_usage"][bucket] = summary["memory_usage"].get(bucket, 0) + int(count)
-            
-            return summary
             
         except Exception as e:
             logger.error(f"Failed to get metrics summary: {e}")
-            return {}
+            return self._empty_metrics_summary()
     
     async def get_user_metrics(self, user_id: str, hours: int = 24) -> Dict[str, Any]:
         """Get metrics for a specific user."""
-        if not self.redis_client:
-            return {}
-        
         try:
-            current_hour = int(time.time() // 3600)
-            total_executions = 0
+            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+            user_metrics = [
+                m for m in self.metrics 
+                if m.user_id == user_id and m.timestamp >= cutoff_time
+            ]
             
-            for hour_offset in range(hours):
-                hour = current_hour - hour_offset
-                key = f"metrics:user:{user_id}:{hour}"
-                count = await self.redis_client.get(key)
-                if count is not None:
-                    total_executions += int(count)
+            if not user_metrics:
+                return {
+                    "user_id": user_id,
+                    "total_executions": 0,
+                    "message": "No executions found for this user"
+                }
+            
+            total = len(user_metrics)
+            successful = sum(1 for m in user_metrics if m.status.value == "success")
+            
+            # Language breakdown
+            languages_used = {}
+            for m in user_metrics:
+                lang = m.language.value
+                languages_used[lang] = languages_used.get(lang, 0) + 1
             
             return {
                 "user_id": user_id,
-                "total_executions": total_executions,
-                "time_period_hours": hours
+                "time_window_hours": hours,
+                "total_executions": total,
+                "successful_executions": successful,
+                "failed_executions": total - successful,
+                "success_rate": round(successful / total * 100, 2),
+                "languages_used": languages_used,
+                "average_execution_time": round(
+                    sum(m.execution_time for m in user_metrics) / total, 3
+                ),
+                "total_tests_run": sum(m.test_count for m in user_metrics),
+                "timestamp": datetime.utcnow().isoformat()
             }
             
         except Exception as e:
             logger.error(f"Failed to get user metrics: {e}")
-            return {}
+            raise
     
-    async def cleanup_old_metrics(self):
-        """Clean up old metrics data."""
-        if not self.redis_client:
-            return
-        
+    async def cleanup_old_metrics(self, days: int = 7):
+        """Remove metrics older than specified days."""
         try:
-            # This is handled by Redis TTL, but we can add additional cleanup logic here
-            logger.info("Metrics cleanup completed (handled by Redis TTL)")
+            cutoff_time = datetime.utcnow() - timedelta(days=days)
+            original_count = len(self.metrics)
+            
+            self.metrics = [
+                m for m in self.metrics 
+                if m.timestamp >= cutoff_time
+            ]
+            
+            removed_count = original_count - len(self.metrics)
+            logger.info(f"Cleaned up {removed_count} old metrics")
+            
         except Exception as e:
             logger.error(f"Failed to cleanup old metrics: {e}")
     
-    async def close(self):
-        """Close Redis connection properly."""
-        if self.redis_client:
-            try:
-                await self.redis_client.aclose()
-                logger.info("Redis connection closed")
-            except Exception as e:
-                logger.error(f"Failed to close Redis connection: {e}")
+    def _empty_metrics_summary(self) -> Dict[str, Any]:
+        """Returns empty metrics summary."""
+        return {
+            "status": "healthy",
+            "service": "Code Execution Service",
+            "total_executions": 0,
+            "successful_executions": 0,
+            "failed_executions": 0,
+            "success_rate": 0.0,
+            "message": "No metrics available"
+        }

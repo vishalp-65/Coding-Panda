@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "github.com/ai-platform/proto/common";
+
+// Common message types used across services
+message Empty {}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string service = 1;
+  string status = 2;
+  string version = 3;
+  string timestamp = 4;
+  int64 uptime = 5;
+}
+
+message PaginationRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+  string sort_by = 3;
+  string sort_order = 4;
+}
+
+message PaginationResponse {
+  int32 total = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+  bool has_next = 4;
+  bool has_prev = 5;
+}
+
+message ErrorDetails {
+  string code = 1;
+  string message = 2;
+  map<string, string> details = 3;
+}
+
+message RequestMetadata {
+  string request_id = 1;
+  string user_id = 2;
+  string user_email = 3;
+  repeated string user_roles = 4;
+  string session_id = 5;
+  string ip_address = 6;
+  string user_agent = 7;
+}
+
+message ValidationError {
+  string field = 1;
+  string message = 2;
+  string code = 3;
+}
+
+message BaseResponse {
+  bool success = 1;
+  string message = 2;
+  repeated ValidationError validation_errors = 3;
+  ErrorDetails error = 4;
+}

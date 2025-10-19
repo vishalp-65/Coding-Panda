@@ -1,0 +1,305 @@
+syntax = "proto3";
+
+package notification;
+
+import "common.proto";
+
+option go_package = "github.com/ai-platform/proto/notification";
+
+// Notification service definition
+service NotificationService {
+  // Health check
+  rpc HealthCheck(common.HealthCheckRequest) returns (common.HealthCheckResponse);
+  
+  // Notification management
+  rpc CreateNotification(CreateNotificationRequest) returns (CreateNotificationResponse);
+  rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse);
+  rpc SendBulkNotifications(SendBulkNotificationsRequest) returns (SendBulkNotificationsResponse);
+  
+  // Notification retrieval
+  rpc GetNotifications(GetNotificationsRequest) returns (GetNotificationsResponse);
+  rpc GetNotification(GetNotificationRequest) returns (GetNotificationResponse);
+  rpc GetUnreadCount(GetUnreadCountRequest) returns (GetUnreadCountResponse);
+  
+  // Notification actions
+  rpc MarkAsRead(MarkAsReadRequest) returns (MarkAsReadResponse);
+  rpc MarkAllAsRead(MarkAllAsReadRequest) returns (MarkAllAsReadResponse);
+  rpc DeleteNotification(DeleteNotificationRequest) returns (DeleteNotificationResponse);
+  
+  // Notification preferences
+  rpc UpdateNotificationPreferences(UpdateNotificationPreferencesRequest) returns (UpdateNotificationPreferencesResponse);
+  rpc GetNotificationPreferences(GetNotificationPreferencesRequest) returns (GetNotificationPreferencesResponse);
+  
+  // Notification templates
+  rpc CreateTemplate(CreateTemplateRequest) returns (CreateTemplateResponse);
+  rpc GetTemplate(GetTemplateRequest) returns (GetTemplateResponse);
+  rpc UpdateTemplate(UpdateTemplateRequest) returns (UpdateTemplateResponse);
+  rpc DeleteTemplate(DeleteTemplateRequest) returns (DeleteTemplateResponse);
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse);
+  
+  // Real-time notifications
+  rpc SubscribeToNotifications(SubscribeToNotificationsRequest) returns (stream NotificationUpdate);
+}
+
+// Notification messages
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  string type = 3;
+  string title = 4;
+  string message = 5;
+  map<string, string> data = 6;
+  repeated string channels = 7;
+  string priority = 8;
+  bool is_read = 9;
+  string read_at = 10;
+  string created_at = 11;
+  string scheduled_for = 12;
+  string template_id = 13;
+}
+
+message NotificationTemplate {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string title_template = 4;
+  string message_template = 5;
+  repeated string default_channels = 6;
+  string default_priority = 7;
+  map<string, string> variables = 8;
+  string created_at = 9;
+  string updated_at = 10;
+}
+
+message NotificationPreferences {
+  string user_id = 1;
+  bool email_enabled = 2;
+  bool push_enabled = 3;
+  bool in_app_enabled = 4;
+  bool sms_enabled = 5;
+  map<string, bool> type_preferences = 6;
+  string quiet_hours_start = 7;
+  string quiet_hours_end = 8;
+  string timezone = 9;
+  string updated_at = 10;
+}
+
+message NotificationUpdate {
+  string type = 1;
+  Notification notification = 2;
+  int32 unread_count = 3;
+  string timestamp = 4;
+}
+
+message BulkNotificationRequest {
+  repeated string user_ids = 1;
+  string type = 2;
+  string title = 3;
+  string message = 4;
+  map<string, string> data = 5;
+  repeated string channels = 6;
+  string priority = 7;
+  string template_id = 8;
+  map<string, string> template_variables = 9;
+}
+
+// Request/Response messages
+message CreateNotificationRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  string type = 3;
+  string title = 4;
+  string message = 5;
+  map<string, string> data = 6;
+  repeated string channels = 7;
+  string priority = 8;
+  string scheduled_for = 9;
+  string template_id = 10;
+  map<string, string> template_variables = 11;
+}
+
+message CreateNotificationResponse {
+  common.BaseResponse base = 1;
+  Notification notification = 2;
+}
+
+message SendNotificationRequest {
+  common.RequestMetadata metadata = 1;
+  string notification_id = 2;
+  bool force_send = 3;
+}
+
+message SendNotificationResponse {
+  common.BaseResponse base = 1;
+  bool sent = 2;
+  repeated string failed_channels = 3;
+}
+
+message SendBulkNotificationsRequest {
+  common.RequestMetadata metadata = 1;
+  repeated BulkNotificationRequest notifications = 2;
+}
+
+message SendBulkNotificationsResponse {
+  common.BaseResponse base = 1;
+  int32 sent_count = 2;
+  int32 failed_count = 3;
+  repeated string failed_notification_ids = 4;
+}
+
+message GetNotificationsRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  common.PaginationRequest pagination = 3;
+  bool unread_only = 4;
+  repeated string types = 5;
+  string priority = 6;
+}
+
+message GetNotificationsResponse {
+  common.BaseResponse base = 1;
+  repeated Notification notifications = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message GetNotificationRequest {
+  common.RequestMetadata metadata = 1;
+  string notification_id = 2;
+}
+
+message GetNotificationResponse {
+  common.BaseResponse base = 1;
+  Notification notification = 2;
+}
+
+message GetUnreadCountRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  repeated string types = 3;
+}
+
+message GetUnreadCountResponse {
+  common.BaseResponse base = 1;
+  int32 unread_count = 2;
+  map<string, int32> unread_by_type = 3;
+}
+
+message MarkAsReadRequest {
+  common.RequestMetadata metadata = 1;
+  string notification_id = 2;
+}
+
+message MarkAsReadResponse {
+  common.BaseResponse base = 1;
+}
+
+message MarkAllAsReadRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  repeated string types = 3;
+}
+
+message MarkAllAsReadResponse {
+  common.BaseResponse base = 1;
+  int32 marked_count = 2;
+}
+
+message DeleteNotificationRequest {
+  common.RequestMetadata metadata = 1;
+  string notification_id = 2;
+}
+
+message DeleteNotificationResponse {
+  common.BaseResponse base = 1;
+}
+
+message UpdateNotificationPreferencesRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  NotificationPreferences preferences = 3;
+}
+
+message UpdateNotificationPreferencesResponse {
+  common.BaseResponse base = 1;
+  NotificationPreferences preferences = 2;
+}
+
+message GetNotificationPreferencesRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+}
+
+message GetNotificationPreferencesResponse {
+  common.BaseResponse base = 1;
+  NotificationPreferences preferences = 2;
+}
+
+message CreateTemplateRequest {
+  common.RequestMetadata metadata = 1;
+  string name = 2;
+  string type = 3;
+  string title_template = 4;
+  string message_template = 5;
+  repeated string default_channels = 6;
+  string default_priority = 7;
+  map<string, string> variables = 8;
+}
+
+message CreateTemplateResponse {
+  common.BaseResponse base = 1;
+  NotificationTemplate template = 2;
+}
+
+message GetTemplateRequest {
+  common.RequestMetadata metadata = 1;
+  string template_id = 2;
+}
+
+message GetTemplateResponse {
+  common.BaseResponse base = 1;
+  NotificationTemplate template = 2;
+}
+
+message UpdateTemplateRequest {
+  common.RequestMetadata metadata = 1;
+  string template_id = 2;
+  string name = 3;
+  string type = 4;
+  string title_template = 5;
+  string message_template = 6;
+  repeated string default_channels = 7;
+  string default_priority = 8;
+  map<string, string> variables = 9;
+}
+
+message UpdateTemplateResponse {
+  common.BaseResponse base = 1;
+  NotificationTemplate template = 2;
+}
+
+message DeleteTemplateRequest {
+  common.RequestMetadata metadata = 1;
+  string template_id = 2;
+}
+
+message DeleteTemplateResponse {
+  common.BaseResponse base = 1;
+}
+
+message ListTemplatesRequest {
+  common.RequestMetadata metadata = 1;
+  common.PaginationRequest pagination = 2;
+  string type = 3;
+}
+
+message ListTemplatesResponse {
+  common.BaseResponse base = 1;
+  repeated NotificationTemplate templates = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message SubscribeToNotificationsRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  repeated string types = 3;
+}

@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+package execution;
+
+import "common.proto";
+
+option go_package = "github.com/ai-platform/proto/execution";
+
+// Code execution service definition
+service ExecutionService {
+  // Health check
+  rpc HealthCheck(common.HealthCheckRequest) returns (common.HealthCheckResponse);
+  
+  // Code execution
+  rpc ExecuteCode(ExecuteCodeRequest) returns (ExecuteCodeResponse);
+  rpc ExecuteCodeStream(ExecuteCodeRequest) returns (stream ExecutionUpdate);
+  
+  // Batch execution
+  rpc ExecuteBatch(ExecuteBatchRequest) returns (ExecuteBatchResponse);
+  rpc ExecuteBatchStream(ExecuteBatchRequest) returns (stream BatchExecutionUpdate);
+  
+  // Execution history
+  rpc GetExecutionHistory(GetExecutionHistoryRequest) returns (GetExecutionHistoryResponse);
+  rpc GetExecutionResult(GetExecutionResultRequest) returns (GetExecutionResultResponse);
+  
+  // Language support
+  rpc GetSupportedLanguages(GetSupportedLanguagesRequest) returns (GetSupportedLanguagesResponse);
+  rpc GetLanguageConfig(GetLanguageConfigRequest) returns (GetLanguageConfigResponse);
+}
+
+// Execution messages
+message ExecutionRequest {
+  string code = 1;
+  string language = 2;
+  repeated TestCase test_cases = 3;
+  int32 time_limit = 4;
+  int32 memory_limit = 5;
+  map<string, string> environment = 6;
+}
+
+message TestCase {
+  string id = 1;
+  string input = 2;
+  string expected_output = 3;
+  bool is_hidden = 4;
+  double weight = 5;
+}
+
+message ExecutionResult {
+  string execution_id = 1;
+  bool success = 2;
+  repeated TestCaseResult results = 3;
+  string overall_status = 4;
+  int32 execution_time = 5;
+  int32 memory_used = 6;
+  string compilation_output = 7;
+  string error = 8;
+  string created_at = 9;
+}
+
+message TestCaseResult {
+  string test_case_id = 1;
+  string status = 2;
+  string actual_output = 3;
+  string expected_output = 4;
+  int32 execution_time = 5;
+  int32 memory_used = 6;
+  string error = 7;
+}
+
+message ExecutionUpdate {
+  string execution_id = 1;
+  string status = 2;
+  string message = 3;
+  int32 progress = 4;
+  TestCaseResult current_test_result = 5;
+  string timestamp = 6;
+}
+
+message LanguageConfig {
+  string language = 1;
+  string version = 2;
+  string compiler = 3;
+  string runtime = 4;
+  repeated string file_extensions = 5;
+  int32 default_time_limit = 6;
+  int32 default_memory_limit = 7;
+  map<string, string> compile_flags = 8;
+  map<string, string> runtime_flags = 9;
+}
+
+// Request/Response messages
+message ExecuteCodeRequest {
+  common.RequestMetadata metadata = 1;
+  ExecutionRequest execution = 2;
+  string user_id = 3;
+  string problem_id = 4;
+  string session_id = 5;
+}
+
+message ExecuteCodeResponse {
+  common.BaseResponse base = 1;
+  ExecutionResult result = 2;
+}
+
+message ExecuteBatchRequest {
+  common.RequestMetadata metadata = 1;
+  repeated ExecutionRequest executions = 2;
+  string user_id = 3;
+  string batch_id = 4;
+}
+
+message ExecuteBatchResponse {
+  common.BaseResponse base = 1;
+  string batch_id = 2;
+  repeated ExecutionResult results = 3;
+}
+
+message BatchExecutionUpdate {
+  string batch_id = 1;
+  int32 completed = 2;
+  int32 total = 3;
+  ExecutionUpdate current_execution = 4;
+  string timestamp = 5;
+}
+
+message GetExecutionHistoryRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  string problem_id = 3;
+  common.PaginationRequest pagination = 4;
+  string language = 5;
+  string status = 6;
+}
+
+message GetExecutionHistoryResponse {
+  common.BaseResponse base = 1;
+  repeated ExecutionResult executions = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message GetExecutionResultRequest {
+  common.RequestMetadata metadata = 1;
+  string execution_id = 2;
+}
+
+message GetExecutionResultResponse {
+  common.BaseResponse base = 1;
+  ExecutionResult result = 2;
+}
+
+message GetSupportedLanguagesRequest {
+  common.RequestMetadata metadata = 1;
+}
+
+message GetSupportedLanguagesResponse {
+  common.BaseResponse base = 1;
+  repeated LanguageConfig languages = 2;
+}
+
+message GetLanguageConfigRequest {
+  common.RequestMetadata metadata = 1;
+  string language = 2;
+}
+
+message GetLanguageConfigResponse {
+  common.BaseResponse base = 1;
+  LanguageConfig config = 2;
+}

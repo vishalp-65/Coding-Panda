@@ -1,0 +1,249 @@
+syntax = "proto3";
+
+package problem;
+
+import "common.proto";
+
+option go_package = "github.com/ai-platform/proto/problem";
+
+// Problem service definition
+service ProblemService {
+  // Health check
+  rpc HealthCheck(common.HealthCheckRequest) returns (common.HealthCheckResponse);
+  
+  // Problem CRUD
+  rpc CreateProblem(CreateProblemRequest) returns (CreateProblemResponse);
+  rpc GetProblem(GetProblemRequest) returns (GetProblemResponse);
+  rpc UpdateProblem(UpdateProblemRequest) returns (UpdateProblemResponse);
+  rpc DeleteProblem(DeleteProblemRequest) returns (DeleteProblemResponse);
+  rpc SearchProblems(SearchProblemsRequest) returns (SearchProblemsResponse);
+  
+  // Problem interactions
+  rpc BookmarkProblem(BookmarkProblemRequest) returns (BookmarkProblemResponse);
+  rpc UnbookmarkProblem(UnbookmarkProblemRequest) returns (UnbookmarkProblemResponse);
+  rpc GetUserBookmarks(GetUserBookmarksRequest) returns (GetUserBookmarksResponse);
+  rpc RateProblem(RateProblemRequest) returns (RateProblemResponse);
+  
+  // Problem statistics
+  rpc UpdateProblemStatistics(UpdateProblemStatisticsRequest) returns (UpdateProblemStatisticsResponse);
+  rpc GetProblemStatistics(GetProblemStatisticsRequest) returns (GetProblemStatisticsResponse);
+  
+  // Tags and categories
+  rpc GetPopularTags(GetPopularTagsRequest) returns (GetPopularTagsResponse);
+  rpc GetCategories(GetCategoriesRequest) returns (GetCategoriesResponse);
+}
+
+// Problem messages
+message Problem {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string difficulty = 4;
+  string category = 5;
+  repeated string tags = 6;
+  string constraints = 7;
+  repeated ProblemExample examples = 8;
+  repeated TestCase test_cases = 9;
+  int32 time_limit = 10;
+  int32 memory_limit = 11;
+  string author_id = 12;
+  ProblemStatistics statistics = 13;
+  string created_at = 14;
+  string updated_at = 15;
+  bool is_active = 16;
+}
+
+message ProblemExample {
+  string input = 1;
+  string output = 2;
+  string explanation = 3;
+}
+
+message TestCase {
+  string id = 1;
+  string input = 2;
+  string expected_output = 3;
+  bool is_hidden = 4;
+  double weight = 5;
+}
+
+message ProblemStatistics {
+  int32 total_submissions = 1;
+  int32 accepted_submissions = 2;
+  double acceptance_rate = 3;
+  double average_rating = 4;
+  int32 total_ratings = 5;
+}
+
+// Request/Response messages
+message CreateProblemRequest {
+  common.RequestMetadata metadata = 1;
+  string title = 2;
+  string description = 3;
+  string difficulty = 4;
+  string category = 5;
+  repeated string tags = 6;
+  string constraints = 7;
+  repeated ProblemExample examples = 8;
+  repeated TestCase test_cases = 9;
+  int32 time_limit = 10;
+  int32 memory_limit = 11;
+}
+
+message CreateProblemResponse {
+  common.BaseResponse base = 1;
+  Problem problem = 2;
+}
+
+message GetProblemRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_id = 2;
+  bool include_hidden_test_cases = 3;
+}
+
+message GetProblemResponse {
+  common.BaseResponse base = 1;
+  Problem problem = 2;
+}
+
+message UpdateProblemRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_id = 2;
+  string title = 3;
+  string description = 4;
+  string difficulty = 5;
+  string category = 6;
+  repeated string tags = 7;
+  string constraints = 8;
+  repeated ProblemExample examples = 9;
+  repeated TestCase test_cases = 10;
+  int32 time_limit = 11;
+  int32 memory_limit = 12;
+}
+
+message UpdateProblemResponse {
+  common.BaseResponse base = 1;
+  Problem problem = 2;
+}
+
+message DeleteProblemRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_id = 2;
+}
+
+message DeleteProblemResponse {
+  common.BaseResponse base = 1;
+}
+
+message SearchProblemsRequest {
+  common.RequestMetadata metadata = 1;
+  common.PaginationRequest pagination = 2;
+  string query = 3;
+  repeated string difficulties = 4;
+  repeated string categories = 5;
+  repeated string tags = 6;
+  string author_id = 7;
+  bool active_only = 8;
+}
+
+message SearchProblemsResponse {
+  common.BaseResponse base = 1;
+  repeated Problem problems = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message BookmarkProblemRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_id = 2;
+  string user_id = 3;
+}
+
+message BookmarkProblemResponse {
+  common.BaseResponse base = 1;
+}
+
+message UnbookmarkProblemRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_id = 2;
+  string user_id = 3;
+}
+
+message UnbookmarkProblemResponse {
+  common.BaseResponse base = 1;
+}
+
+message GetUserBookmarksRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  common.PaginationRequest pagination = 3;
+}
+
+message GetUserBookmarksResponse {
+  common.BaseResponse base = 1;
+  repeated Problem problems = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message RateProblemRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_id = 2;
+  string user_id = 3;
+  int32 rating = 4;
+}
+
+message RateProblemResponse {
+  common.BaseResponse base = 1;
+  double new_average_rating = 2;
+  int32 total_ratings = 3;
+}
+
+message UpdateProblemStatisticsRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_id = 2;
+  int32 total_submissions_delta = 3;
+  int32 accepted_submissions_delta = 4;
+}
+
+message UpdateProblemStatisticsResponse {
+  common.BaseResponse base = 1;
+  ProblemStatistics statistics = 2;
+}
+
+message GetProblemStatisticsRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_id = 2;
+}
+
+message GetProblemStatisticsResponse {
+  common.BaseResponse base = 1;
+  ProblemStatistics statistics = 2;
+}
+
+message GetPopularTagsRequest {
+  common.RequestMetadata metadata = 1;
+  int32 limit = 2;
+}
+
+message GetPopularTagsResponse {
+  common.BaseResponse base = 1;
+  repeated TagCount tags = 2;
+}
+
+message TagCount {
+  string tag = 1;
+  int32 count = 2;
+}
+
+message GetCategoriesRequest {
+  common.RequestMetadata metadata = 1;
+}
+
+message GetCategoriesResponse {
+  common.BaseResponse base = 1;
+  repeated CategoryCount categories = 2;
+}
+
+message CategoryCount {
+  string category = 1;
+  int32 count = 2;
+}

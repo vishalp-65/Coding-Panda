@@ -1,0 +1,406 @@
+syntax = "proto3";
+
+package analytics;
+
+import "common.proto";
+
+option go_package = "github.com/ai-platform/proto/analytics";
+
+// Analytics service definition
+service AnalyticsService {
+  // Health check
+  rpc HealthCheck(common.HealthCheckRequest) returns (common.HealthCheckResponse);
+  
+  // Event tracking
+  rpc TrackEvent(TrackEventRequest) returns (TrackEventResponse);
+  rpc TrackBatchEvents(TrackBatchEventsRequest) returns (TrackBatchEventsResponse);
+  
+  // Event retrieval
+  rpc GetRecentEvents(GetRecentEventsRequest) returns (GetRecentEventsResponse);
+  rpc GetEventStats(GetEventStatsRequest) returns (GetEventStatsResponse);
+  
+  // Behavior analysis
+  rpc AnalyzeUserBehavior(AnalyzeUserBehaviorRequest) returns (AnalyzeUserBehaviorResponse);
+  rpc CalculateEngagementScore(CalculateEngagementScoreRequest) returns (CalculateEngagementScoreResponse);
+  rpc IdentifyDropoffPoints(IdentifyDropoffPointsRequest) returns (IdentifyDropoffPointsResponse);
+  
+  // Recommendations
+  rpc GenerateRecommendations(GenerateRecommendationsRequest) returns (GenerateRecommendationsResponse);
+  
+  // A/B Testing
+  rpc CreateABTest(CreateABTestRequest) returns (CreateABTestResponse);
+  rpc GetTestAssignment(GetTestAssignmentRequest) returns (GetTestAssignmentResponse);
+  rpc GetTestConfig(GetTestConfigRequest) returns (GetTestConfigResponse);
+  rpc RecordTestEvent(RecordTestEventRequest) returns (RecordTestEventResponse);
+  rpc GetTestResults(GetTestResultsRequest) returns (GetTestResultsResponse);
+  rpc UpdateTestStatus(UpdateTestStatusRequest) returns (UpdateTestStatusResponse);
+  rpc GetActiveTests(GetActiveTestsRequest) returns (GetActiveTestsResponse);
+  
+  // Dashboard
+  rpc GetDashboardData(GetDashboardDataRequest) returns (GetDashboardDataResponse);
+  rpc GetRealtimeMetrics(GetRealtimeMetricsRequest) returns (GetRealtimeMetricsResponse);
+  rpc GetEngagementTrends(GetEngagementTrendsRequest) returns (GetEngagementTrendsResponse);
+  rpc GetTopPerformers(GetTopPerformersRequest) returns (GetTopPerformersResponse);
+  rpc GetSystemHealthMetrics(GetSystemHealthMetricsRequest) returns (GetSystemHealthMetricsResponse);
+}
+
+// Analytics messages
+message AnalyticsEvent {
+  string id = 1;
+  string event_type = 2;
+  string user_id = 3;
+  string session_id = 4;
+  map<string, string> properties = 5;
+  string timestamp = 6;
+  string user_agent = 7;
+  string ip_address = 8;
+}
+
+message EventStats {
+  string event_type = 1;
+  int32 count = 2;
+  string first_occurrence = 3;
+  string last_occurrence = 4;
+  map<string, int32> property_counts = 5;
+}
+
+message BehaviorAnalysis {
+  string user_id = 1;
+  double engagement_score = 2;
+  repeated string preferred_topics = 3;
+  repeated string learning_patterns = 4;
+  repeated DropoffPoint dropoff_points = 5;
+  map<string, double> skill_levels = 6;
+  string analysis_timestamp = 7;
+}
+
+message DropoffPoint {
+  string location = 1;
+  string event_type = 2;
+  double dropoff_rate = 3;
+  int32 user_count = 4;
+}
+
+message Recommendation {
+  string id = 1;
+  string type = 2;
+  string title = 3;
+  string description = 4;
+  double confidence = 5;
+  map<string, string> metadata = 6;
+  string reason = 7;
+}
+
+message ABTest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated TestVariant variants = 4;
+  int32 traffic_allocation = 5;
+  string start_date = 6;
+  string end_date = 7;
+  string target_metric = 8;
+  string status = 9;
+  string created_at = 10;
+}
+
+message TestVariant {
+  string id = 1;
+  string name = 2;
+  int32 allocation = 3;
+  map<string, string> config = 4;
+}
+
+message TestResults {
+  string test_id = 1;
+  repeated VariantResults variant_results = 2;
+  double confidence_level = 3;
+  bool is_significant = 4;
+  string winner_variant_id = 5;
+  string analysis_timestamp = 6;
+}
+
+message VariantResults {
+  string variant_id = 1;
+  int32 participant_count = 2;
+  double conversion_rate = 3;
+  double metric_value = 4;
+  double confidence_interval_lower = 5;
+  double confidence_interval_upper = 6;
+}
+
+message DashboardData {
+  int32 total_users = 1;
+  int32 active_users = 2;
+  int32 total_problems = 3;
+  int32 total_submissions = 4;
+  double success_rate = 5;
+  repeated LanguageUsage popular_languages = 6;
+  repeated AnalyticsEvent recent_activity = 7;
+  string time_range = 8;
+  string generated_at = 9;
+}
+
+message LanguageUsage {
+  string language = 1;
+  int32 count = 2;
+  double percentage = 3;
+}
+
+message RealtimeMetrics {
+  int32 active_users_now = 1;
+  int32 submissions_last_hour = 2;
+  int32 problems_solved_today = 3;
+  int32 contests_active = 4;
+  repeated SystemMetric system_metrics = 5;
+  string timestamp = 6;
+}
+
+message SystemMetric {
+  string name = 1;
+  double value = 2;
+  string unit = 3;
+  string status = 4;
+}
+
+message EngagementTrend {
+  string date = 1;
+  double engagement_score = 2;
+  int32 session_count = 3;
+  int32 problem_attempts = 4;
+  int32 time_spent_minutes = 5;
+}
+
+message TopPerformer {
+  string user_id = 1;
+  string username = 2;
+  double metric_value = 3;
+  int32 rank = 4;
+  map<string, string> additional_stats = 5;
+}
+
+// Request/Response messages
+message TrackEventRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  string event_type = 3;
+  map<string, string> event_data = 4;
+  string session_id = 5;
+  string user_agent = 6;
+  string ip_address = 7;
+}
+
+message TrackEventResponse {
+  common.BaseResponse base = 1;
+  string event_id = 2;
+}
+
+message TrackBatchEventsRequest {
+  common.RequestMetadata metadata = 1;
+  repeated AnalyticsEvent events = 2;
+}
+
+message TrackBatchEventsResponse {
+  common.BaseResponse base = 1;
+  repeated string event_ids = 2;
+}
+
+message GetRecentEventsRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  int32 limit = 3;
+  string event_type = 4;
+}
+
+message GetRecentEventsResponse {
+  common.BaseResponse base = 1;
+  repeated AnalyticsEvent events = 2;
+}
+
+message GetEventStatsRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  int32 days = 3;
+  repeated string event_types = 4;
+}
+
+message GetEventStatsResponse {
+  common.BaseResponse base = 1;
+  repeated EventStats stats = 2;
+}
+
+message AnalyzeUserBehaviorRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  int32 analysis_days = 3;
+}
+
+message AnalyzeUserBehaviorResponse {
+  common.BaseResponse base = 1;
+  BehaviorAnalysis analysis = 2;
+}
+
+message CalculateEngagementScoreRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  int32 days = 3;
+}
+
+message CalculateEngagementScoreResponse {
+  common.BaseResponse base = 1;
+  double engagement_score = 2;
+}
+
+message IdentifyDropoffPointsRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  int32 days = 3;
+}
+
+message IdentifyDropoffPointsResponse {
+  common.BaseResponse base = 1;
+  repeated DropoffPoint dropoff_points = 2;
+}
+
+message GenerateRecommendationsRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  string type = 3;
+  map<string, string> context = 4;
+  int32 limit = 5;
+}
+
+message GenerateRecommendationsResponse {
+  common.BaseResponse base = 1;
+  repeated Recommendation recommendations = 2;
+}
+
+message CreateABTestRequest {
+  common.RequestMetadata metadata = 1;
+  string name = 2;
+  string description = 3;
+  repeated TestVariant variants = 4;
+  int32 traffic_allocation = 5;
+  string start_date = 6;
+  string end_date = 7;
+  string target_metric = 8;
+}
+
+message CreateABTestResponse {
+  common.BaseResponse base = 1;
+  ABTest test = 2;
+}
+
+message GetTestAssignmentRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  string test_name = 3;
+}
+
+message GetTestAssignmentResponse {
+  common.BaseResponse base = 1;
+  string variant_id = 2;
+}
+
+message GetTestConfigRequest {
+  common.RequestMetadata metadata = 1;
+  string test_name = 2;
+  string variant_id = 3;
+}
+
+message GetTestConfigResponse {
+  common.BaseResponse base = 1;
+  map<string, string> config = 2;
+}
+
+message RecordTestEventRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  string test_name = 3;
+  string event_type = 4;
+  map<string, string> event_data = 5;
+}
+
+message RecordTestEventResponse {
+  common.BaseResponse base = 1;
+}
+
+message GetTestResultsRequest {
+  common.RequestMetadata metadata = 1;
+  string test_id = 2;
+}
+
+message GetTestResultsResponse {
+  common.BaseResponse base = 1;
+  TestResults results = 2;
+}
+
+message UpdateTestStatusRequest {
+  common.RequestMetadata metadata = 1;
+  string test_id = 2;
+  string status = 3;
+}
+
+message UpdateTestStatusResponse {
+  common.BaseResponse base = 1;
+}
+
+message GetActiveTestsRequest {
+  common.RequestMetadata metadata = 1;
+}
+
+message GetActiveTestsResponse {
+  common.BaseResponse base = 1;
+  repeated ABTest tests = 2;
+}
+
+message GetDashboardDataRequest {
+  common.RequestMetadata metadata = 1;
+  string time_range = 2;
+}
+
+message GetDashboardDataResponse {
+  common.BaseResponse base = 1;
+  DashboardData data = 2;
+}
+
+message GetRealtimeMetricsRequest {
+  common.RequestMetadata metadata = 1;
+}
+
+message GetRealtimeMetricsResponse {
+  common.BaseResponse base = 1;
+  RealtimeMetrics metrics = 2;
+}
+
+message GetEngagementTrendsRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  int32 days = 3;
+}
+
+message GetEngagementTrendsResponse {
+  common.BaseResponse base = 1;
+  repeated EngagementTrend trends = 2;
+}
+
+message GetTopPerformersRequest {
+  common.RequestMetadata metadata = 1;
+  string metric = 2;
+  int32 limit = 3;
+  string time_range = 4;
+}
+
+message GetTopPerformersResponse {
+  common.BaseResponse base = 1;
+  repeated TopPerformer performers = 2;
+}
+
+message GetSystemHealthMetricsRequest {
+  common.RequestMetadata metadata = 1;
+}
+
+message GetSystemHealthMetricsResponse {
+  common.BaseResponse base = 1;
+  repeated SystemMetric metrics = 2;
+}

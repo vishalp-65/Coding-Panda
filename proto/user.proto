@@ -1,0 +1,215 @@
+syntax = "proto3";
+
+package user;
+
+import "common.proto";
+
+option go_package = "github.com/ai-platform/proto/user";
+
+// User service definition
+service UserService {
+  // Health check
+  rpc HealthCheck(common.HealthCheckRequest) returns (common.HealthCheckResponse);
+  
+  // User management
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserResponse);
+  rpc GetUserByUsername(GetUserByUsernameRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  
+  // Authentication
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  
+  // User preferences
+  rpc UpdatePreferences(UpdatePreferencesRequest) returns (UpdatePreferencesResponse);
+  rpc GetPreferences(GetPreferencesRequest) returns (GetPreferencesResponse);
+  
+  // User roles
+  rpc UpdateUserRoles(UpdateUserRolesRequest) returns (UpdateUserRolesResponse);
+  
+  // Availability checks
+  rpc CheckEmailAvailability(CheckEmailAvailabilityRequest) returns (CheckAvailabilityResponse);
+  rpc CheckUsernameAvailability(CheckUsernameAvailabilityRequest) returns (CheckAvailabilityResponse);
+}
+
+// User messages
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string avatar = 6;
+  repeated string roles = 7;
+  UserPreferences preferences = 8;
+  string created_at = 9;
+  string updated_at = 10;
+  bool is_active = 11;
+  bool is_verified = 12;
+}
+
+message UserPreferences {
+  string theme = 1;
+  string language = 2;
+  NotificationPreferences notifications = 3;
+  PrivacySettings privacy = 4;
+}
+
+message NotificationPreferences {
+  bool email = 1;
+  bool push = 2;
+  bool in_app = 3;
+  bool contests = 4;
+  bool achievements = 5;
+  bool system_updates = 6;
+}
+
+message PrivacySettings {
+  string profile_visibility = 1;
+  bool show_email = 2;
+  bool show_real_name = 3;
+  bool allow_analytics = 4;
+}
+
+// Request/Response messages
+message CreateUserRequest {
+  common.RequestMetadata metadata = 1;
+  string username = 2;
+  string email = 3;
+  string password = 4;
+  string first_name = 5;
+  string last_name = 6;
+  bool accept_terms = 7;
+}
+
+message CreateUserResponse {
+  common.BaseResponse base = 1;
+  User user = 2;
+}
+
+message GetUserRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+}
+
+message GetUserByEmailRequest {
+  common.RequestMetadata metadata = 1;
+  string email = 2;
+}
+
+message GetUserByUsernameRequest {
+  common.RequestMetadata metadata = 1;
+  string username = 2;
+}
+
+message GetUserResponse {
+  common.BaseResponse base = 1;
+  User user = 2;
+}
+
+message UpdateUserRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string avatar = 5;
+}
+
+message UpdateUserResponse {
+  common.BaseResponse base = 1;
+  User user = 2;
+}
+
+message DeleteUserRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+}
+
+message DeleteUserResponse {
+  common.BaseResponse base = 1;
+}
+
+message ListUsersRequest {
+  common.RequestMetadata metadata = 1;
+  common.PaginationRequest pagination = 2;
+  string search = 3;
+  repeated string roles = 4;
+  bool active_only = 5;
+}
+
+message ListUsersResponse {
+  common.BaseResponse base = 1;
+  repeated User users = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  common.BaseResponse base = 1;
+  bool valid = 2;
+  User user = 3;
+  int64 expires_at = 4;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  common.BaseResponse base = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+  int64 expires_in = 4;
+}
+
+message UpdatePreferencesRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  UserPreferences preferences = 3;
+}
+
+message UpdatePreferencesResponse {
+  common.BaseResponse base = 1;
+  UserPreferences preferences = 2;
+}
+
+message GetPreferencesRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+}
+
+message GetPreferencesResponse {
+  common.BaseResponse base = 1;
+  UserPreferences preferences = 2;
+}
+
+message UpdateUserRolesRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  repeated string roles = 3;
+}
+
+message UpdateUserRolesResponse {
+  common.BaseResponse base = 1;
+  User user = 2;
+}
+
+message CheckEmailAvailabilityRequest {
+  string email = 1;
+}
+
+message CheckUsernameAvailabilityRequest {
+  string username = 1;
+}
+
+message CheckAvailabilityResponse {
+  common.BaseResponse base = 1;
+  bool available = 2;
+}

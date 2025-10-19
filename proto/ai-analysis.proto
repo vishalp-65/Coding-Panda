@@ -1,0 +1,343 @@
+syntax = "proto3";
+
+package ai_analysis;
+
+import "common.proto";
+
+option go_package = "github.com/ai-platform/proto/ai_analysis";
+
+// AI Analysis service definition
+service AIAnalysisService {
+  // Health check
+  rpc HealthCheck(common.HealthCheckRequest) returns (common.HealthCheckResponse);
+  
+  // Code analysis
+  rpc AnalyzeCode(AnalyzeCodeRequest) returns (AnalyzeCodeResponse);
+  rpc AnalyzeCodeStream(AnalyzeCodeRequest) returns (stream AnalysisUpdate);
+  
+  // Batch analysis
+  rpc AnalyzeBatch(AnalyzeBatchRequest) returns (AnalyzeBatchResponse);
+  rpc AnalyzeBatchStream(AnalyzeBatchRequest) returns (stream BatchAnalysisUpdate);
+  
+  // Analysis history
+  rpc GetAnalysisHistory(GetAnalysisHistoryRequest) returns (GetAnalysisHistoryResponse);
+  rpc GetAnalysisResult(GetAnalysisResultRequest) returns (GetAnalysisResultResponse);
+  
+  // Code suggestions
+  rpc GetCodeSuggestions(GetCodeSuggestionsRequest) returns (GetCodeSuggestionsResponse);
+  rpc ApplyCodeFix(ApplyCodeFixRequest) returns (ApplyCodeFixResponse);
+  
+  // Learning assistance
+  rpc ExplainCode(ExplainCodeRequest) returns (ExplainCodeResponse);
+  rpc GenerateHints(GenerateHintsRequest) returns (GenerateHintsResponse);
+  rpc GenerateTestCases(GenerateTestCasesRequest) returns (GenerateTestCasesResponse);
+  
+  // Performance analysis
+  rpc AnalyzePerformance(AnalyzePerformanceRequest) returns (AnalyzePerformanceResponse);
+  rpc OptimizeCode(OptimizeCodeRequest) returns (OptimizeCodeResponse);
+}
+
+// AI Analysis messages
+message CodeAnalysis {
+  string analysis_id = 1;
+  string code = 2;
+  string language = 3;
+  double overall_score = 4;
+  repeated CodeIssue issues = 5;
+  repeated CodeSuggestion suggestions = 6;
+  CodeMetrics metrics = 7;
+  SecurityAnalysis security = 8;
+  PerformanceAnalysis performance = 9;
+  int32 execution_time_ms = 10;
+  string timestamp = 11;
+  string user_id = 12;
+  string problem_id = 13;
+}
+
+message CodeIssue {
+  string id = 1;
+  string type = 2;
+  string category = 3;
+  string severity = 4;
+  string message = 5;
+  string description = 6;
+  int32 line = 7;
+  int32 column = 8;
+  int32 end_line = 9;
+  int32 end_column = 10;
+  string suggestion = 11;
+  bool fixable = 12;
+  string rule_id = 13;
+}
+
+message CodeSuggestion {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string category = 4;
+  string priority = 5;
+  string code_example = 6;
+  string explanation = 7;
+  repeated string benefits = 8;
+  int32 impact_score = 9;
+}
+
+message CodeMetrics {
+  int32 lines_of_code = 1;
+  int32 cyclomatic_complexity = 2;
+  double maintainability_index = 3;
+  int32 duplicated_lines = 4;
+  double test_coverage = 5;
+  string technical_debt = 6;
+  int32 cognitive_complexity = 7;
+  double code_quality_score = 8;
+}
+
+message SecurityAnalysis {
+  double security_score = 1;
+  repeated SecurityIssue vulnerabilities = 2;
+  repeated string security_recommendations = 3;
+  bool has_sensitive_data = 4;
+  repeated string compliance_issues = 5;
+}
+
+message SecurityIssue {
+  string id = 1;
+  string type = 2;
+  string severity = 3;
+  string description = 4;
+  int32 line = 5;
+  string cwe_id = 6;
+  string remediation = 7;
+}
+
+message PerformanceAnalysis {
+  double performance_score = 1;
+  string time_complexity = 2;
+  string space_complexity = 3;
+  repeated PerformanceIssue bottlenecks = 4;
+  repeated string optimization_suggestions = 5;
+  int32 estimated_runtime_ms = 6;
+  int32 estimated_memory_mb = 7;
+}
+
+message PerformanceIssue {
+  string id = 1;
+  string type = 2;
+  string description = 3;
+  int32 line = 4;
+  string impact = 5;
+  string suggestion = 6;
+}
+
+message AnalysisUpdate {
+  string analysis_id = 1;
+  string status = 2;
+  string message = 3;
+  int32 progress = 4;
+  string current_stage = 5;
+  repeated CodeIssue partial_issues = 6;
+  string timestamp = 7;
+}
+
+message CodeExplanation {
+  string code_snippet = 1;
+  string explanation = 2;
+  string purpose = 3;
+  repeated string key_concepts = 4;
+  string complexity_level = 5;
+  repeated string related_topics = 6;
+}
+
+message Hint {
+  string id = 1;
+  string type = 2;
+  string title = 3;
+  string content = 4;
+  int32 difficulty_level = 5;
+  bool spoiler = 6;
+  string category = 7;
+}
+
+message GeneratedTestCase {
+  string input = 1;
+  string expected_output = 2;
+  string description = 3;
+  string category = 4;
+  bool is_edge_case = 5;
+}
+
+// Request/Response messages
+message AnalyzeCodeRequest {
+  common.RequestMetadata metadata = 1;
+  string code = 2;
+  string language = 3;
+  repeated string analysis_types = 4;
+  AnalysisContext context = 5;
+}
+
+message AnalysisContext {
+  string problem_id = 1;
+  string user_id = 2;
+  string session_id = 3;
+  map<string, string> additional_context = 4;
+}
+
+message AnalyzeCodeResponse {
+  common.BaseResponse base = 1;
+  CodeAnalysis analysis = 2;
+}
+
+message AnalyzeBatchRequest {
+  common.RequestMetadata metadata = 1;
+  repeated BatchAnalysisItem items = 2;
+  string batch_id = 3;
+}
+
+message BatchAnalysisItem {
+  string id = 1;
+  string code = 2;
+  string language = 3;
+  repeated string analysis_types = 4;
+  AnalysisContext context = 5;
+}
+
+message AnalyzeBatchResponse {
+  common.BaseResponse base = 1;
+  string batch_id = 2;
+  repeated CodeAnalysis results = 3;
+}
+
+message BatchAnalysisUpdate {
+  string batch_id = 1;
+  int32 completed = 2;
+  int32 total = 3;
+  AnalysisUpdate current_analysis = 4;
+  string timestamp = 5;
+}
+
+message GetAnalysisHistoryRequest {
+  common.RequestMetadata metadata = 1;
+  string user_id = 2;
+  string problem_id = 3;
+  common.PaginationRequest pagination = 4;
+  string language = 5;
+  string date_from = 6;
+  string date_to = 7;
+}
+
+message GetAnalysisHistoryResponse {
+  common.BaseResponse base = 1;
+  repeated CodeAnalysis analyses = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message GetAnalysisResultRequest {
+  common.RequestMetadata metadata = 1;
+  string analysis_id = 2;
+}
+
+message GetAnalysisResultResponse {
+  common.BaseResponse base = 1;
+  CodeAnalysis analysis = 2;
+}
+
+message GetCodeSuggestionsRequest {
+  common.RequestMetadata metadata = 1;
+  string code = 2;
+  string language = 3;
+  string problem_context = 4;
+  int32 max_suggestions = 5;
+}
+
+message GetCodeSuggestionsResponse {
+  common.BaseResponse base = 1;
+  repeated CodeSuggestion suggestions = 2;
+}
+
+message ApplyCodeFixRequest {
+  common.RequestMetadata metadata = 1;
+  string code = 2;
+  string language = 3;
+  string issue_id = 4;
+  string fix_type = 5;
+}
+
+message ApplyCodeFixResponse {
+  common.BaseResponse base = 1;
+  string fixed_code = 2;
+  string explanation = 3;
+  repeated string changes_made = 4;
+}
+
+message ExplainCodeRequest {
+  common.RequestMetadata metadata = 1;
+  string code = 2;
+  string language = 3;
+  string explanation_level = 4;
+  repeated string focus_areas = 5;
+}
+
+message ExplainCodeResponse {
+  common.BaseResponse base = 1;
+  CodeExplanation explanation = 2;
+}
+
+message GenerateHintsRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_id = 2;
+  string user_code = 3;
+  string language = 4;
+  int32 difficulty_level = 5;
+  int32 max_hints = 6;
+}
+
+message GenerateHintsResponse {
+  common.BaseResponse base = 1;
+  repeated Hint hints = 2;
+}
+
+message GenerateTestCasesRequest {
+  common.RequestMetadata metadata = 1;
+  string problem_description = 2;
+  string constraints = 3;
+  repeated string example_inputs = 4;
+  repeated string example_outputs = 5;
+  int32 num_test_cases = 6;
+  bool include_edge_cases = 7;
+}
+
+message GenerateTestCasesResponse {
+  common.BaseResponse base = 1;
+  repeated GeneratedTestCase test_cases = 2;
+}
+
+message AnalyzePerformanceRequest {
+  common.RequestMetadata metadata = 1;
+  string code = 2;
+  string language = 3;
+  string problem_constraints = 4;
+  repeated string input_sizes = 5;
+}
+
+message AnalyzePerformanceResponse {
+  common.BaseResponse base = 1;
+  PerformanceAnalysis analysis = 2;
+}
+
+message OptimizeCodeRequest {
+  common.RequestMetadata metadata = 1;
+  string code = 2;
+  string language = 3;
+  repeated string optimization_goals = 4;
+  string problem_context = 5;
+}
+
+message OptimizeCodeResponse {
+  common.BaseResponse base = 1;
+  string optimized_code = 2;
+  repeated string optimizations_applied = 3;
+  string explanation = 4;
+  PerformanceAnalysis before_analysis = 5;
+  PerformanceAnalysis after_analysis = 6;
+}

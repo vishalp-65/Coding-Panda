@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package test;
+
+// Simple test service
+service TestService {
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+  string message = 2;
+}

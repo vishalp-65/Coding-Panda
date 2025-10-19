@@ -8,11 +8,17 @@ import { gracefulShutdown } from './utils/graceful-shutdown';
 import { setupMonitoring } from './monitoring/setup';
 import { createMonitoringRoutes } from './routes/monitoring';
 import { createMonitoringMiddleware } from '@ai-platform/common';
+// TODO: Import gRPC clients once protobuf files are generated
+// import { initializeGrpcClients, cleanupGrpcClients } from './grpc/clients';
 
 async function startServer() {
   try {
     const app = express();
     const server = createServer(app);
+
+    // TODO: Initialize gRPC clients once protobuf files are generated
+    // initializeGrpcClients();
+    // logger.info('gRPC clients initialized');
 
     // Initialize monitoring
     const monitoring = setupMonitoring();

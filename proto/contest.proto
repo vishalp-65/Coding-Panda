@@ -1,0 +1,299 @@
+syntax = "proto3";
+
+package contest;
+
+import "common.proto";
+
+option go_package = "github.com/ai-platform/proto/contest";
+
+// Contest service definition
+service ContestService {
+  // Health check
+  rpc HealthCheck(common.HealthCheckRequest) returns (common.HealthCheckResponse);
+  
+  // Contest CRUD
+  rpc CreateContest(CreateContestRequest) returns (CreateContestResponse);
+  rpc GetContest(GetContestRequest) returns (GetContestResponse);
+  rpc UpdateContest(UpdateContestRequest) returns (UpdateContestResponse);
+  rpc DeleteContest(DeleteContestRequest) returns (DeleteContestResponse);
+  rpc SearchContests(SearchContestsRequest) returns (SearchContestsResponse);
+  
+  // Contest participation
+  rpc RegisterForContest(RegisterForContestRequest) returns (RegisterForContestResponse);
+  rpc UnregisterFromContest(UnregisterFromContestRequest) returns (UnregisterFromContestResponse);
+  rpc GetContestParticipants(GetContestParticipantsRequest) returns (GetContestParticipantsResponse);
+  
+  // Contest submissions
+  rpc SubmitSolution(SubmitSolutionRequest) returns (SubmitSolutionResponse);
+  rpc GetContestSubmissions(GetContestSubmissionsRequest) returns (GetContestSubmissionsResponse);
+  
+  // Leaderboard
+  rpc GetLeaderboard(GetLeaderboardRequest) returns (GetLeaderboardResponse);
+  rpc GetLeaderboardStream(GetLeaderboardRequest) returns (stream LeaderboardUpdate);
+  
+  // Contest management
+  rpc StartContest(StartContestRequest) returns (StartContestResponse);
+  rpc EndContest(EndContestRequest) returns (EndContestResponse);
+  rpc CancelContest(CancelContestRequest) returns (CancelContestResponse);
+}
+
+// Contest messages
+message Contest {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string start_time = 4;
+  string end_time = 5;
+  int32 duration = 6;
+  repeated string problem_ids = 7;
+  repeated string participant_ids = 8;
+  int32 max_participants = 9;
+  string registration_deadline = 10;
+  bool is_public = 11;
+  string creator_id = 12;
+  string status = 13;
+  string rules = 14;
+  repeated string prizes = 15;
+  ContestSettings settings = 16;
+  string created_at = 17;
+  string updated_at = 18;
+}
+
+message ContestSettings {
+  bool allow_late_registration = 1;
+  bool show_leaderboard_during_contest = 2;
+  bool freeze_leaderboard = 3;
+  int32 freeze_time_minutes = 4;
+  int32 penalty_per_wrong_submission = 5;
+  bool allow_clarifications = 6;
+  int32 max_submissions_per_problem = 7;
+}
+
+message ContestSubmission {
+  string id = 1;
+  string contest_id = 2;
+  string problem_id = 3;
+  string user_id = 4;
+  string code = 5;
+  string language = 6;
+  string status = 7;
+  int32 score = 8;
+  int32 execution_time = 9;
+  int32 memory_used = 10;
+  string submission_time = 11;
+  int32 attempt_number = 12;
+}
+
+message LeaderboardEntry {
+  int32 rank = 1;
+  string user_id = 2;
+  string username = 3;
+  int32 score = 4;
+  int32 solved_problems = 5;
+  int32 total_time = 6;
+  repeated ProblemScore problem_scores = 7;
+  string last_submission_time = 8;
+}
+
+message ProblemScore {
+  string problem_id = 1;
+  int32 score = 2;
+  int32 attempts = 3;
+  string first_accepted_time = 4;
+  int32 penalty = 5;
+}
+
+message LeaderboardUpdate {
+  string contest_id = 1;
+  repeated LeaderboardEntry entries = 2;
+  string timestamp = 3;
+  string event_type = 4;
+  LeaderboardEntry updated_entry = 5;
+}
+
+// Request/Response messages
+message CreateContestRequest {
+  common.RequestMetadata metadata = 1;
+  string title = 2;
+  string description = 3;
+  string start_time = 4;
+  int32 duration = 5;
+  repeated string problem_ids = 6;
+  int32 max_participants = 7;
+  string registration_deadline = 8;
+  bool is_public = 9;
+  string rules = 10;
+  repeated string prizes = 11;
+  ContestSettings settings = 12;
+}
+
+message CreateContestResponse {
+  common.BaseResponse base = 1;
+  Contest contest = 2;
+}
+
+message GetContestRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+  bool include_problems = 3;
+  bool include_participants = 4;
+}
+
+message GetContestResponse {
+  common.BaseResponse base = 1;
+  Contest contest = 2;
+}
+
+message UpdateContestRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+  string title = 3;
+  string description = 4;
+  string start_time = 5;
+  int32 duration = 6;
+  repeated string problem_ids = 7;
+  int32 max_participants = 8;
+  string registration_deadline = 9;
+  bool is_public = 10;
+  string rules = 11;
+  repeated string prizes = 12;
+  ContestSettings settings = 13;
+}
+
+message UpdateContestResponse {
+  common.BaseResponse base = 1;
+  Contest contest = 2;
+}
+
+message DeleteContestRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+}
+
+message DeleteContestResponse {
+  common.BaseResponse base = 1;
+}
+
+message SearchContestsRequest {
+  common.RequestMetadata metadata = 1;
+  common.PaginationRequest pagination = 2;
+  string query = 3;
+  string status = 4;
+  bool public_only = 5;
+  string creator_id = 6;
+  string start_date_from = 7;
+  string start_date_to = 8;
+}
+
+message SearchContestsResponse {
+  common.BaseResponse base = 1;
+  repeated Contest contests = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message RegisterForContestRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+  string user_id = 3;
+}
+
+message RegisterForContestResponse {
+  common.BaseResponse base = 1;
+  bool registered = 2;
+}
+
+message UnregisterFromContestRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+  string user_id = 3;
+}
+
+message UnregisterFromContestResponse {
+  common.BaseResponse base = 1;
+}
+
+message GetContestParticipantsRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+  common.PaginationRequest pagination = 3;
+}
+
+message GetContestParticipantsResponse {
+  common.BaseResponse base = 1;
+  repeated string participant_ids = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message SubmitSolutionRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+  string problem_id = 3;
+  string user_id = 4;
+  string code = 5;
+  string language = 6;
+}
+
+message SubmitSolutionResponse {
+  common.BaseResponse base = 1;
+  ContestSubmission submission = 2;
+}
+
+message GetContestSubmissionsRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+  string user_id = 3;
+  string problem_id = 4;
+  common.PaginationRequest pagination = 5;
+}
+
+message GetContestSubmissionsResponse {
+  common.BaseResponse base = 1;
+  repeated ContestSubmission submissions = 2;
+  common.PaginationResponse pagination = 3;
+}
+
+message GetLeaderboardRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+  common.PaginationRequest pagination = 3;
+  bool include_frozen = 4;
+}
+
+message GetLeaderboardResponse {
+  common.BaseResponse base = 1;
+  repeated LeaderboardEntry entries = 2;
+  common.PaginationResponse pagination = 3;
+  string last_updated = 4;
+  bool is_frozen = 5;
+}
+
+message StartContestRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+}
+
+message StartContestResponse {
+  common.BaseResponse base = 1;
+  Contest contest = 2;
+}
+
+message EndContestRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+}
+
+message EndContestResponse {
+  common.BaseResponse base = 1;
+  Contest contest = 2;
+}
+
+message CancelContestRequest {
+  common.RequestMetadata metadata = 1;
+  string contest_id = 2;
+  string reason = 3;
+}
+
+message CancelContestResponse {
+  common.BaseResponse base = 1;
+  Contest contest = 2;
+}

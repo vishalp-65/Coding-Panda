@@ -2,6 +2,8 @@ import express, { Express } from 'express';
 import { getHealth, getMetrics } from '../middleware/metrics';
 import { notFoundHandler } from '../middleware/error-handler';
 import { serviceRoutes } from './services';
+// TODO: Import gRPC routes once protobuf files are generated
+// import { grpcRoutes } from './grpc-routes';
 import { authRateLimitMiddleware } from '../middleware/rate-limit';
 
 export function setupRoutes(app: Express): void {
@@ -31,7 +33,10 @@ export function setupRoutes(app: Express): void {
     });
   });
 
-  // API routes with service discovery
+  // TODO: Add gRPC-based API routes once protobuf files are generated
+  // app.use('/api/v2', grpcRoutes);
+
+  // HTTP proxy routes
   app.use('/api', serviceRoutes);
 
   // Authentication routes with stricter rate limiting

@@ -1,0 +1,30 @@
+{
+  "name": "@ai-platform/grpc-common",
+  "version": "1.0.0",
+  "description": "Common gRPC utilities and generated protobuf files for AI Platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npm run proto:generate && tsc",
+    "proto:generate": "npm run proto:clean && npm run proto:compile",
+    "proto:clean": "rimraf src/generated",
+    "proto:compile": "grpc_tools_node_protoc --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts --ts_out=grpc_js:src/generated --js_out=import_style=commonjs,binary:src/generated --grpc_out=grpc_js:src/generated -I ../../proto ../../proto/*.proto",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.9.0",
+    "@grpc/proto-loader": "^0.7.8",
+    "google-protobuf": "^3.21.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/google-protobuf": "^3.15.0",
+    "@types/uuid": "^9.0.0",
+    "grpc_tools_node_protoc_ts": "^5.3.3",
+    "grpc-tools": "^1.13.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.1.0"
+  }
+}

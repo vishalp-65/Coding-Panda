@@ -40,7 +40,7 @@ class Settings(BaseSettings):
             "file_extension": ".py"
         },
         "javascript": {
-            "image": "node:18-alpine",
+            "image": "node:18.20.2-alpine3.18",
             "compile_command": None,
             "run_command": "node /app/solution.js",
             "file_extension": ".js"
@@ -48,24 +48,24 @@ class Settings(BaseSettings):
         "java": {
             "image": "openjdk:17-alpine",
             "compile_command": "javac -d /app /app/Solution.java",
-            "run_command": "java -cp /app Solution",
+            "run_command": "java -Xmx64m -Xms32m -XX:+UseSerialGC -XX:MaxRAMPercentage=50 -XX:+UnlockExperimentalVMOptions -XX:+UseContainerSupport -cp /app Solution",
             "file_extension": ".java",
             "class_name": "Solution"
         },
         "cpp": {
-            "image": "gcc:11",
+            "image": "gcc:12.2",
             "compile_command": "g++ -o /app/solution /app/solution.cpp -std=c++17",
             "run_command": "/app/solution",
             "file_extension": ".cpp"
         },
         "go": {
-            "image": "golang:1.21-alpine",
+            "image": "golang:1.21.3-alpine",
             "compile_command": "go build -o /app/solution /app/solution.go",
             "run_command": "/app/solution",
             "file_extension": ".go"
         },
         "rust": {
-            "image": "rust:1.75-alpine",
+            "image": "rust:1.75-alpine3.18",
             "compile_command": "rustc -o /app/solution /app/solution.rs",
             "run_command": "/app/solution",
             "file_extension": ".rs"

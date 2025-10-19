@@ -26,7 +26,6 @@ class SecurityValidator:
             r'require\s*\(\s*[\'"]http[\'"]',
             r'require\s*\(\s*[\'"]https[\'"]',
             r'eval\s*\(',
-            r'Function\s*\(',
             r'setTimeout\s*\(',
             r'setInterval\s*\(',
         ],
@@ -36,7 +35,14 @@ class SecurityValidator:
             r'Runtime\.getRuntime\(\)',
             r'ProcessBuilder',
             r'System\.exit\(',
-            r'System\.in',
+            r'exec\s*\(',
+            r'fork\s*\(',
+            r'popen\s*\(',
+            r'getRuntime\s*\(',
+            r'getenv\s*\(',
+            r'getenv\s*\(',
+            r'getenv\s*\(',
+
         ],
         Language.CPP: [
             r'#include\s*<cstdlib>',

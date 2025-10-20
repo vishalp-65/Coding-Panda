@@ -10,6 +10,10 @@ import {
   Minimize2,
   AlertTriangle,
   Code,
+  FileText,
+  MessageSquare,
+  BookOpen,
+  CheckCircle,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchProblemById } from '@/store/slices/problemsSlice';
@@ -33,13 +37,14 @@ const ModernProblemDetailPage = () => {
   const [code, setCode] = useState('');
   const [hiddenCode, setHiddenCode] = useState('');
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
-  const [templateError, setTemplateError] = useState<string | null>(null);
   const [templateData, setTemplateData] = useState<any>(null);
   const [useTemplateEditor, setUseTemplateEditor] = useState(false);
 
   // UI state
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showConsole, setShowConsole] = useState(false);
+  const [leftPanelTab, setLeftPanelTab] = useState<'description' | 'editorial' | 'discuss' | 'submissions'>('description');
+  const [rightPanelTab, setRightPanelTab] = useState<'editor' | 'testcases'>('editor');
 
   // Execution state
   const [executionResult, setExecutionResult] =
@@ -119,7 +124,6 @@ var solve = function() {
     async (problemId: string, language: string) => {
       try {
         setIsLoadingTemplate(true);
-        setTemplateError(null);
 
         const { problemsApi } = await import('@/services/api');
 
@@ -152,7 +156,6 @@ var solve = function() {
         }
       } catch (error: any) {
         console.error('Error loading template:', error);
-        setTemplateError(error.message || 'Failed to load template');
         setCode(getDefaultTemplate(language));
         setHiddenCode('');
         setTemplateData(null);
@@ -348,10 +351,10 @@ var solve = function() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-900">
+      <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading problem...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading problem...</p>
         </div>
       </div>
     );
@@ -359,12 +362,12 @@ var solve = function() {
 
   return (
     <div
-      className={`h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-gray-900' : ''}`}
+      className={`h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-200 ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
     >
       {/* Top bar */}
-      <div className="h-12 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
+      <div className="h-12 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 transition-colors duration-200">
         <div className="flex items-center space-x-4">
-          <h1 className="text-lg font-semibold text-white">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
             {currentProblem?.number}. {currentProblem?.title}
           </h1>
           {currentProblem?.difficulty && (
@@ -379,7 +382,7 @@ var solve = function() {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 rounded-md hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
             aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
           >
             {isFullscreen ? (
@@ -389,7 +392,7 @@ var solve = function() {
             )}
           </button>
           <button
-            className="p-2 rounded-md hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
             aria-label="Settings"
           >
             <Settings className="h-4 w-4" />
@@ -398,132 +401,245 @@ var solve = function() {
       </div>
 
       {/* Main content */}
-      <div className="h-[calc(100%-3rem)]">
+      <div className="h-[calc(100%-3rem)] overflow-hidden">
         <PanelGroup direction="horizontal">
-          {/* Left panel - Problem description */}
-          <Panel defaultSize={40} minSize={25}>
-            {currentProblem && (
-              <ModernProblemDescription problem={currentProblem} />
-            )}
-          </Panel>
+          {/* Left panel - Problem info */}
+          <Panel defaultSize={40} minSize={25} maxSize={60}>
+            <div className="h-full flex flex-col bg-white dark:bg-gray-900">
+              {/* Left panel tabs */}
+              <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+                <button
+                  onClick={() => setLeftPanelTab('description')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${leftPanelTab === 'description'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Description</span>
+                </button>
+                <button
+                  onClick={() => setLeftPanelTab('editorial')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${leftPanelTab === 'editorial'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>Editorial</span>
+                </button>
+                <button
+                  onClick={() => setLeftPanelTab('discuss')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${leftPanelTab === 'discuss'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Discuss</span>
+                </button>
+                <button
+                  onClick={() => setLeftPanelTab('submissions')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${leftPanelTab === 'submissions'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Submissions</span>
+                </button>
+              </div>
 
-          <PanelResizeHandle className="w-2 bg-gray-700 hover:bg-gray-600 transition-colors" />
-
-          {/* Right panel - Code editor and console */}
-          <Panel defaultSize={60} minSize={35}>
-            <PanelGroup direction="vertical">
-              {/* Code editor */}
-              <Panel defaultSize={showConsole ? 70 : 100} minSize={40}>
-                <div className="h-full flex flex-col">
-                  {/* Editor header */}
-                  <div className="h-12 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
-                    <div className="flex items-center space-x-4">
-                      <select
-                        value={selectedLanguage}
-                        onChange={e => handleLanguageChange(e.target.value)}
-                        disabled={isLoadingTemplate}
-                        className="bg-gray-700 border border-gray-600 rounded-md px-3 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                      >
-                        <option value="java">Java</option>
-                        <option value="python">Python</option>
-                        <option value="cpp">C++</option>
-                        <option value="javascript">JavaScript</option>
-                        <option value="rust">Rust</option>
-                        <option value="go">Go</option>
-                      </select>
-                      {isLoadingTemplate && (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={handleReset}
-                        disabled={isLoadingTemplate}
-                        className="flex items-center space-x-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 rounded-md text-gray-300 hover:text-white disabled:text-gray-500 transition-colors text-sm"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                        <span>{isLoadingTemplate ? 'Loading...' : 'Reset'}</span>
-                      </button>
-                      <button
-                        onClick={handleFormatCode}
-                        className="flex items-center space-x-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-gray-300 hover:text-white transition-colors text-sm"
-                      >
-                        <Code className="h-4 w-4" />
-                        <span>Format</span>
-                      </button>
-                      <button
-                        onClick={handleRunCode}
-                        disabled={isRunning}
-                        className="flex items-center space-x-2 px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 rounded-md text-white transition-colors text-sm"
-                      >
-                        <Play className="h-4 w-4" />
-                        <span>{isRunning ? 'Running...' : 'Run'}</span>
-                      </button>
-                      <button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                        className="flex items-center space-x-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded-md text-white transition-colors text-sm"
-                      >
-                        <Send className="h-4 w-4" />
-                        <span>{isSubmitting ? 'Submitting...' : 'Submit'}</span>
-                      </button>
+              {/* Left panel content - Only this should scroll */}
+              <div className="flex-1 min-h-0">
+                {leftPanelTab === 'description' && currentProblem && (
+                  <div className="h-full overflow-y-auto">
+                    <ModernProblemDescription problem={currentProblem} />
+                  </div>
+                )}
+                {leftPanelTab === 'editorial' && (
+                  <div className="h-full overflow-y-auto p-6">
+                    <div className="text-center text-gray-500 dark:text-gray-400">
+                      <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Editorial not available yet</p>
                     </div>
                   </div>
+                )}
+                {leftPanelTab === 'discuss' && (
+                  <div className="h-full overflow-y-auto p-6">
+                    <div className="text-center text-gray-500 dark:text-gray-400">
+                      <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Discussion coming soon</p>
+                    </div>
+                  </div>
+                )}
+                {leftPanelTab === 'submissions' && (
+                  <div className="h-full overflow-y-auto p-6">
+                    <div className="text-center text-gray-500 dark:text-gray-400">
+                      <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No submissions yet</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Panel>
 
-                  {/* Code editor */}
-                  <div className="flex-1">
-                    <ErrorBoundary
-                      fallback={
-                        <div className="flex items-center justify-center h-full bg-gray-900">
-                          <div className="text-center">
-                            <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-2" />
-                            <p className="text-gray-400">
-                              Failed to load code editor
-                            </p>
-                            <button
-                              onClick={() => window.location.reload()}
-                              className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm"
+          <PanelResizeHandle className="w-2 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors" />
+
+          {/* Right panel - Code editor and test results */}
+          <Panel defaultSize={60} minSize={40}>
+            <div className="h-full flex flex-col">
+              {/* Right panel tabs */}
+              <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+                <button
+                  onClick={() => setRightPanelTab('editor')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${rightPanelTab === 'editor'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                >
+                  <Code className="h-4 w-4" />
+                  <span>Code</span>
+                </button>
+                <button
+                  onClick={() => setRightPanelTab('testcases')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${rightPanelTab === 'testcases'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                >
+                  <Play className="h-4 w-4" />
+                  <span>Test Cases</span>
+                </button>
+              </div>
+
+              {/* Right panel content */}
+              <div className="flex-1 min-h-0">
+                {rightPanelTab === 'editor' ? (
+                  <PanelGroup direction="vertical">
+                    {/* Code editor */}
+                    <Panel defaultSize={showConsole ? 70 : 100} minSize={40}>
+                      <div className="h-full flex flex-col">
+                        {/* Editor toolbar */}
+                        <div className="h-12 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 flex-shrink-0">
+                          <div className="flex items-center space-x-4">
+                            <select
+                              value={selectedLanguage}
+                              onChange={e => handleLanguageChange(e.target.value)}
+                              disabled={isLoadingTemplate}
+                              className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                             >
-                              Reload Page
+                              <option value="java">Java</option>
+                              <option value="python">Python</option>
+                              <option value="cpp">C++</option>
+                              <option value="javascript">JavaScript</option>
+                              <option value="rust">Rust</option>
+                              <option value="go">Go</option>
+                            </select>
+                            {isLoadingTemplate && (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={handleReset}
+                              disabled={isLoadingTemplate}
+                              className="flex items-center space-x-2 px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 rounded-md text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:text-gray-400 transition-colors text-sm"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                              <span>{isLoadingTemplate ? 'Loading...' : 'Reset'}</span>
+                            </button>
+                            <button
+                              onClick={handleFormatCode}
+                              className="flex items-center space-x-2 px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
+                            >
+                              <Code className="h-4 w-4" />
+                              <span>Format</span>
+                            </button>
+                            <button
+                              onClick={handleRunCode}
+                              disabled={isRunning}
+                              className="flex items-center space-x-2 px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 rounded-md text-white transition-colors text-sm"
+                            >
+                              <Play className="h-4 w-4" />
+                              <span>{isRunning ? 'Running...' : 'Run'}</span>
+                            </button>
+                            <button
+                              onClick={handleSubmit}
+                              disabled={isSubmitting}
+                              className="flex items-center space-x-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded-md text-white transition-colors text-sm"
+                            >
+                              <Send className="h-4 w-4" />
+                              <span>{isSubmitting ? 'Submitting...' : 'Submit'}</span>
                             </button>
                           </div>
                         </div>
-                      }
-                    >
-                      {useTemplateEditor && templateData ? (
-                        <TemplateCodeEditor
-                          templateData={templateData}
-                          onChange={setCode}
-                          isLoading={isLoadingTemplate}
-                        />
-                      ) : (
-                        <ModernCodeEditor
-                          code={code}
-                          language={selectedLanguage}
-                          onChange={setCode}
-                          problem={currentProblem}
-                          isLoading={isLoadingTemplate}
-                        />
-                      )}
-                    </ErrorBoundary>
-                  </div>
-                </div>
-              </Panel>
 
-              {/* Console panel */}
-              {showConsole && (
-                <>
-                  <PanelResizeHandle className="h-2 bg-gray-700 hover:bg-gray-600 transition-colors" />
-                  <Panel defaultSize={30} minSize={20}>
-                    <ModernTestResults
-                      executionResult={executionResult}
-                      onClose={() => setShowConsole(false)}
-                    />
-                  </Panel>
-                </>
-              )}
-            </PanelGroup>
+                        {/* Code editor - This should take full height and not be scrollable */}
+                        <div className="flex-1 min-h-0">
+                          <ErrorBoundary
+                            fallback={
+                              <div className="flex items-center justify-center h-full bg-white dark:bg-gray-900">
+                                <div className="text-center">
+                                  <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+                                  <p className="text-gray-600 dark:text-gray-400">
+                                    Failed to load code editor
+                                  </p>
+                                  <button
+                                    onClick={() => window.location.reload()}
+                                    className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm"
+                                  >
+                                    Reload Page
+                                  </button>
+                                </div>
+                              </div>
+                            }
+                          >
+                            {useTemplateEditor && templateData ? (
+                              <TemplateCodeEditor
+                                templateData={templateData}
+                                onChange={setCode}
+                                isLoading={isLoadingTemplate}
+                              />
+                            ) : (
+                              <ModernCodeEditor
+                                code={code}
+                                language={selectedLanguage}
+                                onChange={setCode}
+                                problem={currentProblem}
+                                isLoading={isLoadingTemplate}
+                              />
+                            )}
+                          </ErrorBoundary>
+                        </div>
+                      </div>
+                    </Panel>
+
+                    {/* Console panel */}
+                    {showConsole && (
+                      <>
+                        <PanelResizeHandle className="h-2 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors" />
+                        <Panel defaultSize={30} minSize={20}>
+                          <ModernTestResults
+                            executionResult={executionResult}
+                            onClose={() => setShowConsole(false)}
+                          />
+                        </Panel>
+                      </>
+                    )}
+                  </PanelGroup>
+                ) : (
+                  <div className="h-full p-6 bg-white dark:bg-gray-900">
+                    <div className="text-center text-gray-500 dark:text-gray-400">
+                      <Play className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Test cases will appear here after running code</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </Panel>
         </PanelGroup>
       </div>

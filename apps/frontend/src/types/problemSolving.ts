@@ -25,17 +25,69 @@ export interface ProblemPagination {
   hasPrev?: boolean;
 }
 
-export interface Problem {
+// Type for each test case
+interface TestCase {
   id: string;
+  input?: string;
+  expectedOutput?: string;
+  isHidden: boolean;
+  explanation: string;
+}
+
+// Type for constraints
+interface Constraints {
+  timeLimit: number;
+  memoryLimit: number;
+  inputFormat: string;
+  outputFormat: string;
+  sampleInput: string;
+  sampleOutput: string;
+}
+
+// Type for problem statistics
+interface ProblemStatistics {
+  totalSubmissions: number;
+  acceptedSubmissions: number;
+  acceptanceRate: number;
+  averageRating: number;
+  ratingCount: number;
+  difficultyVotes: {
+    easy: number;
+    medium: number;
+    hard: number;
+  };
+}
+
+// Main problem type
+export interface Problem {
   title: string;
-  number: number;
+  slug: string;
+  description: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  status: 'unsolved' | 'solved' | 'attempted';
   tags: string[];
-  acceptance: number;
+  number: number;
   frequency: number;
-  status: 'solved' | 'attempted' | null;
   isBookmarked: boolean;
-  isPremium: boolean;
+  constraints: Constraints;
+  testCases: TestCase[];
+  statistics: ProblemStatistics;
+  createdAt: string; // ISO timestamp
+  updatedAt: string; // ISO timestamp
+  id: string;
+}
+
+export interface TemplateData {
+  userEditableRegion: string;
+  hiddenCode?: string;
+  beforeUserCode?: string;
+  afterUserCode?: string;
+  functionSignature: string;
+  imports: string;
+  helperClasses: string;
+  language: string;
+  problemId: string;
+  problemTitle: string;
 }
 
 export interface Submission {

@@ -27,7 +27,7 @@ const Sidebar = () => {
   return (
     <aside
       className={clsx(
-        'fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-40',
+        'fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 z-40',
         sidebarOpen ? 'w-64' : 'w-16'
       )}
     >
@@ -40,8 +40,8 @@ const Sidebar = () => {
               clsx(
                 'flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+                  ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
                 !sidebarOpen && 'justify-center'
               )
             }

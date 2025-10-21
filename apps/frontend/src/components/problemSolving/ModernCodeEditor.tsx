@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as monaco from 'monaco-editor';
 import { getMonacoLanguage } from '@/utils/monacoConfig';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ModernCodeEditorProps {
   code: string;
@@ -20,13 +21,14 @@ const ModernCodeEditor = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [isEditorReady, setIsEditorReady] = useState(false);
+  const { actualTheme } = useTheme();
 
   // Configure Monaco Editor environment once
   useEffect(() => {
     // Configure Monaco Environment if not already configured
     if (!(window as any).MonacoEnvironment) {
       (window as any).MonacoEnvironment = {
-        getWorkerUrl: function (moduleId: string, label: string) {
+        getWorkerUrl: function (_moduleId: string, label: string) {
           if (label === 'json') {
             return './monaco-editor/min/vs/language/json/json.worker.js';
           }
@@ -72,7 +74,7 @@ const ModernCodeEditor = ({
       const editor = monaco.editor.create(editorRef.current, {
         value: code || getDefaultCode(language),
         language: getMonacoLanguage(language),
-        theme: 'coding-dark',
+        theme: actualTheme === 'dark' ? 'coding-dark' : 'vs',
         fontSize: 14,
         fontFamily: 'JetBrains Mono, Consolas, Monaco, monospace',
         minimap: { enabled: false },
@@ -87,6 +89,49 @@ const ModernCodeEditor = ({
         roundedSelection: false,
         readOnly: isLoading,
         cursorStyle: 'line',
+        contextmenu: true,
+        mouseWheelZoom: true,
+        multiCursorModifier: 'ctrlCmd',
+        formatOnPaste: true,
+        formatOnType: true,
+        autoIndent: 'full',
+        acceptSuggestionOnCommitCharacter: true,
+        acceptSuggestionOnEnter: 'on',
+        dragAndDrop: true,
+        find: {
+          addExtraSpaceOnTop: false,
+          autoFindInSelection: 'never',
+          seedSearchStringFromSelection: 'always',
+        },
+        folding: true,
+        foldingHighlight: true,
+        fontLigatures: true,
+        glyphMargin: true,
+        matchBrackets: 'always',
+        occurrencesHighlight: true,
+        parameterHints: {
+          enabled: true,
+        },
+        renderControlCharacters: false,
+        renderFinalNewline: 'on',
+        renderValidationDecorations: 'editable',
+        scrollbar: {
+          useShadows: false,
+          verticalHasArrows: false,
+          horizontalHasArrows: false,
+          vertical: 'visible',
+          horizontal: 'visible',
+          verticalScrollbarSize: 10,
+          horizontalScrollbarSize: 10,
+        },
+        selectionClipboard: true,
+        selectionHighlight: true,
+        showFoldingControls: 'mouseover',
+        showUnused: true,
+        snippetSuggestions: 'top',
+        suggestOnTriggerCharacters: true,
+        useTabStops: true,
+        wordBasedSuggestions: true,
       });
 
       monacoRef.current = editor;
@@ -138,6 +183,14 @@ const ModernCodeEditor = ({
       monacoRef.current.updateOptions({ readOnly: isLoading });
     }
   }, [isLoading, isEditorReady]);
+
+  // Update theme when it changes
+  useEffect(() => {
+    if (isEditorReady && monacoRef.current) {
+      const theme = actualTheme === 'dark' ? 'coding-dark' : 'vs';
+      monaco.editor.setTheme(theme);
+    }
+  }, [actualTheme, isEditorReady]);
 
   const getDefaultCode = (lang: string): string => {
     // If we have initial code from the problem, use that

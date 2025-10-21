@@ -21,9 +21,15 @@ import { Problem, ProblemPagination } from '@/types/problemSolving';
 
 const ITEMS_PER_PAGE = 20;
 
+// Extended type for display purposes (includes computed fields)
+interface DisplayProblem extends Problem {
+  acceptance: number; // Computed from statistics.acceptanceRate
+  isPremium?: boolean; // Optional premium flag
+}
+
 const ModernProblemsPage = () => {
   // State management
-  const [problems, setProblems] = useState<Problem[]>([]);
+  const [problems, setProblems] = useState<DisplayProblem[]>([]);
   const [pagination, setPagination] = useState<ProblemPagination>({
     totalProblems: 0,
     page: 1,
@@ -93,19 +99,46 @@ const ModernProblemsPage = () => {
           throw new Error('Invalid response from server');
         }
 
-        // Transform backend data
-        const transformedProblems: Problem[] = response.data.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          number: p.number,
-          difficulty: p.difficulty,
-          tags: p.tags || [],
-          acceptance: p.statistics?.acceptanceRate || 0,
-          frequency: Math.floor(Math.random() * 100), // Mock frequency
-          status: p.userStatus?.status || null,
-          isBookmarked: p.userStatus?.isBookmarked || false,
-          isPremium: p.isPremium || false,
-        }));
+        // Transform backend data to DisplayProblem
+        const transformedProblems: DisplayProblem[] = response.data.map(
+          (p: any) => ({
+            id: p.id,
+            title: p.title,
+            slug: p.slug || p.title.toLowerCase().replace(/\s+/g, '-'),
+            number: p.number,
+            difficulty: p.difficulty,
+            tags: p.tags || [],
+            description: p.description || '',
+            status: p.status || 'unsolved',
+            isBookmarked: p.isBookmarked || false,
+            isPremium: p.isPremium || false,
+            frequency: p.frequency || Math.floor(Math.random() * 100),
+            acceptance: p.statistics?.acceptanceRate || 0,
+            statistics: p.statistics || {
+              totalSubmissions: 0,
+              acceptedSubmissions: 0,
+              acceptanceRate: 0,
+              averageRating: 0,
+              ratingCount: 0,
+              difficultyVotes: {
+                easy: 0,
+                medium: 0,
+                hard: 0,
+              },
+            },
+            constraints: p.constraints || {
+              timeLimit: 1000,
+              memoryLimit: 128,
+              inputFormat: '',
+              outputFormat: '',
+              sampleInput: '',
+              sampleOutput: '',
+            },
+            testCases: p.testCases || [],
+            createdAt: p.createdAt || new Date().toISOString(),
+            updatedAt: p.updatedAt || new Date().toISOString(),
+          })
+        );
 
         setProblems(transformedProblems);
         setPagination({
@@ -201,20 +234,23 @@ const ModernProblemsPage = () => {
     [sortBy, sortOrder]
   );
 
-  const getStatusIcon = useCallback((status: string | null) => {
-    switch (status) {
-      case 'solved':
-        return (
-          <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
-        );
-      case 'attempted':
-        return (
-          <Clock className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
-        );
-      default:
-        return <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500" />;
-    }
-  }, []);
+  const getStatusIcon = useCallback(
+    (status: 'unsolved' | 'solved' | 'attempted') => {
+      switch (status) {
+        case 'solved':
+          return (
+            <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
+          );
+        case 'attempted':
+          return (
+            <Clock className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
+          );
+        default:
+          return <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500" />;
+      }
+    },
+    []
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-200">
@@ -294,9 +330,9 @@ const ModernProblemsPage = () => {
       {/* Problems list */}
       <div className="flex-1">
         <div className="max-w-7xl mx-auto p-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-200">
+          <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-200">
             {/* Table header */}
-            <div className="grid grid-cols-12 gap-4 p-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <div className="grid grid-cols-12 gap-4 p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300">
               <div className="col-span-1">Status</div>
               <button
                 onClick={() => handleSort('title')}
@@ -346,7 +382,7 @@ const ModernProblemsPage = () => {
                 {problems.map(problem => (
                   <div
                     key={problem.id}
-                    className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-all duration-200"
+                    className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-all duration-200"
                   >
                     {/* Status */}
                     <div className="col-span-1 flex items-center">

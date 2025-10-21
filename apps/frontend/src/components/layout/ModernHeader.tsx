@@ -509,9 +509,9 @@ const ModernHeader = () => {
   return (
     <>
       <header className="bg-slate-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 fixed top-0 left-0 right-0 z-50">
-        <div className="flex items-center justify-between h-full px-3 sm:px-4 max-w-full">
+        <div className="flex items-center justify-between h-full px-0 md:px-1 sm:px-4 max-w-full">
           {/* Left side - Logo and Navigation */}
-          <div className="flex items-center space-x-2 sm:space-x-4 lg:space-x-8 flex-shrink-0">
+          <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
             {/* Mobile menu toggle */}
             <HeaderIconButton
               onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -533,7 +533,7 @@ const ModernHeader = () => {
           <DesktopSearch showSearch={showSearch} />
 
           {/* Right side - User actions */}
-          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+          <div className="flex items-center space-x-0 sm:space-x-2 flex-shrink-0">
             <MobileSearch
               showSearch={showSearch}
               toggleSearch={toggleSearch}

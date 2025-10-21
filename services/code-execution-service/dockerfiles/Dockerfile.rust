@@ -1,0 +1,32 @@
+# ============================================
+# Rust Optimized Dockerfile (Multi-stage)
+# ============================================
+FROM rust:1.75-alpine AS rust-builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache \
+    musl-dev \
+    pkgconfig
+
+# This stage is used for compilation only
+# The actual compilation happens at runtime via docker_manager.py
+
+FROM alpine:3.18 AS rust-executor
+
+# Install only runtime dependencies
+RUN apk add --no-cache \
+    libgcc \
+    && rm -rf /var/cache/apk/*
+
+WORKDIR /app
+
+# Create non-root user for security
+RUN adduser -D -u 1000 coderunner
+
+# Switch to non-root user
+USER coderunner
+
+# Default command to execute Rust binary
+CMD ["/app/solution"]

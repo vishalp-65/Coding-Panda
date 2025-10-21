@@ -1,0 +1,25 @@
+# ============================================
+# Python Fallback Dockerfile (Ubuntu-based)
+# ============================================
+FROM ubuntu:22.04 AS python-executor
+
+# Install Python and minimal dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Create non-root user for security
+RUN useradd -m -u 1000 coderunner
+
+# Switch to non-root user
+USER coderunner
+
+# Set Python to run in unbuffered mode for better logging
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Default command to execute Python code
+CMD ["python3", "-u", "/app/solution.py"]

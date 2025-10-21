@@ -1,0 +1,28 @@
+# ============================================
+# Go Builder Image (for compilation)
+# ============================================
+FROM golang:1.21-alpine AS go-builder
+
+WORKDIR /app
+
+# Install build dependencies and optimize
+RUN apk add --no-cache \
+    git \
+    ca-certificates \
+    && rm -rf /var/cache/apk/* \
+    && go clean -cache -modcache
+
+# Create non-root user for security
+RUN adduser -D -u 1000 coderunner \
+    && chown coderunner:coderunner /app
+
+# Set Go build optimizations
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
+
+# Switch to non-root user
+USER coderunner
+
+# Default command for optimized compilation
+CMD ["go", "build", "-ldflags=-s -w -extldflags=-static", "-a", "-installsuffix", "cgo", "-o", "/app/solution", "/app/solution.go"]

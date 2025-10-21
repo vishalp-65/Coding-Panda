@@ -55,7 +55,7 @@ Start-Service "Realtime Service" "services/realtime-service" "npm run dev" 3008
 
 # Start Python services
 Write-Host "Starting Python services..." -ForegroundColor Cyan
-Start-Service "Code Execution Service" "services/code-execution-service" ".\start.ps1" 3004
+Start-Service "Code Execution Service" "services/code-execution-service" ".\build-and-run.ps1 -Run" 8000
 Start-Service "AI Analysis Service" "services/ai-analysis-service" ".\start.ps1" 8001
 
 # Wait for services to initialize
@@ -78,7 +78,7 @@ Write-Host "API Gateway:           http://localhost:8080" -ForegroundColor White
 Write-Host "User Service:          http://localhost:3006/api/v1/health" -ForegroundColor White
 Write-Host "Problem Service:       http://localhost:3002/api/v1/health" -ForegroundColor White
 Write-Host "Contest Service:       http://localhost:3003/api/v1/health" -ForegroundColor White
-Write-Host "Code Execution:        http://localhost:3004/api/v1/health" -ForegroundColor White
+Write-Host "Code Execution:        http://localhost:8000/api/v1/health" -ForegroundColor White
 Write-Host "Analytics Service:     http://localhost:3005/api/v1/health" -ForegroundColor White
 Write-Host "Notification Service:  http://localhost:3007/api/v1/health" -ForegroundColor White
 Write-Host "Realtime Service:      http://localhost:3008/api/v1/health" -ForegroundColor White

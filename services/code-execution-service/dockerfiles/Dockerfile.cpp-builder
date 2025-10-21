@@ -1,0 +1,23 @@
+# ============================================
+# C++ Builder Image (for compilation)
+# ============================================
+FROM alpine:3.18 AS cpp-builder
+
+WORKDIR /app
+
+# Install build dependencies with optimizations
+RUN apk add --no-cache \
+    g++ \
+    musl-dev \
+    make \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user for security
+RUN adduser -D -u 1000 coderunner \
+    && chown coderunner:coderunner /app
+
+# Switch to non-root user
+USER coderunner
+
+# Default command for optimized compilation
+CMD ["g++", "-O2", "-o", "/app/solution", "/app/solution.cpp", "-std=c++17", "-static", "-s", "-DNDEBUG", "-ffast-math", "-march=native"]

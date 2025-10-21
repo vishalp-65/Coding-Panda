@@ -1,0 +1,30 @@
+# ============================================
+# Node.js Optimized Dockerfile
+# ============================================
+FROM node:20-alpine AS node-executor
+
+# Install minimal runtime dependencies and optimize
+RUN apk add --no-cache \
+    libstdc++ \
+    && rm -rf /var/cache/apk/* \
+    && npm cache clean --force \
+    && rm -rf /tmp/* /var/tmp/* \
+    && find /usr/local/lib/node_modules -name "*.md" -delete \
+    && find /usr/local/lib/node_modules -name "test" -type d -exec rm -rf {} + 2>/dev/null || true
+
+WORKDIR /app
+
+# Create non-root user for security (use different UID to avoid conflict)
+RUN adduser -D -u 1001 coderunner \
+    && chown coderunner:coderunner /app
+
+# Set Node.js optimizations
+ENV NODE_ENV=production \
+    NODE_OPTIONS="--max-old-space-size=96" \
+    UV_THREADPOOL_SIZE=2
+
+# Switch to non-root user
+USER coderunner
+
+# Default command to execute JavaScript code
+CMD ["node", "/app/solution.js"]

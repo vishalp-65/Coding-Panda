@@ -64,9 +64,9 @@ const ModernProblemDescription = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-900">
+    <div className="h-full flex flex-col bg-gray-100 text-black dark:text-white dark:bg-gray-900">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="p-4 border-b border-gray-400 dark:border-gray-700">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
             <span

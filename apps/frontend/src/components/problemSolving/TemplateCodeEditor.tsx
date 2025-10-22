@@ -254,21 +254,21 @@ const TemplateCodeEditor = ({
       )}
 
       {/* Function signature display */}
-      {templateData.functionSignature && (
+      {/* {templateData.functionSignature && (
         <div className="flex-shrink-0 bg-slate-800/50 border-b border-slate-700 px-3 py-2">
           <div className="text-xs text-slate-400 mb-1">Function Signature:</div>
           <code className="text-sm text-blue-400 font-mono">
             {templateData.functionSignature}
           </code>
         </div>
-      )}
+      )} */}
 
       {/* User editable region label */}
-      <div className="flex-shrink-0 bg-slate-800/30 border-b border-slate-700 px-3 py-2">
+      {/* <div className="flex-shrink-0 bg-slate-800/30 border-b border-slate-700 px-3 py-2">
         <div className="text-xs text-emerald-400 font-medium">
           ✏️ Your Code (Editable Region)
         </div>
-      </div>
+      </div> */}
 
       {/* Main editor */}
       <div className="flex-1 relative">

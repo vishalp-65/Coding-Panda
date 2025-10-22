@@ -59,15 +59,24 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
             root.classList.remove('light');
             body.classList.add('dark');
             body.classList.remove('light');
+            // Ensure background color is applied
+            body.style.backgroundColor = '#111827';
         } else {
             root.classList.add('light');
             root.classList.remove('dark');
             body.classList.add('light');
             body.classList.remove('dark');
+            // Ensure background color is applied
+            body.style.backgroundColor = '#ffffff';
         }
 
         // Set color-scheme for better browser integration
         root.style.colorScheme = actualTheme;
+
+        // Force a repaint to ensure theme changes are applied
+        root.style.display = 'none';
+        root.offsetHeight; // Trigger reflow
+        root.style.display = '';
     }, [actualTheme]);
 
     const handleSetTheme = (newTheme: Theme) => {

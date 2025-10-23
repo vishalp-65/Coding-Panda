@@ -66,3 +66,33 @@ export const getDifficultyBadgeColor = (difficulty: string): string => {
       return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
   }
 };
+
+export const CODE_TEMPLATES: Record<string, string> = {
+  java: `public class Solution {
+    public void solve() {
+        // Your code here
+    }
+}`,
+  python: `class Solution:
+    def solve(self):
+        # Your code here
+        pass`,
+  cpp: `class Solution {
+public:
+    void solve() {
+        // Your code here
+    }
+};`,
+  javascript: `/**
+ * @return {void}
+ */
+var solve = function() {
+    // Your code here
+};`,
+  rust: `fn solve() {
+    // Your code here
+}`,
+  go: `func solve() {
+    // Your code here
+}`,
+};

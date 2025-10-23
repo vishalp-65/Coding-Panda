@@ -19,11 +19,3 @@ export interface Activity {
   rank?: number;
   timestamp: string;
 }
-
-export interface Problem {
-  id: number;
-  title: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  tags: string[];
-  acceptanceRate: number;
-}

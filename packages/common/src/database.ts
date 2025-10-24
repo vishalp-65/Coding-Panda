@@ -19,7 +19,7 @@ export interface PaginatedResult<T> {
   pagination: {
     page: number;
     limit: number;
-    total: number;
+    totalProblems: number;
     totalPages: number;
     hasNext: boolean;
     hasPrev: boolean;
@@ -33,18 +33,18 @@ export class DatabaseUtils {
 
   static createPaginatedResult<T>(
     data: T[],
-    total: number,
+    totalProblems: number,
     page: number,
     limit: number
   ): PaginatedResult<T> {
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(totalProblems / limit);
 
     return {
       data,
       pagination: {
         page,
         limit,
-        total,
+        totalProblems,
         totalPages,
         hasNext: page < totalPages,
         hasPrev: page > 1,

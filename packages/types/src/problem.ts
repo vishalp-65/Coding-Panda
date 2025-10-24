@@ -21,6 +21,7 @@ export interface Problem {
   slug: string;
   description: string;
   difficulty: ProblemDifficulty;
+  status: ProblemStatus;
   tags: string[];
   number: number;
   constraints: ProblemConstraints;
@@ -33,6 +34,8 @@ export interface Problem {
 }
 
 export type ProblemDifficulty = 'easy' | 'medium' | 'hard';
+
+export type ProblemStatus = 'solved' | 'attempted' | 'unsolved';
 
 export interface ProblemConstraints {
   timeLimit: number; // in milliseconds

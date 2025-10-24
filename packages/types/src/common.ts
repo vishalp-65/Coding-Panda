@@ -25,7 +25,7 @@ export interface PaginatedResult<T> {
 export interface PaginationInfo {
   page: number;
   limit: number;
-  total: number;
+  totalProblems: number;
   totalPages: number;
   hasNext: boolean;
   hasPrev: boolean;
@@ -81,10 +81,10 @@ export interface ActivityFeed {
   id: string;
   userId: string;
   type:
-    | 'problem_solved'
-    | 'contest_participated'
-    | 'achievement_unlocked'
-    | 'streak_milestone';
+  | 'problem_solved'
+  | 'contest_participated'
+  | 'achievement_unlocked'
+  | 'streak_milestone';
   title: string;
   description: string;
   metadata: Record<string, any>;

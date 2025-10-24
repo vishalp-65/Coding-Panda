@@ -44,13 +44,13 @@ export const formatMemoryUsage = (memoryBytes: number): string => {
 export const getDifficultyColor = (difficulty: string): string => {
   switch (difficulty.toLowerCase()) {
     case 'easy':
-      return 'text-green-400';
+      return 'text-green-600 dark:text-green-400';
     case 'medium':
-      return 'text-yellow-400';
+      return 'text-yellow-600 dark:text-yellow-400';
     case 'hard':
-      return 'text-red-400';
+      return 'text-red-600 dark:text-red-400';
     default:
-      return 'text-gray-400';
+      return 'text-gray-600 dark:text-gray-400';
   }
 };
 

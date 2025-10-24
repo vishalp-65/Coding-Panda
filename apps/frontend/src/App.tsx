@@ -4,6 +4,8 @@ import { useAppDispatch } from '@/hooks/redux';
 import { useAuth } from '@/hooks/useAuth';
 import { setOnlineStatus } from '@/store/slices/uiSlice';
 import socketService from '@/services/socket';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import ThemedToaster from '@/components/ui/ThemedToaster';
 
 // Layout components
 import ModernLayout from '@/components/layout/ModernLayout';
@@ -59,8 +61,9 @@ function App() {
   }, [dispatch]);
 
   return (
-    <>
+    <ThemeProvider>
       <AuthErrorHandler />
+      <ThemedToaster />
       <Routes>
         {/* Public routes */}
         <Route
@@ -128,7 +131,7 @@ function App() {
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </ThemeProvider>
   );
 }
 

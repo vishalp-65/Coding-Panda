@@ -23,7 +23,7 @@ export interface AuthenticatedRequest extends Request {
 
 export class AuthUtils {
   private static readonly SALT_ROUNDS = 12;
-  private static readonly JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+  private static readonly JWT_SECRET = process.env.JWT_SECRET || 'vishalp65';
   private static readonly JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
   private static readonly REFRESH_TOKEN_EXPIRES_IN =
     process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';

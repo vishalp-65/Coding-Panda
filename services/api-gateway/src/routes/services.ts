@@ -3,7 +3,7 @@ import { createProxyMiddleware, Options } from 'http-proxy-middleware';
 import { config } from '../config';
 import { HTTP_STATUS, logger } from '@ai-platform/common';
 import { ServiceUnavailableError } from '../middleware/error-handler';
-import { optionalAuthMiddleware, requireRole } from '../middleware/auth';
+import { authMiddleware, optionalAuthMiddleware, requireRole } from '../middleware/auth';
 
 const router = Router();
 
@@ -176,15 +176,23 @@ Object.entries(serviceConfig).forEach(([path, config]) => {
   // Apply authentication middleware based on service configuration
   if (config.auth === 'required') {
     router.use(path, (req, res, next) => {
-      if (!(req as any).user) {
-        return res.status(401).json({
-          error: {
-            code: 'AUTHENTICATION_REQUIRED',
-            message: 'Authentication is required for this service',
-          },
-        });
+      // Skip auth for health check routes
+      if (req.path.includes('health')) {
+        return next();
       }
-      next();
+
+      // Apply authentication middleware
+      authMiddleware(req, res, (err) => {
+        if (err || !(req as any).user) {
+          return res.status(401).json({
+            error: {
+              code: 'AUTHENTICATION_REQUIRED',
+              message: 'Authentication is required for this service',
+            },
+          });
+        }
+        next();
+      });
     });
   } else if (config.auth === 'optional') {
     // Skip auth middleware for public health check routes

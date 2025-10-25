@@ -8,6 +8,7 @@ import {
   ProblemConstraints,
   InitialCode,
   CodeTemplate,
+  ProblemStatus,
 } from '@ai-platform/types';
 
 export interface ProblemDocument extends Omit<Problem, 'id'>, Document {
@@ -123,6 +124,12 @@ const ProblemSchema = new Schema<ProblemDocument>(
     difficulty: {
       type: String,
       enum: ['easy', 'medium', 'hard'] as ProblemDifficulty[],
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ['solved', 'attempted', 'unsolved'] as ProblemStatus[],
+      default: 'unsolved',
       required: true,
     },
     tags: [

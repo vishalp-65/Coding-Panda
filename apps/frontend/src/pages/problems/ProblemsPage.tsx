@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Filter, BookmarkIcon, CheckCircle, Clock } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
@@ -18,7 +18,7 @@ const ProblemsPage = () => {
     dispatch(fetchProblems(searchCriteria));
   }, [dispatch, searchCriteria]);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     dispatch(
       setSearchCriteria({
         ...searchCriteria,
@@ -28,26 +28,22 @@ const ProblemsPage = () => {
         page: 1,
       })
     );
-  };
+  }, [dispatch, searchCriteria, searchQuery, selectedDifficulty, selectedTags]);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     dispatch(setSearchCriteria({ ...searchCriteria, page }));
-  };
+  }, [dispatch, searchCriteria]);
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy':
-        return 'text-green-600 bg-green-100';
-      case 'medium':
-        return 'text-yellow-600 bg-yellow-100';
-      case 'hard':
-        return 'text-red-600 bg-red-100';
-      default:
-        return 'text-gray-600 bg-gray-100';
-    }
-  };
+  const getDifficultyColor = useCallback((difficulty: string) => {
+    const colors: Record<string, string> = {
+      easy: 'text-green-600 bg-green-100',
+      medium: 'text-yellow-600 bg-yellow-100',
+      hard: 'text-red-600 bg-red-100'
+    };
+    return colors[difficulty] || 'text-gray-600 bg-gray-100';
+  }, []);
 
-  const getStatusIcon = (status?: string | null) => {
+  const getStatusIcon = useCallback((status?: string | null) => {
     switch (status) {
       case 'solved':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
@@ -56,41 +52,30 @@ const ProblemsPage = () => {
       default:
         return null;
     }
-  };
+  }, []);
 
-  // Mock data for demonstration
-  const mockProblems = [
-    {
-      id: '1',
-      title: 'Two Sum',
-      slug: 'two-sum',
-      difficulty: 'easy',
-      tags: ['Array', 'Hash Table'],
-      statistics: { acceptanceRate: 49.5 },
-      status: 'solved',
-    },
-    {
-      id: '2',
-      title: 'Add Two Numbers',
-      slug: 'add-two-numbers',
-      difficulty: 'medium',
-      tags: ['Linked List', 'Math'],
-      statistics: { acceptanceRate: 37.8 },
-      status: 'attempted',
-    },
-    {
-      id: '3',
-      title: 'Longest Substring Without Repeating Characters',
-      slug: 'longest-substring-without-repeating-characters',
-      difficulty: 'medium',
-      tags: ['Hash Table', 'String', 'Sliding Window'],
-      statistics: { acceptanceRate: 33.8 },
-      status: null,
-    },
-  ];
 
-  const displayProblems = problems.length > 0 ? problems : mockProblems;
+  const toggleDifficulty = useCallback((difficulty: string, checked: boolean) => {
+    if (checked) {
+      setSelectedDifficulty(prev => [...prev, difficulty]);
+    } else {
+      setSelectedDifficulty(prev => prev.filter(d => d !== difficulty));
+    }
+  }, []);
 
+  const toggleTag = useCallback((tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  }, []);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  }, [handleSearch]);
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -103,7 +88,7 @@ const ProblemsPage = () => {
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-500">
-            {totalCount || displayProblems.length} problems
+            {totalCount || problems.length} problems
           </span>
         </div>
       </div>
@@ -213,11 +198,10 @@ const ProblemsPage = () => {
                             setSelectedTags([...selectedTags, tag]);
                           }
                         }}
-                        className={`px-3 py-1 text-xs rounded-full border ${
-                          selectedTags.includes(tag)
-                            ? 'bg-primary-100 text-primary-700 border-primary-300'
-                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                        }`}
+                        className={`px-3 py-1 text-xs rounded-full border ${selectedTags.includes(tag)
+                          ? 'bg-primary-100 text-primary-700 border-primary-300'
+                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                          }`}
                       >
                         {tag}
                       </button>
@@ -261,7 +245,7 @@ const ProblemsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {displayProblems.map(problem => (
+                  {problems.map(problem => (
                     <tr key={problem.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center justify-center w-6">
@@ -325,8 +309,8 @@ const ProblemsPage = () => {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-500">
-          Showing 1 to {displayProblems.length} of{' '}
-          {totalCount || displayProblems.length} problems
+          Showing 1 to {problems.length} of{' '}
+          {totalCount || problems.length} problems
         </div>
         <div className="flex items-center space-x-2">
           <button

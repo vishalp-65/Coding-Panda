@@ -167,6 +167,7 @@ export interface Problem {
     timeLimit: number;
     memoryLimit: number;
     authorId: string;
+    initialCode?: InitialCode;
     statistics?: ProblemStatistics;
     createdAt: string;
     updatedAt: string;
@@ -216,6 +217,36 @@ export type ProgrammingLanguage =
     | 'typescript'
     | 'c'
     | 'csharp';
+
+// Enhanced code template structure for LeetCode-style handling
+export interface CodeTemplate {
+    userEditableRegion: string;
+    hiddenCode: string;
+    functionSignature: string;
+    imports?: string;
+    helperClasses?: string;
+}
+
+export interface InitialCode {
+    javascript?: CodeTemplate;
+    python?: CodeTemplate;
+    java?: CodeTemplate;
+    cpp?: CodeTemplate;
+    go?: CodeTemplate;
+    rust?: CodeTemplate;
+}
+
+export interface CodeMergeRequest {
+    userCode: string;
+    language: ProgrammingLanguage;
+    problemId: string;
+}
+
+export interface CodeMergeResult {
+    success: boolean;
+    mergedCode: string;
+    error?: string;
+}
 
 export interface ExecutionRequest {
     code: string;

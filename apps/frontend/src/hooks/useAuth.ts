@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from './redux';
-import { refreshAccessToken, getCurrentUser } from '@/store/slices/authSlice';
-import { TokenManager } from '@/utils/tokenManager';
+import { getCurrentUser } from '@/store/slices/authSlice';
+import { useTokenRefresh } from './useTokenRefresh';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -9,26 +9,14 @@ export const useAuth = () => {
     state => state.auth
   );
 
+  // Handle automatic token refresh
+  useTokenRefresh();
+
   useEffect(() => {
     // Check if we have a token but no user data
     if (token && !user && !isLoading) {
       dispatch(getCurrentUser());
     }
-
-    // Set up token refresh interval
-    // const checkTokenExpiration = () => {
-    //     if (token && TokenManager.isTokenExpired()) {
-    //         dispatch(refreshAccessToken());
-    //     }
-    // };
-
-    // // Check immediately
-    // checkTokenExpiration();
-
-    // // Check every 5 minutes
-    // const interval = setInterval(checkTokenExpiration, 5 * 60 * 1000);
-
-    // return () => clearInterval(interval);
   }, [dispatch, token, user, isLoading]);
 
   return {

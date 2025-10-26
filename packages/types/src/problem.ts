@@ -1,8 +1,18 @@
+export interface CodeTemplate {
+  userEditableRegion: string;
+  hiddenCode: string;
+  functionSignature: string;
+  imports: string;
+  helperClasses: string;
+}
+
 export interface InitialCode {
-  javascript?: string;
-  python?: string;
-  java?: string;
-  cpp?: string;
+  javascript?: CodeTemplate;
+  python?: CodeTemplate;
+  java?: CodeTemplate;
+  cpp?: CodeTemplate;
+  go?: CodeTemplate;
+  rust?: CodeTemplate;
 }
 
 export interface Problem {
@@ -12,6 +22,7 @@ export interface Problem {
   description: string;
   difficulty: ProblemDifficulty;
   tags: string[];
+  number: number;
   constraints: ProblemConstraints;
   testCases: TestCase[];
   editorial?: Editorial;

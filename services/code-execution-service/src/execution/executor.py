@@ -9,6 +9,7 @@ from src.models.execution import (
 from src.execution.docker_manager import DockerExecutionManager
 from src.security.validator import SecurityValidator
 from src.metrics.collector import MetricsCollector
+from src.services.CodeMergerService import CodeMergerService
 import logging
 import asyncio
 from functools import lru_cache
@@ -23,6 +24,7 @@ class CodeExecutor:
         self.docker_manager = DockerExecutionManager()
         self.security_validator = SecurityValidator()
         self.metrics_collector = MetricsCollector()
+        self.code_merger = CodeMergerService()
         
         # Result cache for identical submissions (LRU cache)
         self._result_cache = {}
@@ -82,8 +84,8 @@ class CodeExecutor:
         # Check cache first
         cache_key = self._get_cache_key(request)
         cached_result = await self._get_cached_result(cache_key)
-        if cached_result:
-            return cached_result
+        # if cached_result:
+        #     return cached_result
         
         # Apply rate limiting
         async with self._execution_semaphore:
@@ -95,10 +97,38 @@ class CodeExecutor:
                         violations, len(request.test_cases)
                     )
                 
-                # Sanitize code
-                sanitized_code = self.security_validator.sanitize_code(
-                    request.code, request.language
-                )
+                # Merge user code with hidden infrastructure code if provided
+                if request.hidden_code:
+                    # Validate user code first
+                    is_valid, error_msg = self.code_merger.validate_user_code(
+                        request.code, request.language
+                    )
+                    if not is_valid:
+                        return ExecutionResult(
+                            status=ExecutionStatus.COMPILE_ERROR,
+                            output="",
+                            error=f"Code validation failed: {error_msg}",
+                            execution_time=0,
+                            memory_used=0,
+                            test_results=[],
+                            total_tests=len(request.test_cases),
+                            passed_tests=0,
+                            compilation_output=error_msg
+                        )
+                    
+                    # Merge user code with hidden code
+                    merged_code = self.code_merger.merge_code(
+                        request.code, request.hidden_code, request.language
+                    )
+                    logger.info(f"Code merged : {merged_code}")
+                    sanitized_code = self.security_validator.sanitize_code(
+                        merged_code, request.language
+                    )
+                else:
+                    # Use user code directly (legacy mode)
+                    sanitized_code = self.security_validator.sanitize_code(
+                        request.code, request.language
+                    )
                 
                 # Set up resource limits with adaptive sizing
                 limits = self._get_resource_limits(request)
@@ -357,8 +387,14 @@ class CodeExecutor:
             status = ExecutionStatus.TIME_LIMIT_EXCEEDED
         elif any(r.error_message and "Memory limit" in r.error_message for r in test_results):
             status = ExecutionStatus.MEMORY_LIMIT_EXCEEDED
-        else:
+        elif any(r.error_message and r.error_message not in ["", None] and 
+                 "Time limit" not in r.error_message and 
+                 "Memory limit" not in r.error_message for r in test_results):
+            # Only set RUNTIME_ERROR if there are actual error messages (exceptions, crashes, etc.)
             status = ExecutionStatus.RUNTIME_ERROR
+        else:
+            # Code executed successfully but produced wrong output - this is still SUCCESS
+            status = ExecutionStatus.SUCCESS
         
         # Calculate aggregates
         total_execution_time = sum(r.execution_time for r in test_results)

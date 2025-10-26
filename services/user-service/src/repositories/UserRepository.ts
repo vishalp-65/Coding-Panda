@@ -77,7 +77,7 @@ export class UserRepository {
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.repository.findOne({
+    return await this.repository.findOne({
       where: { id },
       relations: ['stats'],
     });

@@ -1,179 +1,156 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 import logging
-import time
 import asyncio
-import uvicorn
-from src.api.routes import router
-from src.config.settings import settings
 from contextlib import asynccontextmanager
+from src.api.execution_routes import router as execution_router
+from src.config.settings import settings
+from src.execution.executor import CodeExecutor
+import uvicorn
 
 # Configure logging
 logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper()),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=getattr(logging, settings.log_level),
+    format=settings.log_format
 )
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Pre-pull images
-    from src.execution.docker_manager import DockerExecutionManager
+    """Application lifespan manager for startup and shutdown tasks."""
+    # Startup
+    logger.info("Starting Code Execution Service")
     
-    executor = DockerExecutionManager()
-    await executor.pull_images()
-    await executor.warmup()  # Warm up with test runs
+    # Initialize executor and warm up
+    executor = CodeExecutor()
     
-    yield
+    # Start background tasks
+    cleanup_task = asyncio.create_task(periodic_cleanup(executor))
     
-    # Shutdown: Cleanup
-    await executor.cleanup_old_containers()
+    try:
+        # Warm up the service (non-blocking)
+        try:
+            await executor.warmup()
+            logger.info("Service warmup completed")
+        except Exception as e:
+            logger.warning(f"Service warmup failed, but continuing: {e}")
+        
+        yield
+        
+    finally:
+        # Shutdown
+        logger.info("Shutting down Code Execution Service")
+        
+        # Cancel background tasks
+        cleanup_task.cancel()
+        try:
+            await cleanup_task
+        except asyncio.CancelledError:
+            pass
+        
+        # Clear cache
+        await executor.clear_cache()
+        
+        logger.info("Service shutdown completed")
 
 
-# Create FastAPI app
+async def periodic_cleanup(executor: CodeExecutor):
+    """Periodic cleanup task for containers and cache."""
+    while True:
+        try:
+            await asyncio.sleep(settings.cleanup_interval)
+            
+            # Cleanup old containers
+            await executor.docker_manager.cleanup_old_containers()
+            
+            logger.debug("Periodic cleanup completed")
+            
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Periodic cleanup failed: {e}")
+
+
+# Create FastAPI application
 app = FastAPI(
-    title=settings.app_name,
-    description="Secure code execution service for AI-powered coding platform",
+    title="Code Execution Service",
+    description="LeetCode-style code execution service with hidden code merging",
     version="1.0.0",
-    docs_url="/docs" if settings.debug else None,
-    redoc_url="/redoc" if settings.debug else None,
     lifespan=lifespan
 )
 
-# Security middleware
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=["*"] if settings.debug else ["localhost", "127.0.0.1"]
-)
-
-# CORS middleware
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.debug else ["http://localhost:3000"],
+    allow_origins=["*"],  # Configure appropriately for production
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    """Request logging and timing middleware."""
-    start_time = time.time()
-    
-    # Log request
-    logger.info(f"Request: {request.method} {request.url.path}")
-    
-    try:
-        response = await call_next(request)
-        
-        # Log response
-        process_time = time.time() - start_time
-        logger.info(
-            f"Response: {response.status_code} - {process_time:.3f}s"
-        )
-        
-        # Add timing header
-        response.headers["X-Process-Time"] = str(process_time)
-        
-        return response
-        
-    except Exception as e:
-        process_time = time.time() - start_time
-        logger.error(f"Request failed: {str(e)} - {process_time:.3f}s", exc_info=True)
-        
-        return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "error": "Internal server error"
-            },
-            headers={"X-Process-Time": str(process_time)}
-        )
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler."""
-    logger.error(
-        f"Unhandled exception for {request.url.path}: {str(exc)}", 
-        exc_info=True
-    )
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={
-            "success": False,
-            "error": "Internal server error"
+            "error": "Internal server error",
+            "message": "An unexpected error occurred",
+            "request_id": getattr(request.state, 'request_id', None)
         }
     )
 
 
-# Include API routes
-app.include_router(router, prefix="/api/v1", tags=["Code Execution"])
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    """Add request ID for tracing."""
+    import uuid
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    
+    return response
+
+
+# Include routers
+app.include_router(execution_router)
 
 
 @app.get("/")
 async def root():
-    """Root endpoint."""
+    """Root endpoint with service information."""
     return {
-        "service": settings.app_name,
-        "status": "running",
+        "service": "Code Execution Service",
         "version": "1.0.0",
+        "description": "LeetCode-style code execution with hidden code merging",
+        "supported_languages": list(settings.language_configs.keys()),
         "endpoints": {
-            "execute": "/api/v1/execute",
-            "health": "/api/v1/health",
-            "metrics": "/api/v1/metrics",
-            "languages": "/api/v1/languages"
+            "execute": "/api/v1/execution/execute",
+            "validate": "/api/v1/execution/validate",
+            "health": "/api/v1/execution/health",
+            "metrics": "/api/v1/execution/metrics"
         }
     }
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Startup event handler."""
-    logger.info(f"Starting {settings.app_name}")
-    
-    try:
-        # Initialize executor to check Docker connection
-        from src.api.routes import get_executor
-        executor = get_executor()
-        
-        # Pull Docker images in background
-        asyncio.create_task(executor.docker_manager.pull_images())
-        
-        logger.info("Service started successfully")
-        logger.info(f"Debug mode: {settings.debug}")
-        logger.info(f"Supported languages: {list(settings.language_configs.keys())}")
-        
-    except Exception as e:
-        logger.error(f"Failed to start service: {e}", exc_info=True)
-        raise
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Shutdown event handler."""
-    logger.info(f"Shutting down {settings.app_name}")
-    
-    try:
-        # Cleanup resources
-        from src.api.routes import get_executor
-        executor = get_executor()
-        await executor.docker_manager.cleanup_old_containers()
-        
-        logger.info("Service shutdown completed")
-        
-    except Exception as e:
-        logger.error(f"Error during shutdown: {e}", exc_info=True)
+@app.get("/api/v1/health")
+async def health():
+    """Simple health check endpoint."""
+    return {"status": "healthy", "service": "code-execution-service"}
 
 
 if __name__ == "__main__":
     uvicorn.run(
-        "src.main:app",
-        host="0.0.0.0",
-        port=3004,
-        reload=settings.debug,
+        "main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        workers=1,  # Use 1 worker for development
+        reload=False,
         log_level=settings.log_level.lower()
     )

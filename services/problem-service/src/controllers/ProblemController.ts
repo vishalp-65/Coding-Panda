@@ -25,53 +25,47 @@ export class ProblemController extends BaseController {
     this.problemService = new ProblemService();
   }
 
-  /**
-   * Helper to get validated data from request
-   */
-  private getValidatedData(req: ValidatedRequest, source: 'body' | 'query') {
-    return source === 'body'
-      ? req.validatedBody || req.body
-      : req.validatedQuery || req.query;
-  }
+  // ==================== PROBLEM CRUD OPERATIONS ====================
 
-  /**
-   * Helper to ensure user is authenticated
-   */
-  private requireAuth(req: ValidatedRequest, res: Response): string | null {
-    const userId = req.user?.id;
-    if (!userId) {
-      ResponseHandler.unauthorized(res, 'Authentication required');
-      return null;
-    }
-    return userId;
-  }
+  // createProblem = asyncHandler(
+  //   async (req: ValidatedRequest, res: Response): Promise<void> => {
+  //     const problemData = this.getValidatedData(req, 'body');
 
-  createProblem = asyncHandler(
+  //     this.validateProblemData(problemData);
+
+  //     try {
+  //       const problem = await this.problemService.createProblem(problemData);
+  //       ResponseHandler.success(
+  //         res,
+  //         problem,
+  //         'Problem created successfully',
+  //         201
+  //       );
+  //     } catch (error) {
+  //       this.handleProblemCreationError(error, res);
+  //     }
+  //   }
+  // );
+
+  createCodingProblem = asyncHandler(
     async (req: ValidatedRequest, res: Response): Promise<void> => {
-      const problemData = this.getValidatedData(req, 'body');
+      const { problemData, codeSpec } = this.getValidatedData(req, 'body');
 
-      ValidationUtils.validateRequired(problemData.title, 'Title');
-      ValidationUtils.validateRequired(problemData.description, 'Description');
+      this.validateCodingProblemData(problemData, codeSpec);
 
       try {
-        const problem = await this.problemService.createProblem(problemData);
+        const problem = await this.problemService.createCodingProblem(
+          problemData,
+          codeSpec
+        );
         ResponseHandler.success(
           res,
           problem,
-          'Problem created successfully',
+          'Coding problem created successfully with templates',
           201
         );
       } catch (error) {
-        logger.error('Error in createProblem controller:', error);
-
-        if (
-          error instanceof Error &&
-          error.message.includes('already exists')
-        ) {
-          return ResponseHandler.conflict(res, error.message);
-        }
-
-        throw error;
+        this.handleProblemCreationError(error, res);
       }
     }
   );
@@ -83,19 +77,16 @@ export class ProblemController extends BaseController {
 
       ValidationUtils.validateRequired(id, 'Problem ID');
 
-      // Try to get by ID first (MongoDB ObjectId pattern), then by slug
-      const problem = ValidationUtils.isValidObjectId(id)
-        ? await this.problemService.getProblemById(id)
-        : await this.problemService.getProblemBySlug(id);
+      const problem = await this.findProblemByIdentifier(id);
 
       if (!problem) {
         return ResponseHandler.notFound(res, 'Problem not found');
       }
 
-      // Add user status if authenticated (placeholder for future implementation)
-      const userStatus = userId ? null : null;
-
-      ResponseHandler.success(res, { ...problem, userStatus });
+      ResponseHandler.success(res, {
+        ...problem,
+        userStatus: userId ? null : null,
+      });
     }
   );
 
@@ -115,16 +106,7 @@ export class ProblemController extends BaseController {
 
         ResponseHandler.success(res, problem, 'Problem updated successfully');
       } catch (error) {
-        logger.error('Error in updateProblem controller:', error);
-
-        if (
-          error instanceof Error &&
-          error.message.includes('already exists')
-        ) {
-          return ResponseHandler.conflict(res, error.message);
-        }
-
-        throw error;
+        this.handleProblemUpdateError(error, res);
       }
     }
   );
@@ -144,6 +126,8 @@ export class ProblemController extends BaseController {
       ResponseHandler.success(res, undefined, 'Problem deleted successfully');
     }
   );
+
+  // ==================== PROBLEM SEARCH & FILTERING ====================
 
   searchProblems = asyncHandler(
     async (req: ValidatedRequest, res: Response): Promise<void> => {
@@ -172,19 +156,14 @@ export class ProblemController extends BaseController {
 
   getPopularTags = asyncHandler(
     async (req: ValidatedRequest, res: Response): Promise<void> => {
-      const limit = parseInt(req.query.limit as string) || 20;
-
-      if (limit < 1 || limit > 100) {
-        return ResponseHandler.badRequest(
-          res,
-          'Limit must be between 1 and 100'
-        );
-      }
+      const limit = this.parseAndValidateLimit(req.query.limit as string);
 
       const tags = await this.problemService.getPopularTags(limit);
       ResponseHandler.success(res, tags);
     }
   );
+
+  // ==================== USER-SPECIFIC OPERATIONS ====================
 
   bookmarkProblem = asyncHandler(
     async (req: ValidatedRequest, res: Response): Promise<void> => {
@@ -202,13 +181,7 @@ export class ProblemController extends BaseController {
           'Problem bookmarked successfully'
         );
       } catch (error) {
-        logger.error('Error in bookmarkProblem controller:', error);
-
-        if (error instanceof Error && error.message.includes('not found')) {
-          return ResponseHandler.notFound(res, 'Problem not found');
-        }
-
-        throw error;
+        this.handleNotFoundError(error, res, 'Problem not found');
       }
     }
   );
@@ -245,20 +218,7 @@ export class ProblemController extends BaseController {
         await this.problemService.rateProblem(userId, id, rating);
         ResponseHandler.success(res, undefined, 'Problem rated successfully');
       } catch (error) {
-        logger.error('Error in rateProblem controller:', error);
-
-        if (
-          error instanceof Error &&
-          error.message.includes('Rating must be')
-        ) {
-          return ResponseHandler.badRequest(res, error.message);
-        }
-
-        if (error instanceof Error && error.message.includes('not found')) {
-          return ResponseHandler.notFound(res, 'Problem not found');
-        }
-
-        throw error;
+        this.handleRatingError(error, res);
       }
     }
   );
@@ -290,6 +250,8 @@ export class ProblemController extends BaseController {
     }
   );
 
+  // ==================== PROBLEM STATISTICS ====================
+
   updateProblemStatistics = asyncHandler(
     async (req: ValidatedRequest, res: Response): Promise<void> => {
       const { id } = req.params;
@@ -312,12 +274,57 @@ export class ProblemController extends BaseController {
           'Problem statistics updated successfully'
         );
       } catch (error) {
-        logger.error('Error in updateProblemStatistics controller:', error);
+        this.handleNotFoundError(error, res, 'Problem not found');
+      }
+    }
+  );
 
-        if (error instanceof Error && error.message.includes('not found')) {
-          return ResponseHandler.notFound(res, 'Problem not found');
+  // ==================== CODE TEMPLATES ====================
+
+  getProblemCodeTemplate = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      const { id } = req.params;
+      const { language } = req.query;
+
+      ValidationUtils.validateRequired(id, 'Problem ID');
+      ValidationUtils.validateRequired(language, 'Language');
+
+      try {
+        const template = await this.problemService.getProblemCodeTemplate(
+          id,
+          language as string
+        );
+
+        if (!template) {
+          return ResponseHandler.notFound(
+            res,
+            'Code template not found for this problem and language'
+          );
         }
 
+        ResponseHandler.success(res, template);
+      } catch (error) {
+        this.handleNotFoundError(error, res, 'Problem not found');
+      }
+    }
+  );
+
+  // ==================== UTILITY ENDPOINTS ====================
+
+  assignNumbersToExistingProblems = asyncHandler(
+    async (req: ValidatedRequest, res: Response): Promise<void> => {
+      try {
+        await this.problemService.assignNumbersToExistingProblems();
+        ResponseHandler.success(
+          res,
+          undefined,
+          'Numbers assigned to existing problems successfully'
+        );
+      } catch (error) {
+        logger.error(
+          'Error in assignNumbersToExistingProblems controller:',
+          error
+        );
         throw error;
       }
     }
@@ -331,4 +338,118 @@ export class ProblemController extends BaseController {
       });
     }
   );
+
+  // ==================== PRIVATE HELPER METHODS ====================
+
+  private getValidatedData(
+    req: ValidatedRequest,
+    source: 'body' | 'query'
+  ): any {
+    return source === 'body'
+      ? req.validatedBody || req.body
+      : req.validatedQuery || req.query;
+  }
+
+  private requireAuth(req: ValidatedRequest, res: Response): string | null {
+    const userId = req.user?.id;
+    if (!userId) {
+      ResponseHandler.unauthorized(res, 'Authentication required');
+      return null;
+    }
+    return userId;
+  }
+
+  private validateProblemData(problemData: any): void {
+    ValidationUtils.validateRequired(problemData.title, 'Title');
+    ValidationUtils.validateRequired(problemData.description, 'Description');
+  }
+
+  private validateCodingProblemData(problemData: any, codeSpec: any): void {
+    this.validateProblemData(problemData);
+    ValidationUtils.validateRequired(codeSpec, 'Code specification');
+    ValidationUtils.validateRequired(
+      codeSpec.functionDefinition,
+      'Function definition'
+    );
+  }
+
+  private async findProblemByIdentifier(id: string): Promise<any | null> {
+    // Try to get by ID first (MongoDB ObjectId pattern)
+    if (ValidationUtils.isValidObjectId(id)) {
+      return await this.problemService.getProblemById(id);
+    }
+
+    // Try to get by number if it's a numeric string
+    if (/^\d+$/.test(id)) {
+      return await this.problemService.getProblemByNumber(parseInt(id));
+    }
+
+    // Finally try by slug
+    return await this.problemService.getProblemBySlug(id);
+  }
+
+  private parseAndValidateLimit(limitParam: string | undefined): number {
+    const limit = parseInt(limitParam || '20');
+
+    if (limit < 1 || limit > 100) {
+      throw new Error('Limit must be between 1 and 100');
+    }
+
+    return limit;
+  }
+
+  private handleProblemCreationError(error: unknown, res: Response): void {
+    logger.error('Error in problem creation:', error);
+
+    if (error instanceof Error && error.message.includes('already exists')) {
+      ResponseHandler.conflict(res, error.message);
+      return;
+    }
+
+    throw error;
+  }
+
+  private handleProblemUpdateError(error: unknown, res: Response): void {
+    logger.error('Error in problem update:', error);
+
+    if (error instanceof Error && error.message.includes('already exists')) {
+      ResponseHandler.conflict(res, error.message);
+      return;
+    }
+
+    throw error;
+  }
+
+  private handleRatingError(error: unknown, res: Response): void {
+    logger.error('Error in problem rating:', error);
+
+    if (error instanceof Error) {
+      if (error.message.includes('Rating must be')) {
+        ResponseHandler.badRequest(res, error.message);
+        return;
+      }
+
+      if (error.message.includes('not found')) {
+        ResponseHandler.notFound(res, 'Problem not found');
+        return;
+      }
+    }
+
+    throw error;
+  }
+
+  private handleNotFoundError(
+    error: unknown,
+    res: Response,
+    message: string
+  ): void {
+    logger.error('Error in controller operation:', error);
+
+    if (error instanceof Error && error.message.includes('not found')) {
+      ResponseHandler.notFound(res, message);
+      return;
+    }
+
+    throw error;
+  }
 }

@@ -112,9 +112,9 @@ export const refreshAccessToken = createAsyncThunk(
     const state = getState() as { auth: AuthState };
     let refreshToken =
       state.auth.refreshToken || TokenManager.getRefreshToken();
-    // refreshToken = `Barrier ${refreshToken}`;
 
     if (!refreshToken) {
+      TokenManager.clearTokens();
       return rejectWithValue('No refresh token available');
     }
 
@@ -132,6 +132,12 @@ export const refreshAccessToken = createAsyncThunk(
     } catch (error: any) {
       // If refresh fails, clear all tokens
       TokenManager.clearTokens();
+
+      // Check if it's a TOKEN_REFRESH_FAILED error
+      if (error.response?.data?.error?.code === 'TOKEN_REFRESH_FAILED') {
+        return rejectWithValue('REFRESH_TOKEN_EXPIRED');
+      }
+
       return rejectWithValue(error.message || 'Token refresh failed');
     }
   }
@@ -226,7 +232,11 @@ const authSlice = createSlice({
         state.refreshToken = null;
         state.expiresIn = null;
         state.isAuthenticated = false;
-        state.error = (action.payload as string) || 'Token refresh failed';
+
+        // Don't set error for expired refresh tokens to avoid showing error messages
+        if (action.payload !== 'REFRESH_TOKEN_EXPIRED') {
+          state.error = (action.payload as string) || 'Token refresh failed';
+        }
       })
       // Get current user
       .addCase(getCurrentUser.fulfilled, (state, action) => {

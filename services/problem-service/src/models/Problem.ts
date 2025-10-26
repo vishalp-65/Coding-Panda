@@ -7,6 +7,7 @@ import {
   ProblemStatistics,
   ProblemConstraints,
   InitialCode,
+  CodeTemplate,
 } from '@ai-platform/types';
 
 export interface ProblemDocument extends Omit<Problem, 'id'>, Document {
@@ -75,12 +76,26 @@ const ProblemStatisticsSchema = new Schema<ProblemStatistics>(
   { _id: false }
 );
 
+// Enhanced code template structure for LeetCode-style handling
+const CodeTemplateSchema = new Schema(
+  {
+    userEditableRegion: { type: String, required: true },
+    hiddenCode: { type: String, required: true },
+    functionSignature: { type: String, required: true },
+    imports: { type: String, default: '' },
+    helperClasses: { type: String, default: '' },
+  },
+  { _id: false }
+);
+
 const InitialCodeSchema = new Schema<InitialCode>(
   {
-    javascript: { type: String },
-    python: { type: String },
-    java: { type: String },
-    cpp: { type: String },
+    javascript: CodeTemplateSchema,
+    python: CodeTemplateSchema,
+    java: CodeTemplateSchema,
+    cpp: CodeTemplateSchema,
+    go: CodeTemplateSchema,
+    rust: CodeTemplateSchema,
   },
   { _id: false }
 );
@@ -117,6 +132,11 @@ const ProblemSchema = new Schema<ProblemDocument>(
         lowercase: true,
       },
     ],
+    number: {
+      type: Number,
+      required: true,
+      unique: true,
+    },
     constraints: {
       type: ProblemConstraintsSchema,
       required: true,
@@ -151,6 +171,7 @@ const ProblemSchema = new Schema<ProblemDocument>(
 
 // Indexes for efficient querying
 ProblemSchema.index({ slug: 1 });
+ProblemSchema.index({ number: 1 });
 ProblemSchema.index({ difficulty: 1 });
 ProblemSchema.index({ tags: 1 });
 ProblemSchema.index({ 'statistics.acceptanceRate': -1 });

@@ -144,6 +144,8 @@ export class ProblemController extends BaseController {
         userId
       );
 
+      console.log("Result", result.pagination)
+
       ResponseHandler.success(
         res,
         result.data,

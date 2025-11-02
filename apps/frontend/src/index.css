@@ -5,14 +5,34 @@
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
+    @apply transition-colors duration-200;
   }
-  
+
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200;
   }
-  
+
   * {
-    @apply border-gray-200;
+    @apply border-gray-200 dark:border-gray-700;
+  }
+
+  /* Ensure proper theme transitions */
+  .dark {
+    color-scheme: dark;
+  }
+
+  .light {
+    color-scheme: light;
+  }
+
+  /* Smooth transitions for all theme-aware elements */
+  *,
+  *::before,
+  *::after {
+    transition-property:
+      color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
   }
 }
 
@@ -20,35 +40,35 @@
   .btn {
     @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
   }
-  
+
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 h-10 py-2 px-4;
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 h-10 py-2 px-4 transition-colors duration-200;
   }
-  
+
   .btn-secondary {
-    @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200 h-10 py-2 px-4;
+    @apply btn bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 h-10 py-2 px-4 transition-colors duration-200;
   }
-  
+
   .btn-outline {
-    @apply btn border border-gray-300 bg-white hover:bg-gray-50 h-10 py-2 px-4;
+    @apply btn border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 h-10 py-2 px-4 transition-colors duration-200;
   }
-  
+
   .btn-outline-sm {
-    @apply btn border border-gray-300 bg-white hover:bg-gray-50 h-8 py-1 px-3 text-xs;
+    @apply btn border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 h-8 py-1 px-3 text-xs transition-colors duration-200;
   }
-  
+
   .input {
-    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm ring-offset-white dark:ring-offset-gray-900 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200;
   }
-  
+
   .card {
-    @apply rounded-lg border bg-white text-gray-950 shadow-sm;
+    @apply rounded-lg border bg-white dark:bg-gray-800 text-gray-950 dark:text-gray-100 shadow-sm transition-colors duration-200;
   }
-  
+
   .card-header {
     @apply flex flex-col space-y-1.5 p-6;
   }
-  
+
   .card-content {
     @apply p-6 pt-0;
   }

@@ -138,7 +138,7 @@ const HomePage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white py-12 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">

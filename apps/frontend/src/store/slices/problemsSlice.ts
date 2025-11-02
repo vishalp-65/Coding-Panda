@@ -1,35 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { problemsApi } from '@/services/api';
+import { Problem } from '@/types/problemSolving';
 
 export interface TestCase {
   input: string;
   expectedOutput: string;
   isHidden: boolean;
-}
-
-export interface Problem {
-  id: string;
-  title: string;
-  slug: string;
-  number: number;
-  description: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  tags: string[];
-  constraints: {
-    timeLimit: number;
-    memoryLimit: number;
-    inputFormat: string;
-    outputFormat: string;
-  };
-  testCases: TestCase[];
-  statistics: {
-    totalSubmissions: number;
-    acceptedSubmissions: number;
-    acceptanceRate: number;
-  };
-  status?: 'solved' | 'attempted' | null;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface SearchCriteria {

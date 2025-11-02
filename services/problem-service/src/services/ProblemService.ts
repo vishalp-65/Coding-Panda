@@ -57,7 +57,6 @@ export class ProblemService {
     problemData: CreateProblemRequest,
     codeSpec: ProblemCodeSpec
   ): Promise<Problem> {
-    console.log({ problemData, codeSpec });
     return this.createProblem({ ...problemData, codeSpec });
   }
 
@@ -165,18 +164,16 @@ export class ProblemService {
         sortOrder,
       });
 
-      const [problems, total] = await Promise.all([
+      const [problems, totalProblems] = await Promise.all([
         this.executePaginatedPipeline(pipeline, page, limit),
         this.countPipelineResults(pipeline),
       ]);
-
-      console.log({ problems, total })
 
       const transformedProblems = this.transformAggregationResults(problems);
 
       return DatabaseUtils.createPaginatedResult(
         transformedProblems,
-        total,
+        totalProblems,
         page,
         limit
       );

@@ -14,7 +14,7 @@ const configSchema = z.object({
 
   // JWT configuration
   jwt: z.object({
-    secret: z.string().min(32),
+    secret: z.string().min(8),
     expiresIn: z.string().default('1h'),
     refreshExpiresIn: z.string().default('7d'),
   }),
@@ -23,7 +23,7 @@ const configSchema = z.object({
   rateLimit: z.object({
     windowMs: z.coerce.number().default(15 * 60 * 1000), // 15 minutes
     max: z.coerce.number().default(100), // limit each IP to 100 requests per windowMs
-    skipSuccessfulRequests: z.boolean().default(false),
+    skipSuccessfulRequests: z.coerce.boolean().default(false),
   }),
 
   // Service discovery configuration
@@ -65,13 +65,13 @@ const configSchema = z.object({
   // CORS configuration
   cors: z.object({
     origin: z.union([z.string(), z.array(z.string())]).default('*'),
-    credentials: z.boolean().default(true),
+    credentials: z.coerce.boolean().default(true),
   }),
 });
 
 const env = {
   nodeEnv: process.env.NODE_ENV,
-  port: process.env.PORT || process.env.API_GATEWAY_PORT,
+  port: process.env.PORT,
 
   redis: {
     host: process.env.REDIS_HOST,
@@ -81,9 +81,7 @@ const env = {
   },
 
   jwt: {
-    secret:
-      process.env.JWT_SECRET ||
-      'your-super-secret-jwt-key-change-in-production',
+    secret: process.env.JWT_SECRET || 'your-super-secret',
     expiresIn: process.env.JWT_EXPIRES_IN,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
   },

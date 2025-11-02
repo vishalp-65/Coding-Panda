@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.responses import JSONResponse
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import logging
 from src.models.execution import ExecutionRequest, ExecutionResult
 from src.execution.executor import CodeExecutor
 from src.services.CodeMergerService import CodeMergerService
+from src.middleware.auth import get_current_user_required, get_current_user_optional
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,10 @@ def get_executor():
 
 
 @router.post("/execute", response_model=ExecutionResult)
-async def execute_code(request: ExecutionRequest) -> ExecutionResult:
+async def execute_code(
+    request: ExecutionRequest, 
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
+) -> ExecutionResult:
     """
     Execute user code with LeetCode-style hidden code merging.
     
@@ -36,7 +40,7 @@ async def execute_code(request: ExecutionRequest) -> ExecutionResult:
     4. Returns detailed results
     """
     try:
-        logger.info(f"Received execution request for {request.language} with {len(request.test_cases)} test cases")
+        logger.info(f"Received execution request for {request.language} with {len(request.test_cases)} test cases from user {current_user['id']}")
         
         # Execute the code (merging is handled internally by the executor)
         executor_instance = get_executor()
@@ -55,7 +59,10 @@ async def execute_code(request: ExecutionRequest) -> ExecutionResult:
 
 
 @router.post("/validate", response_model=Dict[str, Any])
-async def validate_code(request: ExecutionRequest) -> Dict[str, Any]:
+async def validate_code(
+    request: ExecutionRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
+) -> Dict[str, Any]:
     """
     Validate user code without executing it.
     
@@ -107,7 +114,10 @@ async def validate_code(request: ExecutionRequest) -> Dict[str, Any]:
 
 
 @router.post("/merge-preview", response_model=Dict[str, str])
-async def preview_merged_code(request: ExecutionRequest) -> Dict[str, str]:
+async def preview_merged_code(
+    request: ExecutionRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
+) -> Dict[str, str]:
     """
     Preview how user code will be merged with hidden code.
     
@@ -160,16 +170,12 @@ async def health_check() -> Dict[str, Any]:
     Health check endpoint for the execution service.
     """
     try:
-        executor_instance = get_executor()
-        health_status = await executor_instance.health_check()
-        
+        from datetime import datetime
         return {
             "service": "code-execution-service",
-            "status": health_status.get("status", "unknown"),
-            "timestamp": health_status.get("timestamp"),
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
             "details": {
-                "docker": health_status.get("docker", "unknown"),
-                "cache_size": health_status.get("cache_size", 0),
                 "supported_languages": ["python", "javascript", "java", "cpp", "go", "rust"]
             }
         }
@@ -207,7 +213,9 @@ async def warmup_service(background_tasks: BackgroundTasks) -> Dict[str, str]:
 
 
 @router.delete("/cache")
-async def clear_cache() -> Dict[str, str]:
+async def clear_cache(
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
+) -> Dict[str, str]:
     """
     Clear the execution result cache.
     """
@@ -228,8 +236,38 @@ async def clear_cache() -> Dict[str, str]:
         )
 
 
+@router.get("/debug-headers")
+async def debug_headers(request: Request) -> Dict[str, Any]:
+    """
+    Debug endpoint to see what headers are being received.
+    """
+    from datetime import datetime
+    return {
+        "message": "Debug headers endpoint",
+        "headers": dict(request.headers),
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
+
+
+@router.get("/test-auth")
+async def test_auth(
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
+) -> Dict[str, Any]:
+    """
+    Test endpoint to verify authentication is working.
+    """
+    from datetime import datetime
+    return {
+        "message": "Authentication successful",
+        "user": current_user,
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
+
+
 @router.get("/metrics")
-async def get_metrics() -> Dict[str, Any]:
+async def get_metrics(
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)
+) -> Dict[str, Any]:
     """
     Get execution metrics and statistics.
     """

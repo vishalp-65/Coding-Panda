@@ -1,3 +1,4 @@
+import { ProblemPagination } from '@/types/problemSolving';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 const API_BASE_URL =
@@ -84,12 +85,14 @@ class ApiClient {
             // If already refreshing, queue this request
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
-            }).then(token => {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-              return this.client(originalRequest);
-            }).catch(err => {
-              return Promise.reject(err);
-            });
+            })
+              .then(token => {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                return this.client(originalRequest);
+              })
+              .catch(err => {
+                return Promise.reject(err);
+              });
           }
 
           originalRequest._retry = true;
@@ -101,7 +104,9 @@ class ApiClient {
               throw new Error('Max refresh attempts exceeded');
             }
 
-            const refreshResult = await this.store.dispatch(this.refreshAccessToken());
+            const refreshResult = await this.store.dispatch(
+              this.refreshAccessToken()
+            );
 
             if (refreshResult.type.endsWith('/fulfilled')) {
               // Reset failure count on successful refresh
@@ -231,7 +236,7 @@ export const authApi = {
 // Problems API
 export const problemsApi = {
   searchProblems: (criteria: any) =>
-    apiClient.get<{ data: any[]; totalCount: number }>(
+    apiClient.get<{ data: any[]; pagination: ProblemPagination }>(
       '/problems/search',
       criteria
     ),

@@ -45,8 +45,8 @@ const LoginPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Sign in to your account</h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Sign in to your account</h2>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           Or{' '}
           <Link
             to="/register"
@@ -59,7 +59,7 @@ const LoginPage = () => {
 
       <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Email address
           </label>
           <div className="mt-1">
@@ -71,13 +71,13 @@ const LoginPage = () => {
               placeholder="Enter your email"
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
             )}
           </div>
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Password
           </label>
           <div className="mt-1 relative">
@@ -94,13 +94,13 @@ const LoginPage = () => {
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? (
-                <EyeOff className="h-4 w-4 text-gray-400" />
+                <EyeOff className="h-4 w-4 text-gray-400 dark:text-gray-500" />
               ) : (
-                <Eye className="h-4 w-4 text-gray-400" />
+                <Eye className="h-4 w-4 text-gray-400 dark:text-gray-500" />
               )}
             </button>
             {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
             )}
           </div>
         </div>
@@ -111,9 +111,9 @@ const LoginPage = () => {
               id="remember-me"
               name="remember-me"
               type="checkbox"
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded"
             />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 dark:text-white">
               Remember me
             </label>
           </div>
@@ -129,8 +129,8 @@ const LoginPage = () => {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
 

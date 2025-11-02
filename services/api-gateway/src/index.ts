@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file BEFORE importing config
+dotenv.config();
+
 import express from 'express';
 import { createServer } from 'http';
 import { config } from './config';

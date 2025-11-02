@@ -18,7 +18,7 @@ export const config = {
 
   // JWT
   jwt: {
-    secret: process.env.JWT_SECRET || 'dev-secret-key-change-in-production',
+    secret: process.env.JWT_SECRET,
     accessTokenExpiry: process.env.JWT_ACCESS_EXPIRY || '1h',
     refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
   },

@@ -3,7 +3,7 @@ import { corsMiddleware } from './cors';
 import { securityMiddleware, additionalSecurityMiddleware, enhancedSecurityMiddleware } from './security';
 import { loggingMiddleware } from './logging';
 import { rateLimitMiddleware } from './rate-limit';
-import { authMiddleware } from './auth';
+import { authMiddleware, optionalAuthMiddleware } from './auth';
 import { metricsMiddleware } from './metrics';
 import { errorHandlerMiddleware } from './error-handler';
 import { logger } from '@ai-platform/common';

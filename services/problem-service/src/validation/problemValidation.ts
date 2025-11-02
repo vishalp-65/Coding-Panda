@@ -238,10 +238,10 @@ export const searchProblemsSchema = Joi.object({
   status: Joi.string().valid('solved', 'attempted', 'unsolved').optional(),
 
   sortBy: Joi.string()
-    .valid('title', 'difficulty', 'acceptance_rate', 'created_at')
-    .default('created_at'),
+    .valid('title', 'difficulty', 'acceptance_rate', 'created_at', 'number')
+    .default('number'),
 
-  sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
+  sortOrder: Joi.string().valid('asc', 'desc').default('asc'),
 
   page: Joi.alternatives()
     .try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/))

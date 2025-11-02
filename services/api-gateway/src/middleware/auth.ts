@@ -19,10 +19,12 @@ declare global {
 }
 
 interface JWTPayload {
-  id: string;
+  id?: string;
+  userId?: string;
   email: string;
-  username: string;
+  username?: string;
   roles: string[];
+  sessionId?: string;
   iat: number;
   exp: number;
 }
@@ -44,9 +46,30 @@ const extractToken = (req: Request): string | null => {
 };
 
 // Verify JWT token
-const verifyToken = async (token: string, skipRedisCheck = false): Promise<JWTPayload | null> => {
+const verifyToken = async (
+  token: string,
+  skipRedisCheck = false
+): Promise<JWTPayload | null> => {
   try {
-    const decoded = jwt.verify(token, config.jwt.secret) as JWTPayload;
+    logger.debug('Verifying JWT token', {
+      tokenLength: token.length,
+      tokenStart: token.substring(0, 20),
+      secret: config.jwt.secret.substring(0, 10) + '...',
+    });
+
+    // Verify with issuer and audience to match the user service token format
+    const decoded = jwt.verify(token, config.jwt.secret, {
+      issuer: 'ai-platform',
+      audience: 'ai-platform-users',
+    }) as JWTPayload;
+
+    // Handle both 'id' and 'userId' fields for compatibility
+    const userId = decoded.id || decoded.userId;
+
+    logger.debug('JWT token verified successfully', {
+      userId: userId,
+      email: decoded.email,
+    });
 
     // Skip Redis checks for optional auth to avoid blocking requests
     if (!skipRedisCheck) {
@@ -54,20 +77,28 @@ const verifyToken = async (token: string, skipRedisCheck = false): Promise<JWTPa
         // Check if token is blacklisted in Redis
         const isBlacklisted = await redisClient.get(`blacklist:${token}`);
         if (isBlacklisted) {
+          logger.debug('Token is blacklisted');
           return null;
         }
       } catch (redisError) {
-        logger.warn('Redis blacklist check failed, continuing with token validation', {
-          error: redisError instanceof Error ? redisError.message : String(redisError),
-        });
+        logger.warn(
+          'Redis blacklist check failed, continuing with token validation',
+          {
+            error:
+              redisError instanceof Error
+                ? redisError.message
+                : String(redisError),
+          }
+        );
         // Continue without Redis check if Redis is unavailable
       }
     }
 
     return decoded;
   } catch (error) {
-    logger.debug('Token verification failed', {
+    logger.error('Token verification failed', {
       error: error instanceof Error ? error.message : String(error),
+      tokenStart: token.substring(0, 20),
     });
     return null;
   }
@@ -83,7 +114,12 @@ export const authMiddleware = async (
     const token = extractToken(req);
 
     if (!token) {
-      SecurityAuditLogger.logAuthenticationAttempt(req, false, undefined, 'Missing token');
+      SecurityAuditLogger.logAuthenticationAttempt(
+        req,
+        false,
+        undefined,
+        'Missing token'
+      );
       return res.status(401).json({
         error: {
           code: 'MISSING_TOKEN',
@@ -97,7 +133,12 @@ export const authMiddleware = async (
     const apiKey = req.headers['x-api-key'] as string;
     if (apiKey && !token) {
       if (!AuthUtils.validateApiKey(apiKey)) {
-        SecurityAuditLogger.logAuthenticationAttempt(req, false, undefined, 'Invalid API key format');
+        SecurityAuditLogger.logAuthenticationAttempt(
+          req,
+          false,
+          undefined,
+          'Invalid API key format'
+        );
         return res.status(401).json({
           error: {
             code: 'INVALID_API_KEY',
@@ -113,7 +154,12 @@ export const authMiddleware = async (
     const payload = await verifyToken(token);
 
     if (!payload) {
-      SecurityAuditLogger.logAuthenticationAttempt(req, false, undefined, 'Invalid or expired token');
+      SecurityAuditLogger.logAuthenticationAttempt(
+        req,
+        false,
+        undefined,
+        'Invalid or expired token'
+      );
       return res.status(401).json({
         error: {
           code: 'INVALID_TOKEN',
@@ -123,29 +169,37 @@ export const authMiddleware = async (
       });
     }
 
-    // Check for session validity
-    const sessionKey = `session:${payload.id}:${token.substring(0, 10)}`;
-    const sessionValid = await redisClient.get(sessionKey);
+    // Check for session validity (skip in development for testing)
+    if (config.nodeEnv !== 'development') {
+      const sessionKey = `session:${payload.id}:${token.substring(0, 10)}`;
+      const sessionValid = await redisClient.get(sessionKey);
 
-    if (!sessionValid) {
-      SecurityAuditLogger.logAuthenticationAttempt(req, false, payload.id, 'Session expired or invalid');
-      return res.status(401).json({
-        error: {
-          code: 'SESSION_EXPIRED',
-          message: 'Session has expired, please login again',
-          timestamp: new Date().toISOString(),
-        },
-      });
+      if (!sessionValid) {
+        SecurityAuditLogger.logAuthenticationAttempt(
+          req,
+          false,
+          payload.id,
+          'Session expired or invalid'
+        );
+        return res.status(401).json({
+          error: {
+            code: 'SESSION_EXPIRED',
+            message: 'Session has expired, please login again',
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+
+      // Update session activity
+      await redisClient.setex(sessionKey, 3600, 'active'); // Extend session for 1 hour
     }
 
-    // Update session activity
-    await redisClient.setex(sessionKey, 3600, 'active'); // Extend session for 1 hour
-
-    // Attach user info to request
+    // Attach user info to request (handle both 'id' and 'userId' fields)
+    const userId = payload.id || payload.userId || '';
     req.user = {
-      id: payload.id,
+      id: userId,
       email: payload.email,
-      username: payload.username,
+      username: payload.username || '',
       roles: payload.roles,
     };
 
@@ -159,11 +213,11 @@ export const authMiddleware = async (
 
     next();
   } catch (error) {
-    SecurityAuditLogger.logSecurityEvent(
-      'AUTHENTICATION_ERROR',
-      'HIGH',
-      { error: (error as Error).message, ip: req.ip, path: req.path }
-    );
+    SecurityAuditLogger.logSecurityEvent('AUTHENTICATION_ERROR', 'HIGH', {
+      error: (error as Error).message,
+      ip: req.ip,
+      path: req.path,
+    });
 
     logger.error('Authentication middleware error', {
       requestId: req.requestId || 'unknown',
@@ -196,9 +250,9 @@ export const optionalAuthMiddleware = async (
         // For optional auth, skip session validation to avoid Redis dependency issues
         // Only validate sessions for required auth endpoints
         req.user = {
-          id: payload.id,
+          id: payload.id || payload.userId || '',
           email: payload.email,
-          username: payload.username,
+          username: payload.username || '',
           roles: payload.roles,
         };
       }
@@ -223,7 +277,13 @@ export const requireRole = (requiredRoles: string | string[]) => {
 
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      SecurityAuditLogger.logAuthorizationAttempt(req, false, 'unknown', req.path, req.method);
+      SecurityAuditLogger.logAuthorizationAttempt(
+        req,
+        false,
+        'unknown',
+        req.path,
+        req.method
+      );
       return res.status(401).json({
         error: {
           code: 'AUTHENTICATION_REQUIRED',
@@ -236,7 +296,13 @@ export const requireRole = (requiredRoles: string | string[]) => {
     const hasRequiredRole = roles.some(role => req.user!.roles.includes(role));
 
     if (!hasRequiredRole) {
-      SecurityAuditLogger.logAuthorizationAttempt(req, false, req.user.id, req.path, req.method);
+      SecurityAuditLogger.logAuthorizationAttempt(
+        req,
+        false,
+        req.user.id,
+        req.path,
+        req.method
+      );
 
       logger.warn('Insufficient permissions', {
         requestId: req.requestId || 'unknown',
@@ -254,7 +320,13 @@ export const requireRole = (requiredRoles: string | string[]) => {
       });
     }
 
-    SecurityAuditLogger.logAuthorizationAttempt(req, true, req.user.id, req.path, req.method);
+    SecurityAuditLogger.logAuthorizationAttempt(
+      req,
+      true,
+      req.user.id,
+      req.path,
+      req.method
+    );
     next();
   };
 };
